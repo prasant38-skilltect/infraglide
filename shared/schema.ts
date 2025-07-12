@@ -35,6 +35,16 @@ export const deployments = pgTable("deployments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const credentials = pgTable("credentials", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  username: text("username").notNull(),
+  password: text("password").notNull(),
+  provider: text("provider").notNull(), // AWS, GCP, Azure
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Component schemas
 export const componentConfigSchema = z.object({
   id: z.string(),
@@ -67,11 +77,19 @@ export const insertDeploymentSchema = createInsertSchema(deployments).omit({
   createdAt: true,
 });
 
+export const insertCredentialSchema = createInsertSchema(credentials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export type Project = typeof projects.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type Deployment = typeof deployments.$inferSelect;
+export type Credential = typeof credentials.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
+export type InsertCredential = z.infer<typeof insertCredentialSchema>;
 export type ComponentConfig = z.infer<typeof componentConfigSchema>;
 export type PipelineConnection = z.infer<typeof pipelineConnectionSchema>;

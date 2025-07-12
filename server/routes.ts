@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertPipelineSchema, insertDeploymentSchema } from "@shared/schema";
+import { insertProjectSchema, insertPipelineSchema, insertDeploymentSchema, insertCredentialSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -168,6 +168,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Invalid deployment data", details: error.errors });
       }
       res.status(500).json({ error: "Failed to create deployment" });
+    }
+  });
+
+  // Credentials routes
+  app.get("/api/credentials", async (req, res) => {
+    try {
+      const credentials = await storage.getCredentials();
+      res.json(credentials);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch credentials" });
+    }
+  });
+
+  app.get("/api/credentials/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const credential = await storage.getCredential(id);
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      res.json(credential);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch credential" });
+    }
+  });
+
+  app.post("/api/credentials", async (req, res) => {
+    try {
+      const validatedData = insertCredentialSchema.parse(req.body);
+      const credential = await storage.createCredential(validatedData);
+      res.status(201).json(credential);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid credential data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create credential" });
+    }
+  });
+
+  app.put("/api/credentials/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCredentialSchema.partial().parse(req.body);
+      const credential = await storage.updateCredential(id, validatedData);
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      res.json(credential);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid credential data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update credential" });
+    }
+  });
+
+  app.delete("/api/credentials/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCredential(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Credential not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete credential" });
     }
   });
 

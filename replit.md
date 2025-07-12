@@ -39,13 +39,15 @@ Preferred communication style: Simple, everyday language.
 1. **Projects** - Top-level containers for organizing infrastructure
 2. **Pipelines** - Visual representations of AWS infrastructure with components and connections
 3. **Deployments** - Execution records of pipeline deployments with environment tracking
-4. **Components** - AWS resource definitions (EC2, S3, RDS, Lambda, VPC, ALB, DynamoDB)
+4. **Credentials** - Cloud provider authentication credentials (AWS, GCP, Azure)
+5. **Components** - AWS resource definitions (EC2, S3, RDS, Lambda, VPC, ALB, DynamoDB)
 
 ### Frontend Components
 - **Dashboard** - Overview of projects, pipelines, and recent deployments
 - **Pipeline Designer** - Visual canvas for designing infrastructure with drag-and-drop
 - **Component Library** - Palette of available AWS services organized by category
 - **Properties Panel** - Configuration interface for selected components
+- **Credentials Management** - Secure storage and management of cloud provider credentials
 - **Sidebar Navigation** - Application navigation with routing
 
 ### Backend Services
@@ -118,3 +120,14 @@ Preferred communication style: Simple, everyday language.
 - Stateless server design for horizontal scaling
 - Client-side routing reduces server load
 - Optimistic updates improve perceived performance
+
+## Recent Changes
+
+### January 12, 2025
+- **Added Credentials Management System**
+  - New credentials data model with support for AWS, GCP, and Azure providers
+  - Complete CRUD operations for credential management through REST API
+  - Credentials page with provider-grouped table view and filtering
+  - Create/Edit credential modals with form validation
+  - Enhanced sidebar navigation with credentials link
+  - Secure storage of provider authentication details (name, username, password)

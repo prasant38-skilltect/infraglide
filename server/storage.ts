@@ -2,12 +2,15 @@ import {
   projects, 
   pipelines, 
   deployments,
+  credentials,
   type Project, 
   type Pipeline, 
   type Deployment,
+  type Credential,
   type InsertProject, 
   type InsertPipeline, 
-  type InsertDeployment 
+  type InsertDeployment,
+  type InsertCredential
 } from "@shared/schema";
 
 export interface IStorage {
@@ -30,23 +33,34 @@ export interface IStorage {
   getDeployment(id: number): Promise<Deployment | undefined>;
   createDeployment(deployment: InsertDeployment): Promise<Deployment>;
   updateDeployment(id: number, deployment: Partial<InsertDeployment>): Promise<Deployment | undefined>;
+
+  // Credentials
+  getCredentials(): Promise<Credential[]>;
+  getCredential(id: number): Promise<Credential | undefined>;
+  createCredential(credential: InsertCredential): Promise<Credential>;
+  updateCredential(id: number, credential: Partial<InsertCredential>): Promise<Credential | undefined>;
+  deleteCredential(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
   private projects: Map<number, Project>;
   private pipelines: Map<number, Pipeline>;
   private deployments: Map<number, Deployment>;
+  private credentials: Map<number, Credential>;
   private currentProjectId: number;
   private currentPipelineId: number;
   private currentDeploymentId: number;
+  private currentCredentialId: number;
 
   constructor() {
     this.projects = new Map();
     this.pipelines = new Map();
     this.deployments = new Map();
+    this.credentials = new Map();
     this.currentProjectId = 1;
     this.currentPipelineId = 1;
     this.currentDeploymentId = 1;
+    this.currentCredentialId = 1;
 
     // Create default project
     this.createProject({
@@ -69,6 +83,7 @@ export class MemStorage implements IStorage {
     const project: Project = {
       ...insertProject,
       id,
+      description: insertProject.description || null,
       createdAt: new Date(),
     };
     this.projects.set(id, project);
@@ -107,6 +122,13 @@ export class MemStorage implements IStorage {
     const pipeline: Pipeline = {
       ...insertPipeline,
       id,
+      description: insertPipeline.description || null,
+      region: insertPipeline.region || "us-east-1",
+      status: insertPipeline.status || "draft",
+      projectId: insertPipeline.projectId || null,
+      components: insertPipeline.components || [],
+      connections: insertPipeline.connections || [],
+      isTemplate: insertPipeline.isTemplate || false,
       createdAt: now,
       updatedAt: now,
     };
@@ -149,6 +171,12 @@ export class MemStorage implements IStorage {
     const deployment: Deployment = {
       ...insertDeployment,
       id,
+      status: insertDeployment.status || "pending",
+      environment: insertDeployment.environment || "development",
+      notes: insertDeployment.notes || null,
+      validateConfig: insertDeployment.validateConfig || true,
+      dryRun: insertDeployment.dryRun || false,
+      notifications: insertDeployment.notifications || true,
       createdAt: new Date(),
     };
     this.deployments.set(id, deployment);
@@ -162,6 +190,45 @@ export class MemStorage implements IStorage {
     const updatedDeployment: Deployment = { ...deployment, ...insertDeployment };
     this.deployments.set(id, updatedDeployment);
     return updatedDeployment;
+  }
+
+  // Credentials
+  async getCredentials(): Promise<Credential[]> {
+    return Array.from(this.credentials.values());
+  }
+
+  async getCredential(id: number): Promise<Credential | undefined> {
+    return this.credentials.get(id);
+  }
+
+  async createCredential(insertCredential: InsertCredential): Promise<Credential> {
+    const id = this.currentCredentialId++;
+    const now = new Date();
+    const credential: Credential = {
+      ...insertCredential,
+      id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.credentials.set(id, credential);
+    return credential;
+  }
+
+  async updateCredential(id: number, insertCredential: Partial<InsertCredential>): Promise<Credential | undefined> {
+    const credential = this.credentials.get(id);
+    if (!credential) return undefined;
+
+    const updatedCredential: Credential = { 
+      ...credential, 
+      ...insertCredential,
+      updatedAt: new Date()
+    };
+    this.credentials.set(id, updatedCredential);
+    return updatedCredential;
+  }
+
+  async deleteCredential(id: number): Promise<boolean> {
+    return this.credentials.delete(id);
   }
 }
 
