@@ -366,6 +366,7 @@ export default function PipelineDesigner() {
           {showComponentLibrary && (
             <ComponentLibrary 
               hasUnsavedChanges={hasUnsavedChanges}
+              onSavePrompt={() => handleSavePipeline()}
             />
           )}
           

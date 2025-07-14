@@ -2,6 +2,16 @@ import { Server, Zap, Folder, Database, Table, Network, Scale, Cloud, Monitor, S
 import * as React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const awsComponents = [
   {
@@ -263,10 +273,41 @@ const gcpComponents = [
 
 interface ComponentLibraryProps {
   hasUnsavedChanges?: boolean;
+  onSavePrompt?: () => void;
 }
 
-export default function ComponentLibrary({ hasUnsavedChanges = false }: ComponentLibraryProps) {
+export default function ComponentLibrary({ hasUnsavedChanges = false, onSavePrompt }: ComponentLibraryProps) {
   const [selectedTab, setSelectedTab] = useState("aws");
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  const handleTabChange = (value: string) => {
+    if (hasUnsavedChanges && selectedTab !== value) {
+      setPendingTab(value);
+      setShowSaveDialog(true);
+    } else {
+      setSelectedTab(value);
+    }
+  };
+
+  const handleSaveAndSwitch = () => {
+    if (onSavePrompt) {
+      onSavePrompt();
+    }
+    if (pendingTab) {
+      setSelectedTab(pendingTab);
+    }
+    setShowSaveDialog(false);
+    setPendingTab(null);
+  };
+
+  const handleDiscardAndSwitch = () => {
+    if (pendingTab) {
+      setSelectedTab(pendingTab);
+    }
+    setShowSaveDialog(false);
+    setPendingTab(null);
+  };
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
@@ -315,7 +356,7 @@ export default function ComponentLibrary({ hasUnsavedChanges = false }: Componen
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
               <TabsTrigger value="aws">AWS</TabsTrigger>
               <TabsTrigger value="azure">Azure</TabsTrigger>
@@ -337,6 +378,24 @@ export default function ComponentLibrary({ hasUnsavedChanges = false }: Componen
         </div>
       </div>
 
+    <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Save Pipeline?</AlertDialogTitle>
+          <AlertDialogDescription>
+            You have unsaved changes in your current pipeline. Do you want to save it before switching to {pendingTab?.toUpperCase()} components?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleDiscardAndSwitch}>
+            No, discard changes
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleSaveAndSwitch}>
+            Yes, save pipeline
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
