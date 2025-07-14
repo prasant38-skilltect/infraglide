@@ -1,6 +1,16 @@
 import { Server, Zap, Folder, Database, Table, Network, Scale, Cloud, Monitor, Shield, HardDrive, Cpu, Globe } from "lucide-react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const awsComponents = [
   {
@@ -260,7 +270,44 @@ const gcpComponents = [
   },
 ];
 
-export default function ComponentLibrary() {
+interface ComponentLibraryProps {
+  hasUnsavedChanges?: boolean;
+  onSavePrompt?: () => void;
+}
+
+export default function ComponentLibrary({ hasUnsavedChanges = false, onSavePrompt }: ComponentLibraryProps) {
+  const [selectedTab, setSelectedTab] = useState("aws");
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  const handleTabChange = (value: string) => {
+    if (hasUnsavedChanges && selectedTab !== value) {
+      setPendingTab(value);
+      setShowSaveDialog(true);
+    } else {
+      setSelectedTab(value);
+    }
+  };
+
+  const handleSaveAndSwitch = () => {
+    if (onSavePrompt) {
+      onSavePrompt();
+    }
+    if (pendingTab) {
+      setSelectedTab(pendingTab);
+    }
+    setShowSaveDialog(false);
+    setPendingTab(null);
+  };
+
+  const handleDiscardAndSwitch = () => {
+    if (pendingTab) {
+      setSelectedTab(pendingTab);
+    }
+    setShowSaveDialog(false);
+    setPendingTab(null);
+  };
+
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.effectAllowed = "move";
@@ -300,33 +347,54 @@ export default function ComponentLibrary() {
   );
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900">Cloud Components</h3>
-        <p className="text-sm text-gray-600 mt-1">Drag components to the canvas</p>
+    <>
+      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+        <div className="p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Cloud Components</h3>
+          <p className="text-sm text-gray-600 mt-1">Drag components to the canvas</p>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
+              <TabsTrigger value="aws">AWS</TabsTrigger>
+              <TabsTrigger value="azure">Azure</TabsTrigger>
+              <TabsTrigger value="gcp">GCP</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="aws" className="p-4 pt-4">
+              {renderComponents(awsComponents)}
+            </TabsContent>
+            
+            <TabsContent value="azure" className="p-4 pt-4">
+              {renderComponents(azureComponents)}
+            </TabsContent>
+            
+            <TabsContent value="gcp" className="p-4 pt-4">
+              {renderComponents(gcpComponents)}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        <Tabs defaultValue="aws" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
-            <TabsTrigger value="aws">AWS</TabsTrigger>
-            <TabsTrigger value="azure">Azure</TabsTrigger>
-            <TabsTrigger value="gcp">GCP</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="aws" className="p-4 pt-4">
-            {renderComponents(awsComponents)}
-          </TabsContent>
-          
-          <TabsContent value="azure" className="p-4 pt-4">
-            {renderComponents(azureComponents)}
-          </TabsContent>
-          
-          <TabsContent value="gcp" className="p-4 pt-4">
-            {renderComponents(gcpComponents)}
-          </TabsContent>
-        </Tabs>
-      </div>
-    </div>
+    <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+          <AlertDialogDescription>
+            You have unsaved changes in your pipeline. Do you want to save your changes before switching providers?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={handleDiscardAndSwitch}>
+            Discard Changes
+          </AlertDialogCancel>
+          <AlertDialogAction onClick={handleSaveAndSwitch}>
+            Save & Switch
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }

@@ -50,6 +50,7 @@ export default function PipelineDesigner() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -60,8 +61,20 @@ export default function PipelineDesigner() {
 
   // Auto-collapse sidebar when component mounts (user clicked on Pipeline link)
   useEffect(() => {
-    setIsSidebarCollapsed(true);
+    const storedSidebarState = localStorage.getItem('pipelineDesignerSidebarCollapsed');
+    if (storedSidebarState === null) {
+      // First time visiting pipeline designer, auto-collapse
+      setIsSidebarCollapsed(true);
+      localStorage.setItem('pipelineDesignerSidebarCollapsed', 'true');
+    } else {
+      setIsSidebarCollapsed(storedSidebarState === 'true');
+    }
   }, []);
+
+  // Save sidebar state to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('pipelineDesignerSidebarCollapsed', isSidebarCollapsed.toString());
+  }, [isSidebarCollapsed]);
 
   // Load existing pipeline if editing
   const { data: pipeline } = useQuery<Pipeline>({
@@ -119,6 +132,7 @@ export default function PipelineDesigner() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       setShowSaveModal(false);
+      setHasUnsavedChanges(false);
     },
     onError: () => {
       toast({
@@ -151,7 +165,10 @@ export default function PipelineDesigner() {
   });
 
   const onConnect = useCallback(
-    (params: Connection) => setEdges((eds) => addEdge(params, eds)),
+    (params: Connection) => {
+      setEdges((eds) => addEdge(params, eds));
+      setHasUnsavedChanges(true);
+    },
     [setEdges]
   );
 
@@ -182,6 +199,7 @@ export default function PipelineDesigner() {
       };
 
       setNodes((nds) => nds.concat(newNode));
+      setHasUnsavedChanges(true);
     },
     [reactFlowInstance, setNodes]
   );
@@ -199,6 +217,7 @@ export default function PipelineDesigner() {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
+    setHasUnsavedChanges(true);
   }, [setNodes, setEdges]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -301,87 +320,17 @@ export default function PipelineDesigner() {
                 <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSaveModal(true)}
-                disabled={savePipelineMutation.isPending}
-              >
-                <Save className="w-4 h-4 mr-1" />
-                Save
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Publish", description: "Publishing functionality coming soon" })}
-              >
-                <Upload className="w-4 h-4 mr-1" />
-                Publish
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Export", description: "Export functionality coming soon" })}
-              >
-                <Download className="w-4 h-4 mr-1" />
-                Export
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Import", description: "Import functionality coming soon" })}
-              >
-                <Upload className="w-4 h-4 mr-1" />
-                Import
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Validate", description: "Validation functionality coming soon" })}
-              >
-                <CheckCircle className="w-4 h-4 mr-1" />
-                Validate
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Preview", description: "Preview functionality coming soon" })}
-              >
-                <Eye className="w-4 h-4 mr-1" />
-                Preview
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => toast({ title: "Create", description: "Create functionality coming soon" })}
-              >
-                <Plus className="w-4 h-4 mr-1" />
-                Create
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowDeployModal(true)}
-                disabled={!pipelineId || createDeploymentMutation.isPending}
-              >
-                <Rocket className="w-4 h-4 mr-1" />
-                {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
-              </Button>
-              <Button 
-                variant="destructive" 
-                size="sm"
-                onClick={() => toast({ title: "Destroy", description: "Destroy functionality coming soon" })}
-              >
-                <Zap className="w-4 h-4 mr-1" />
-                Destroy
-              </Button>
-            </div>
+
           </div>
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {!isSidebarCollapsed && <ComponentLibrary />}
+          {!isSidebarCollapsed && (
+            <ComponentLibrary 
+              hasUnsavedChanges={hasUnsavedChanges}
+              onSavePrompt={() => setShowSaveModal(true)}
+            />
+          )}
           
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
@@ -404,7 +353,84 @@ export default function PipelineDesigner() {
                       <Edit3 className="w-4 h-4" />
                     </Button>
                   </div>
-
+                  
+                  {/* Action Buttons */}
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowSaveModal(true)}
+                      disabled={savePipelineMutation.isPending}
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Publish", description: "Publishing functionality coming soon" })}
+                    >
+                      <Upload className="w-4 h-4 mr-1" />
+                      Publish
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Export", description: "Export functionality coming soon" })}
+                    >
+                      <Download className="w-4 h-4 mr-1" />
+                      Export
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Import", description: "Import functionality coming soon" })}
+                    >
+                      <Upload className="w-4 h-4 mr-1" />
+                      Import
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Validate", description: "Validation functionality coming soon" })}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Validate
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Preview", description: "Preview functionality coming soon" })}
+                    >
+                      <Eye className="w-4 h-4 mr-1" />
+                      Preview
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => toast({ title: "Create", description: "Create functionality coming soon" })}
+                    >
+                      <Plus className="w-4 h-4 mr-1" />
+                      Create
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setShowDeployModal(true)}
+                      disabled={!pipelineId || createDeploymentMutation.isPending}
+                    >
+                      <Rocket className="w-4 h-4 mr-1" />
+                      {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
+                    </Button>
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => toast({ title: "Destroy", description: "Destroy functionality coming soon" })}
+                    >
+                      <Zap className="w-4 h-4 mr-1" />
+                      Destroy
+                    </Button>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
