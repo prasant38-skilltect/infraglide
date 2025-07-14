@@ -150,10 +150,9 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
             selected ? "ring-2 ring-blue-500" : ""
           }`}
         >
-          {/* Source handles */}
           <Handle 
             id="top"
-            type="source" 
+            type="target" 
             position={Position.Top} 
             className="w-3 h-3" 
             style={{
@@ -163,7 +162,7 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
           />
           <Handle 
             id="left"
-            type="source" 
+            type="target" 
             position={Position.Left} 
             className="w-3 h-3" 
             style={{
@@ -178,38 +177,6 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
             className="w-3 h-3" 
             style={{
               background: '#3b82f6',
-              border: '2px solid #ffffff',
-            }}
-          />
-          
-          {/* Target handles */}
-          <Handle 
-            id="top-target"
-            type="target" 
-            position={Position.Top} 
-            className="w-3 h-3" 
-            style={{
-              background: '#22c55e',
-              border: '2px solid #ffffff',
-            }}
-          />
-          <Handle 
-            id="left-target"
-            type="target" 
-            position={Position.Left} 
-            className="w-3 h-3" 
-            style={{
-              background: '#22c55e',
-              border: '2px solid #ffffff',
-            }}
-          />
-          <Handle 
-            id="right-target"
-            type="target" 
-            position={Position.Right} 
-            className="w-3 h-3" 
-            style={{
-              background: '#22c55e',
               border: '2px solid #ffffff',
             }}
           />
@@ -239,16 +206,6 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
             className="w-3 h-3" 
             style={{
               background: '#3b82f6',
-              border: '2px solid #ffffff',
-            }}
-          />
-          <Handle 
-            id="bottom-target"
-            type="target" 
-            position={Position.Bottom} 
-            className="w-3 h-3" 
-            style={{
-              background: '#22c55e',
               border: '2px solid #ffffff',
             }}
           />

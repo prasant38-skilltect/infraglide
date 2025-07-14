@@ -102,9 +102,6 @@ export default function PipelineDesigner() {
           id: connection.id,
           source: connection.source,
           target: connection.target,
-          sourceHandle: connection.sourceHandle || null,
-          targetHandle: connection.targetHandle || null,
-          targetHandle: connection.targetHandle || null,
           type: 'smoothstep',
           animated: true,
           style: {
@@ -189,28 +186,24 @@ export default function PipelineDesigner() {
     let sourceHandle = null;
     let targetHandle = null;
     
-    // Determine optimal handles based on relative positions
+    // Determine optimal source handle based on target position
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal connection preferred
       if (deltaX > 0) {
-        // Target is to the right of source
         sourceHandle = 'right';
-        targetHandle = 'left-target';
+        targetHandle = 'left';
       } else {
-        // Target is to the left of source
         sourceHandle = 'left';
-        targetHandle = 'right-target';
+        targetHandle = 'right';
       }
     } else {
       // Vertical connection preferred
       if (deltaY > 0) {
-        // Target is below source
         sourceHandle = 'bottom';
-        targetHandle = 'top-target';
+        targetHandle = 'top';
       } else {
-        // Target is above source
         sourceHandle = 'top';
-        targetHandle = 'bottom-target';
+        targetHandle = 'bottom';
       }
     }
     
@@ -670,7 +663,6 @@ export default function PipelineDesigner() {
                     height: 20,
                   },
                 }}
-                deleteKeyCode={['Backspace', 'Delete']}
               >
                 <Controls />
                 <Background />
