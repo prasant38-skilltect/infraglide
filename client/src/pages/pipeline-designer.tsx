@@ -23,7 +23,7 @@ import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3 } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -189,6 +189,34 @@ export default function PipelineDesigner() {
     setSelectedNode(node);
   }, []);
 
+  const handleDeleteNode = useCallback((nodeId: string) => {
+    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
+    setSelectedNode(null);
+  }, [setNodes, setEdges]);
+
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Delete' && selectedNode) {
+      handleDeleteNode(selectedNode.id);
+    }
+  }, [selectedNode, handleDeleteNode]);
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
+  // Listen for custom delete events from context menu
+  useEffect(() => {
+    const handleDeleteEvent = (event: CustomEvent) => {
+      const { nodeId } = event.detail;
+      handleDeleteNode(nodeId);
+    };
+
+    window.addEventListener('deleteNode', handleDeleteEvent as EventListener);
+    return () => window.removeEventListener('deleteNode', handleDeleteEvent as EventListener);
+  }, [handleDeleteNode]);
+
   const handleSavePipeline = () => {
     const pipelineData = {
       name: pipelineName,
@@ -256,21 +284,80 @@ export default function PipelineDesigner() {
               <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
               <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <Button 
                 variant="outline" 
+                size="sm"
                 onClick={() => setShowSaveModal(true)}
                 disabled={savePipelineMutation.isPending}
               >
-                <Save className="w-4 h-4 mr-2" />
-                {savePipelineMutation.isPending ? "Saving..." : "Save Pipeline"}
+                <Save className="w-4 h-4 mr-1" />
+                Save
               </Button>
               <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Publish", description: "Publishing functionality coming soon" })}
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Publish
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Export", description: "Export functionality coming soon" })}
+              >
+                <Download className="w-4 h-4 mr-1" />
+                Export
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Import", description: "Import functionality coming soon" })}
+              >
+                <Upload className="w-4 h-4 mr-1" />
+                Import
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Validate", description: "Validation functionality coming soon" })}
+              >
+                <CheckCircle className="w-4 h-4 mr-1" />
+                Validate
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Preview", description: "Preview functionality coming soon" })}
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                Preview
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Create", description: "Create functionality coming soon" })}
+              >
+                <Plus className="w-4 h-4 mr-1" />
+                Create
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
                 onClick={() => setShowDeployModal(true)}
                 disabled={!pipelineId || createDeploymentMutation.isPending}
               >
-                <Rocket className="w-4 h-4 mr-2" />
-                {createDeploymentMutation.isPending ? "Deploying..." : "Deploy Pipeline"}
+                <Rocket className="w-4 h-4 mr-1" />
+                {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={() => toast({ title: "Destroy", description: "Destroy functionality coming soon" })}
+              >
+                <Zap className="w-4 h-4 mr-1" />
+                Destroy
               </Button>
             </div>
           </div>
@@ -337,6 +424,16 @@ export default function PipelineDesigner() {
                   >
                     <Maximize className="w-4 h-4" />
                   </Button>
+                  {selectedNode && (
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteNode(selectedNode.id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>

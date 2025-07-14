@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useState, useEffect } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +23,12 @@ export default function EditPipelineModal({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
 
+  // Update local state when props change
+  useEffect(() => {
+    setName(initialName);
+    setDescription(initialDescription);
+  }, [initialName, initialDescription, isOpen]);
+
   const handleSave = () => {
     if (name.trim()) {
       onSave(name.trim(), description.trim());
@@ -41,6 +47,9 @@ export default function EditPipelineModal({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit Pipeline Details</DialogTitle>
+          <DialogDescription>
+            Update the pipeline name and description
+          </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-4 py-4">

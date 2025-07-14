@@ -1,5 +1,12 @@
 import { Handle, Position } from "reactflow";
-import { Server, Zap, Folder, Database, Table, Network, Scale } from "lucide-react";
+import { Server, Zap, Folder, Database, Table, Network, Scale, Trash2 } from "lucide-react";
+import { useState } from "react";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 
 const componentIcons = {
   // AWS
@@ -62,9 +69,10 @@ interface CloudComponentNodeProps {
     config?: any;
   };
   selected?: boolean;
+  id?: string;
 }
 
-export function CloudComponentNode({ data, selected }: CloudComponentNodeProps) {
+export function CloudComponentNode({ data, selected, id }: CloudComponentNodeProps) {
   const Icon = componentIcons[data.type as keyof typeof componentIcons] || Server;
   const colors = componentColors[data.type as keyof typeof componentColors] || componentColors.ec2;
 
@@ -126,33 +134,50 @@ export function CloudComponentNode({ data, selected }: CloudComponentNodeProps) 
     return "AWS";
   };
 
+  const handleDelete = () => {
+    // Dispatch a custom event for parent component to handle deletion
+    if (id) {
+      window.dispatchEvent(new CustomEvent('deleteNode', { detail: { nodeId: id } }));
+    }
+  };
+
   return (
-    <div 
-      className={`min-w-32 bg-white border-2 ${colors.border} rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
-        selected ? "ring-2 ring-blue-500" : ""
-      }`}
-    >
-      <Handle type="target" position={Position.Top} className="w-2 h-2" />
-      
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center space-x-2">
-          <div className={`w-6 h-6 ${colors.bg} rounded flex items-center justify-center`}>
-            <Icon className="text-white w-4 h-4" />
+    <ContextMenu>
+      <ContextMenuTrigger>
+        <div 
+          className={`min-w-32 bg-white border-2 ${colors.border} rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
+            selected ? "ring-2 ring-blue-500" : ""
+          }`}
+        >
+          <Handle type="target" position={Position.Top} className="w-2 h-2" />
+          
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center space-x-2">
+              <div className={`w-6 h-6 ${colors.bg} rounded flex items-center justify-center`}>
+                <Icon className="text-white w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium text-gray-900 truncate">
+                {data.name}
+              </span>
+            </div>
+            <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+              {getProviderBadge()}
+            </span>
           </div>
-          <span className="text-sm font-medium text-gray-900 truncate">
-            {data.name}
-          </span>
+          
+          <p className="text-xs text-gray-600 truncate">
+            {getDisplayInfo()}
+          </p>
+          
+          <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
         </div>
-        <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-          {getProviderBadge()}
-        </span>
-      </div>
-      
-      <p className="text-xs text-gray-600 truncate">
-        {getDisplayInfo()}
-      </p>
-      
-      <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
-    </div>
+      </ContextMenuTrigger>
+      <ContextMenuContent>
+        <ContextMenuItem onClick={handleDelete}>
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete Component
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
