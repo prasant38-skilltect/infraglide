@@ -51,6 +51,7 @@ export default function PipelineDesigner() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Generate automatic pipeline name with current date and time
@@ -316,7 +317,7 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {!isSidebarCollapsed && (
+          {showComponentLibrary && (
             <ComponentLibrary 
               hasUnsavedChanges={hasUnsavedChanges}
             />
@@ -448,6 +449,14 @@ export default function PipelineDesigner() {
                       Delete
                     </Button>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowComponentLibrary(!showComponentLibrary)}
+                    title={showComponentLibrary ? "Hide components" : "Show components"}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
                   {!isSidebarCollapsed && (
                     <Button
                       variant="ghost"
