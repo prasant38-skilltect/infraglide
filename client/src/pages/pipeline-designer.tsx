@@ -186,24 +186,28 @@ export default function PipelineDesigner() {
     let sourceHandle = null;
     let targetHandle = null;
     
-    // Determine optimal source handle based on target position
+    // Determine optimal handles based on relative positions
     if (Math.abs(deltaX) > Math.abs(deltaY)) {
       // Horizontal connection preferred
       if (deltaX > 0) {
+        // Target is to the right of source
         sourceHandle = 'right';
-        targetHandle = 'left';
+        targetHandle = 'left-target';
       } else {
+        // Target is to the left of source
         sourceHandle = 'left';
-        targetHandle = 'right';
+        targetHandle = 'right-target';
       }
     } else {
       // Vertical connection preferred
       if (deltaY > 0) {
+        // Target is below source
         sourceHandle = 'bottom';
-        targetHandle = 'top';
+        targetHandle = 'top-target';
       } else {
+        // Target is above source
         sourceHandle = 'top';
-        targetHandle = 'bottom';
+        targetHandle = 'bottom-target';
       }
     }
     

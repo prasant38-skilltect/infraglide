@@ -152,7 +152,7 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
         >
           <Handle 
             id="top"
-            type="target" 
+            type="source" 
             position={Position.Top} 
             className="w-3 h-3" 
             style={{
@@ -162,7 +162,7 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
           />
           <Handle 
             id="left"
-            type="target" 
+            type="source" 
             position={Position.Left} 
             className="w-3 h-3" 
             style={{
@@ -173,6 +173,36 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
           <Handle 
             id="right"
             type="source" 
+            position={Position.Right} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            id="top-target"
+            type="target" 
+            position={Position.Top} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            id="left-target"
+            type="target" 
+            position={Position.Left} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            id="right-target"
+            type="target" 
             position={Position.Right} 
             className="w-3 h-3" 
             style={{
@@ -202,6 +232,16 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
           <Handle 
             id="bottom"
             type="source" 
+            position={Position.Bottom} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            id="bottom-target"
+            type="target" 
             position={Position.Bottom} 
             className="w-3 h-3" 
             style={{
