@@ -127,9 +127,10 @@ Preferred communication style: Simple, everyday language.
 
 ### January 14, 2025
 - **Added My Pipelines Management System**
-  - New "My Pipelines" section in sidebar navigation with provider-segregated view
+  - New "My Pipelines" section in sidebar navigation with expandable provider panels
   - Auto-save functionality when components are dragged to canvas
   - Pipeline versions automatically named and organized by cloud provider (AWS, Azure, GCP)
+  - Expandable/collapsible provider sections with grid view for multiple versions
   - Export pipeline functionality to JSON files
   - Import pipeline functionality (placeholder implementation)
   - Delete pipeline functionality (placeholder implementation)
