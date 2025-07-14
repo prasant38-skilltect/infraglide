@@ -23,7 +23,7 @@ import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -49,6 +49,7 @@ export default function PipelineDesigner() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -56,6 +57,11 @@ export default function PipelineDesigner() {
     const dateTime = now.toISOString().slice(0, 19).replace(/[T:]/g, '-').replace(/-/g, '');
     return `newPipeline_${dateTime}`;
   };
+
+  // Auto-collapse sidebar when component mounts (user clicked on Pipeline link)
+  useEffect(() => {
+    setIsSidebarCollapsed(true);
+  }, []);
 
   // Load existing pipeline if editing
   const { data: pipeline } = useQuery<Pipeline>({
@@ -274,15 +280,26 @@ export default function PipelineDesigner() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar />
+      {!isSidebarCollapsed && <Sidebar />}
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
-              <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
+            <div className="flex items-center space-x-4">
+              {isSidebarCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSidebarCollapsed(false)}
+                >
+                  <Menu className="w-4 h-4" />
+                </Button>
+              )}
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
+                <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
+              </div>
             </div>
             <div className="flex items-center space-x-2">
               <Button 
@@ -364,7 +381,7 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          <ComponentLibrary />
+          {!isSidebarCollapsed && <ComponentLibrary />}
           
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
@@ -387,17 +404,7 @@ export default function PipelineDesigner() {
                       <Edit3 className="w-4 h-4" />
                     </Button>
                   </div>
-                  <Select value={pipelineRegion} onValueChange={setPipelineRegion}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="us-east-1">us-east-1</SelectItem>
-                      <SelectItem value="us-west-2">us-west-2</SelectItem>
-                      <SelectItem value="eu-west-1">eu-west-1</SelectItem>
-                      <SelectItem value="ap-southeast-1">ap-southeast-1</SelectItem>
-                    </SelectContent>
-                  </Select>
+
                 </div>
                 <div className="flex items-center space-x-2">
                   <Button
@@ -432,6 +439,16 @@ export default function PipelineDesigner() {
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
                       Delete
+                    </Button>
+                  )}
+                  {!isSidebarCollapsed && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsSidebarCollapsed(true)}
+                      title="Hide sidebar"
+                    >
+                      <X className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
