@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 14, 2025
+- **Added My Pipelines Management System**
+  - New "My Pipelines" section in sidebar navigation with grid view interface
+  - Auto-save functionality when components are dragged to canvas
+  - Pipeline versions automatically named (Version 1, Version 2, etc.)
+  - Export pipeline functionality to JSON files
+  - Import pipeline functionality (placeholder implementation)
+  - Delete pipeline functionality (placeholder implementation)
+  - Version management with creation timestamps and component counts
+
+### January 14, 2025
 - **Added Multi-Cloud Support (AWS, Azure, GCP)**
   - Expanded component library with tabbed interface for AWS, Azure, and GCP services
   - Implemented unified CloudComponentNode for all providers with provider-specific styling

@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Upload, Trash2, Edit3, Eye, Plus } from "lucide-react";
+import { Download, Upload, Trash2, Edit3, Eye, Plus, Layers } from "lucide-react";
 import { Link } from "wouter";
 
 import Sidebar from "@/components/layout/sidebar";
