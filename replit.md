@@ -40,12 +40,12 @@ Preferred communication style: Simple, everyday language.
 2. **Pipelines** - Visual representations of AWS infrastructure with components and connections
 3. **Deployments** - Execution records of pipeline deployments with environment tracking
 4. **Credentials** - Cloud provider authentication credentials (AWS, GCP, Azure)
-5. **Components** - AWS resource definitions (EC2, S3, RDS, Lambda, VPC, ALB, DynamoDB)
+5. **Components** - Multi-cloud resource definitions (AWS, Azure, GCP services)
 
 ### Frontend Components
 - **Dashboard** - Overview of projects, pipelines, and recent deployments
 - **Pipeline Designer** - Visual canvas for designing infrastructure with drag-and-drop
-- **Component Library** - Palette of available AWS services organized by category
+- **Component Library** - Tabbed palette of AWS, Azure, and GCP services organized by category
 - **Properties Panel** - Configuration interface for selected components
 - **Credentials Management** - Secure storage and management of cloud provider credentials
 - **Sidebar Navigation** - Application navigation with routing
@@ -59,11 +59,13 @@ Preferred communication style: Simple, everyday language.
 ## Data Flow
 
 ### Pipeline Design Flow
-1. User drags AWS components from library onto canvas
-2. ReactFlow manages node positioning and visual connections
+1. User selects cloud provider tab (AWS, Azure, GCP) and drags components onto canvas
+2. ReactFlow manages node positioning and visual connections with provider-specific styling
 3. Properties panel allows configuration of component parameters
-4. Changes are stored in local state until save operation
-5. Save operation validates and persists to backend via REST API
+4. Pipeline auto-generates name with timestamp (newPipeline_YYYYMMDD-HHMMSS)
+5. Pipeline name and description editable via popup modal
+6. Changes are stored in local state until save operation
+7. Save operation validates and persists to backend via REST API
 
 ### Deployment Flow
 1. User initiates deployment from pipeline designer
@@ -124,6 +126,18 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 14, 2025
+- **Added Multi-Cloud Support (AWS, Azure, GCP)**
+  - Expanded component library with tabbed interface for AWS, Azure, and GCP services
+  - Implemented unified CloudComponentNode for all providers with provider-specific styling
+  - Added 21 total cloud components across compute, storage, database, and networking categories
+  - Updated schema to support all multi-cloud component types
+
+- **Enhanced Pipeline Management**
+  - Automatic pipeline naming with timestamp format (newPipeline_YYYYMMDD-HHMMSS)
+  - Pipeline name and description editor modal with save/cancel functionality
+  - Updated pipeline designer UI to display name/description with edit button
+  - Added description field support throughout the application
+
 - **Integrated PostgreSQL Database**
   - Replaced in-memory storage with persistent PostgreSQL database
   - Implemented DatabaseStorage class with full CRUD operations

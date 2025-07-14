@@ -19,18 +19,19 @@ import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
 import SavePipelineModal from "@/components/modals/save-pipeline-modal";
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
+import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
-import { AWSComponentNode } from "@/components/pipeline/aws-components";
+import { CloudComponentNode } from "@/components/pipeline/cloud-components";
 import type { Pipeline, ComponentConfig } from "@shared/schema";
 
 const nodeTypes: NodeTypes = {
-  awsComponent: AWSComponentNode,
+  cloudComponent: CloudComponentNode,
 };
 
 export default function PipelineDesigner() {
@@ -42,10 +43,19 @@ export default function PipelineDesigner() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [pipelineName, setPipelineName] = useState("New Pipeline");
+  const [pipelineDescription, setPipelineDescription] = useState("");
   const [pipelineRegion, setPipelineRegion] = useState("us-east-1");
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showDeployModal, setShowDeployModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+  // Generate automatic pipeline name with current date and time
+  const generatePipelineName = () => {
+    const now = new Date();
+    const dateTime = now.toISOString().slice(0, 19).replace(/[T:]/g, '-').replace(/-/g, '');
+    return `newPipeline_${dateTime}`;
+  };
 
   // Load existing pipeline if editing
   const { data: pipeline } = useQuery<Pipeline>({
@@ -57,12 +67,13 @@ export default function PipelineDesigner() {
   useEffect(() => {
     if (pipeline) {
       setPipelineName(pipeline.name);
+      setPipelineDescription(pipeline.description || "");
       setPipelineRegion(pipeline.region);
       
       if (Array.isArray(pipeline.components)) {
         const loadedNodes = pipeline.components.map((component: ComponentConfig) => ({
           id: component.id,
-          type: "awsComponent",
+          type: "cloudComponent",
           position: component.position,
           data: {
             type: component.type,
@@ -82,6 +93,9 @@ export default function PipelineDesigner() {
         }));
         setEdges(loadedEdges);
       }
+    } else if (!pipelineId) {
+      // Auto-generate name for new pipelines
+      setPipelineName(generatePipelineName());
     }
   }, [pipeline, setNodes, setEdges]);
 
@@ -152,7 +166,7 @@ export default function PipelineDesigner() {
 
       const newNode: Node = {
         id: `${type}-${Date.now()}`,
-        type: "awsComponent",
+        type: "cloudComponent",
         position,
         data: {
           type,
@@ -178,6 +192,7 @@ export default function PipelineDesigner() {
   const handleSavePipeline = () => {
     const pipelineData = {
       name: pipelineName,
+      description: pipelineDescription,
       region: pipelineRegion,
       components: nodes.map((node) => ({
         id: node.id,
@@ -196,6 +211,11 @@ export default function PipelineDesigner() {
     };
 
     savePipelineMutation.mutate(pipelineData);
+  };
+
+  const handleEditPipeline = (name: string, description: string) => {
+    setPipelineName(name);
+    setPipelineDescription(description);
   };
 
   const handleDeployPipeline = (deploymentData: any) => {
@@ -234,7 +254,7 @@ export default function PipelineDesigner() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
-              <p className="text-sm text-gray-600 mt-1">Design and deploy your AWS infrastructure</p>
+              <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
             </div>
             <div className="flex items-center space-x-4">
               <Button 
@@ -265,12 +285,21 @@ export default function PipelineDesigner() {
             <div className="bg-gray-100 border-b border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
-                  <Input
-                    value={pipelineName}
-                    onChange={(e) => setPipelineName(e.target.value)}
-                    placeholder="Pipeline Name"
-                    className="w-64"
-                  />
+                  <div className="flex items-center space-x-2">
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900">{pipelineName}</span>
+                      {pipelineDescription && (
+                        <span className="text-sm text-gray-600">{pipelineDescription}</span>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowEditModal(true)}
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </Button>
+                  </div>
                   <Select value={pipelineRegion} onValueChange={setPipelineRegion}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
@@ -361,6 +390,14 @@ export default function PipelineDesigner() {
         onClose={() => setShowDeployModal(false)}
         onDeploy={handleDeployPipeline}
         pipelineId={pipelineId}
+      />
+
+      <EditPipelineModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleEditPipeline}
+        initialName={pipelineName}
+        initialDescription={pipelineDescription}
       />
     </div>
   );

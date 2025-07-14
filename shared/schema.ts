@@ -48,7 +48,14 @@ export const credentials = pgTable("credentials", {
 // Component schemas
 export const componentConfigSchema = z.object({
   id: z.string(),
-  type: z.enum(["ec2", "s3", "rds", "lambda", "vpc", "alb", "dynamodb"]),
+  type: z.enum([
+    // AWS
+    "ec2", "s3", "rds", "lambda", "vpc", "alb", "dynamodb",
+    // Azure
+    "azure-vm", "azure-functions", "azure-storage", "azure-sql", "azure-cosmos", "azure-vnet", "azure-lb",
+    // GCP
+    "gcp-vm", "gcp-functions", "gcp-storage", "gcp-sql", "gcp-firestore", "gcp-vpc", "gcp-lb"
+  ]),
   name: z.string(),
   position: z.object({ x: z.number(), y: z.number() }),
   config: z.record(z.any()),
