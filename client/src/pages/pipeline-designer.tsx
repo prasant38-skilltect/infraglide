@@ -43,6 +43,7 @@ export default function PipelineDesigner() {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [pipelineName, setPipelineName] = useState("New Pipeline");
   const [pipelineDescription, setPipelineDescription] = useState("");
   const [pipelineRegion, setPipelineRegion] = useState("us-east-1");
@@ -208,6 +209,21 @@ export default function PipelineDesigner() {
 
   const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     setSelectedNode(node);
+    setShowPropertiesPanel(true);
+  }, []);
+
+  const onUpdateNodeConfig = useCallback((nodeId: string, config: any) => {
+    setNodes((nds) =>
+      nds.map((node) =>
+        node.id === nodeId ? { ...node, data: { ...node.data, config } } : node
+      )
+    );
+    setHasUnsavedChanges(true);
+  }, [setNodes]);
+
+  const onClosePropertiesPanel = useCallback(() => {
+    setShowPropertiesPanel(false);
+    setSelectedNode(null);
   }, []);
 
   const handleDeleteNode = useCallback((nodeId: string) => {
@@ -260,9 +276,8 @@ export default function PipelineDesigner() {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: edge.type,
+        type: edge.type || 'default',
       })),
-      projectId: 1, // Default project
     };
 
     // Use the mutation to save pipeline
@@ -296,9 +311,8 @@ export default function PipelineDesigner() {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: edge.type,
+        type: edge.type || 'default',
       })),
-      projectId: 1, // Default project
     };
 
     savePipelineMutation.mutate(pipelineData);
@@ -544,11 +558,11 @@ export default function PipelineDesigner() {
             </div>
           </div>
 
-          {selectedNode && (
+          {showPropertiesPanel && selectedNode && (
             <PropertiesPanel
               node={selectedNode}
-              onUpdateConfig={updateNodeConfig}
-              onClose={() => setSelectedNode(null)}
+              onUpdateConfig={onUpdateNodeConfig}
+              onClose={onClosePropertiesPanel}
             />
           )}
         </div>
