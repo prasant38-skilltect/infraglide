@@ -102,6 +102,9 @@ export default function PipelineDesigner() {
           id: connection.id,
           source: connection.source,
           target: connection.target,
+          sourceHandle: connection.sourceHandle || null,
+          targetHandle: connection.targetHandle || null,
+          targetHandle: connection.targetHandle || null,
           type: 'smoothstep',
           animated: true,
           style: {
@@ -667,6 +670,7 @@ export default function PipelineDesigner() {
                     height: 20,
                   },
                 }}
+                deleteKeyCode={['Backspace', 'Delete']}
               >
                 <Controls />
                 <Background />
