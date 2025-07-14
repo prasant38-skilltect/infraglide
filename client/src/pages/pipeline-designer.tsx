@@ -12,6 +12,7 @@ import ReactFlow, {
   Controls,
   Background,
   NodeTypes,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -101,7 +102,18 @@ export default function PipelineDesigner() {
           id: connection.id,
           source: connection.source,
           target: connection.target,
-          type: "default",
+          type: 'smoothstep',
+          animated: true,
+          style: {
+            stroke: '#3b82f6',
+            strokeWidth: 2,
+          },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#3b82f6',
+            width: 20,
+            height: 20,
+          },
         }));
         setEdges(loadedEdges);
       }
@@ -159,7 +171,22 @@ export default function PipelineDesigner() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => addEdge(params, eds));
+      const newEdge = {
+        ...params,
+        type: 'smoothstep',
+        animated: true,
+        style: {
+          stroke: '#3b82f6',
+          strokeWidth: 2,
+        },
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          color: '#3b82f6',
+          width: 20,
+          height: 20,
+        },
+      };
+      setEdges((eds) => addEdge(newEdge, eds));
       setHasUnsavedChanges(true);
     },
     [setEdges]
@@ -550,6 +577,22 @@ export default function PipelineDesigner() {
                 style={{
                   backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
                   backgroundSize: "20px 20px",
+                }}
+                connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
+                connectionLineType="smoothstep"
+                defaultEdgeOptions={{
+                  type: 'smoothstep',
+                  animated: true,
+                  style: {
+                    stroke: '#3b82f6',
+                    strokeWidth: 2,
+                  },
+                  markerEnd: {
+                    type: MarkerType.ArrowClosed,
+                    color: '#3b82f6',
+                    width: 20,
+                    height: 20,
+                  },
                 }}
               >
                 <Controls />

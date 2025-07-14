@@ -150,7 +150,33 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
             selected ? "ring-2 ring-blue-500" : ""
           }`}
         >
-          <Handle type="target" position={Position.Top} className="w-2 h-2" />
+          <Handle 
+            type="target" 
+            position={Position.Top} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            type="target" 
+            position={Position.Left} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
+          <Handle 
+            type="source" 
+            position={Position.Right} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
           
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
@@ -170,7 +196,15 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
             {getDisplayInfo()}
           </p>
           
-          <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
+          <Handle 
+            type="source" 
+            position={Position.Bottom} 
+            className="w-3 h-3" 
+            style={{
+              background: '#3b82f6',
+              border: '2px solid #ffffff',
+            }}
+          />
         </div>
       </ContextMenuTrigger>
       <ContextMenuContent>
