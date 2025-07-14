@@ -18,7 +18,7 @@ import "reactflow/dist/style.css";
 import Sidebar from "@/components/layout/sidebar";
 import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
-import SavePipelineModal from "@/components/modals/save-pipeline-modal";
+
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
 import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
@@ -46,7 +46,7 @@ export default function PipelineDesigner() {
   const [pipelineName, setPipelineName] = useState("New Pipeline");
   const [pipelineDescription, setPipelineDescription] = useState("");
   const [pipelineRegion, setPipelineRegion] = useState("us-east-1");
-  const [showSaveModal, setShowSaveModal] = useState(false);
+
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -60,22 +60,12 @@ export default function PipelineDesigner() {
     return `newPipeline_${dateTime}`;
   };
 
-  // Auto-collapse sidebar when component mounts (user clicked on Pipeline link)
+  // Always hide the sidebar when entering pipeline designer
   useEffect(() => {
-    const storedSidebarState = localStorage.getItem('pipelineDesignerSidebarCollapsed');
-    if (storedSidebarState === null) {
-      // First time visiting pipeline designer, auto-collapse
-      setIsSidebarCollapsed(true);
-      localStorage.setItem('pipelineDesignerSidebarCollapsed', 'true');
-    } else {
-      setIsSidebarCollapsed(storedSidebarState === 'true');
-    }
+    setIsSidebarCollapsed(true);
   }, []);
 
-  // Save sidebar state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('pipelineDesignerSidebarCollapsed', isSidebarCollapsed.toString());
-  }, [isSidebarCollapsed]);
+
 
   // Load existing pipeline if editing
   const { data: pipeline } = useQuery<Pipeline>({
@@ -132,7 +122,7 @@ export default function PipelineDesigner() {
         description: "Your pipeline has been saved successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
-      setShowSaveModal(false);
+
       setHasUnsavedChanges(false);
     },
     onError: () => {
@@ -329,7 +319,6 @@ export default function PipelineDesigner() {
           {!isSidebarCollapsed && (
             <ComponentLibrary 
               hasUnsavedChanges={hasUnsavedChanges}
-              onSavePrompt={() => setShowSaveModal(true)}
             />
           )}
           
@@ -357,15 +346,6 @@ export default function PipelineDesigner() {
                   
                   {/* Action Buttons */}
                   <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => setShowSaveModal(true)}
-                      disabled={savePipelineMutation.isPending}
-                    >
-                      <Save className="w-4 h-4 mr-1" />
-                      Save
-                    </Button>
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -518,13 +498,7 @@ export default function PipelineDesigner() {
         </div>
       </div>
 
-      <SavePipelineModal
-        isOpen={showSaveModal}
-        onClose={() => setShowSaveModal(false)}
-        onSave={handleSavePipeline}
-        pipelineName={pipelineName}
-        setPipelineName={setPipelineName}
-      />
+
 
       <DeployPipelineModal
         isOpen={showDeployModal}
