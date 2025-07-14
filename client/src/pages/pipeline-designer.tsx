@@ -190,10 +190,15 @@ export default function PipelineDesigner() {
         },
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      setNodes((nds) => {
+        const updatedNodes = nds.concat(newNode);
+        // Auto-save after adding component
+        setTimeout(() => autoSavePipeline(updatedNodes, edges), 1000);
+        return updatedNodes;
+      });
       setHasUnsavedChanges(true);
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance, setNodes, edges, pipelineName, pipelineRegion]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -233,6 +238,33 @@ export default function PipelineDesigner() {
     window.addEventListener('deleteNode', handleDeleteEvent as EventListener);
     return () => window.removeEventListener('deleteNode', handleDeleteEvent as EventListener);
   }, [handleDeleteNode]);
+
+  const autoSavePipeline = (currentNodes: Node[], currentEdges: any[]) => {
+    if (currentNodes.length === 0) return; // Don't save empty pipelines
+    
+    const pipelineData = {
+      name: `${pipelineName}_auto_${new Date().toISOString().slice(11, 16).replace(':', '')}`,
+      description: `Auto-saved version - ${new Date().toLocaleString()}`,
+      region: pipelineRegion,
+      components: currentNodes.map((node) => ({
+        id: node.id,
+        type: node.data.type,
+        name: node.data.name,
+        position: node.position,
+        config: node.data.config || {},
+      })),
+      connections: currentEdges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+      })),
+      projectId: 1, // Default project
+    };
+
+    // Use the mutation to save pipeline
+    savePipelineMutation.mutate(pipelineData);
+  };
 
   const handleSavePipeline = () => {
     const pipelineData = {

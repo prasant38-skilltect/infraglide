@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import PipelineDesigner from "@/pages/pipeline-designer";
 import Credentials from "@/pages/credentials";
+import MyPipelines from "@/pages/my-pipelines";
 
 function Router() {
   return (
@@ -14,6 +15,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/pipeline/:id?" component={PipelineDesigner} />
+      <Route path="/my-pipelines" component={MyPipelines} />
       <Route path="/credentials" component={Credentials} />
       <Route component={NotFound} />
     </Switch>
