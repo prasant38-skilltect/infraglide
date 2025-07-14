@@ -242,9 +242,12 @@ export default function PipelineDesigner() {
   const autoSavePipeline = (currentNodes: Node[], currentEdges: any[]) => {
     if (currentNodes.length === 0) return; // Don't save empty pipelines
     
+    const cloudProvider = getCloudProvider(currentNodes);
+    const versionNumber = Date.now(); // Use timestamp for unique versions
+    
     const pipelineData = {
-      name: `${pipelineName}_auto_${new Date().toISOString().slice(11, 16).replace(':', '')}`,
-      description: `Auto-saved version - ${new Date().toLocaleString()}`,
+      name: `${cloudProvider}_Pipeline_${versionNumber}`,
+      description: `Auto-saved ${cloudProvider} pipeline - ${new Date().toLocaleString()}`,
       region: pipelineRegion,
       components: currentNodes.map((node) => ({
         id: node.id,
@@ -264,6 +267,17 @@ export default function PipelineDesigner() {
 
     // Use the mutation to save pipeline
     savePipelineMutation.mutate(pipelineData);
+  };
+
+  const getCloudProvider = (nodes: Node[]) => {
+    if (!nodes || nodes.length === 0) return 'Unknown';
+    
+    const firstNode = nodes[0];
+    const componentType = firstNode.data.type;
+    
+    if (componentType.startsWith('gcp-')) return 'GCP';
+    if (componentType.startsWith('azure-')) return 'Azure';
+    return 'AWS';
   };
 
   const handleSavePipeline = () => {

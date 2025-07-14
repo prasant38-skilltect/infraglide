@@ -127,13 +127,14 @@ Preferred communication style: Simple, everyday language.
 
 ### January 14, 2025
 - **Added My Pipelines Management System**
-  - New "My Pipelines" section in sidebar navigation with grid view interface
+  - New "My Pipelines" section in sidebar navigation with provider-segregated view
   - Auto-save functionality when components are dragged to canvas
-  - Pipeline versions automatically named (Version 1, Version 2, etc.)
+  - Pipeline versions automatically named and organized by cloud provider (AWS, Azure, GCP)
   - Export pipeline functionality to JSON files
   - Import pipeline functionality (placeholder implementation)
   - Delete pipeline functionality (placeholder implementation)
   - Version management with creation timestamps and component counts
+  - Removed manual pipeline creation - all pipelines are auto-saved from canvas interactions
 
 ### January 14, 2025
 - **Added Multi-Cloud Support (AWS, Azure, GCP)**

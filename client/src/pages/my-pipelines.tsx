@@ -77,6 +77,36 @@ export default function MyPipelines() {
     return `Version ${pipeline.id}`;
   };
 
+  const getCloudProvider = (pipeline: Pipeline) => {
+    if (!Array.isArray(pipeline.components) || pipeline.components.length === 0) {
+      return 'Unknown';
+    }
+    
+    const firstComponent = pipeline.components[0];
+    const componentType = firstComponent.type;
+    
+    if (componentType.startsWith('gcp-')) return 'GCP';
+    if (componentType.startsWith('azure-')) return 'Azure';
+    return 'AWS';
+  };
+
+  const groupPipelinesByProvider = (pipelines: Pipeline[]) => {
+    const groups = {
+      AWS: [] as Pipeline[],
+      Azure: [] as Pipeline[],
+      GCP: [] as Pipeline[]
+    };
+    
+    pipelines.forEach(pipeline => {
+      const provider = getCloudProvider(pipeline);
+      if (provider in groups) {
+        groups[provider as keyof typeof groups].push(pipeline);
+      }
+    });
+    
+    return groups;
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -104,12 +134,6 @@ export default function MyPipelines() {
                 <Upload className="w-4 h-4 mr-2" />
                 Import Pipeline
               </Button>
-              <Link href="/pipeline">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  New Pipeline
-                </Button>
-              </Link>
             </div>
           </div>
         </header>
@@ -117,22 +141,27 @@ export default function MyPipelines() {
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
           {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(6)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-20 bg-gray-200 rounded mb-4"></div>
-                    <div className="flex space-x-2">
-                      <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                      <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                      <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                    </div>
-                  </CardContent>
-                </Card>
+            <div className="space-y-8">
+              {['AWS', 'Azure', 'GCP'].map((provider) => (
+                <div key={provider}>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4">{provider}</h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {[...Array(3)].map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardHeader>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex space-x-2">
+                            <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                            <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                            <div className="h-8 bg-gray-200 rounded flex-1"></div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           ) : pipelines.length === 0 ? (
@@ -141,82 +170,78 @@ export default function MyPipelines() {
                 <Layers className="w-8 h-8 text-gray-400" />
               </div>
               <h3 className="text-lg font-medium text-gray-900 mb-2">No pipelines yet</h3>
-              <p className="text-gray-600 mb-6">Create your first pipeline to get started</p>
-              <Link href="/pipeline">
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Pipeline
-                </Button>
-              </Link>
+              <p className="text-gray-600 mb-6">Drag and drop components on the canvas to automatically save pipelines</p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {pipelines.map((pipeline) => (
-                <Card key={pipeline.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-lg">{pipeline.name}</CardTitle>
-                        <CardDescription className="mt-1">
-                          {pipeline.description || "No description"}
-                        </CardDescription>
-                      </div>
-                      <Badge variant="secondary" className="ml-2">
-                        {getVersionName(pipeline)}
-                      </Badge>
+            <div className="space-y-8">
+              {Object.entries(groupPipelinesByProvider(pipelines)).map(([provider, providerPipelines]) => (
+                <div key={provider}>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                    <span className={`w-3 h-3 rounded-full mr-3 ${
+                      provider === 'AWS' ? 'bg-orange-500' : 
+                      provider === 'Azure' ? 'bg-blue-500' : 
+                      'bg-red-500'
+                    }`}></span>
+                    {provider}
+                  </h2>
+                  {providerPipelines.length === 0 ? (
+                    <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+                      <p className="text-gray-500">No {provider} pipelines yet</p>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {/* Pipeline Info */}
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Region:</span>
-                          <span className="font-medium">{pipeline.region}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Components:</span>
-                          <span className="font-medium">
-                            {Array.isArray(pipeline.components) ? pipeline.components.length : 0}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Created:</span>
-                          <span className="font-medium">
-                            {pipeline.createdAt ? formatDate(pipeline.createdAt) : 'N/A'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Action Buttons */}
-                      <div className="flex space-x-2">
-                        <Link href={`/pipeline/${pipeline.id}`} className="flex-1">
-                          <Button variant="outline" size="sm" className="w-full">
-                            <Eye className="w-4 h-4 mr-1" />
-                            View
-                          </Button>
-                        </Link>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleExport(pipeline)}
-                          className="flex-1"
-                        >
-                          <Download className="w-4 h-4 mr-1" />
-                          Export
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => handleDelete(pipeline.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {providerPipelines.map((pipeline) => (
+                        <Card key={pipeline.id} className="hover:shadow-lg transition-shadow">
+                          <CardHeader>
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <CardTitle className="text-lg">{getVersionName(pipeline)}</CardTitle>
+                                <CardDescription className="mt-1">
+                                  {pipeline.components && Array.isArray(pipeline.components) ? 
+                                    `${pipeline.components.length} components` : 
+                                    "No components"}
+                                </CardDescription>
+                              </div>
+                              <Badge variant="outline" className="ml-2">
+                                {pipeline.createdAt ? formatDate(pipeline.createdAt) : 'N/A'}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="flex space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleExport(pipeline)}
+                                className="flex-1"
+                              >
+                                <Download className="w-4 h-4 mr-1" />
+                                Export
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleImport()}
+                                className="flex-1"
+                              >
+                                <Upload className="w-4 h-4 mr-1" />
+                                Import
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={() => handleDelete(pipeline.id)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
               ))}
             </div>
           )}
