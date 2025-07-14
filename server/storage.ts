@@ -12,6 +12,8 @@ import {
   type InsertDeployment,
   type InsertCredential
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
@@ -232,4 +234,135 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  // Projects
+  async getProjects(): Promise<Project[]> {
+    return db.select().from(projects);
+  }
+
+  async getProject(id: number): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || undefined;
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const [project] = await db
+      .insert(projects)
+      .values(insertProject)
+      .returning();
+    return project;
+  }
+
+  async updateProject(id: number, insertProject: Partial<InsertProject>): Promise<Project | undefined> {
+    const [project] = await db
+      .update(projects)
+      .set({ ...insertProject, updatedAt: new Date() })
+      .where(eq(projects.id, id))
+      .returning();
+    return project || undefined;
+  }
+
+  async deleteProject(id: number): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Pipelines
+  async getPipelines(projectId?: number): Promise<Pipeline[]> {
+    if (projectId) {
+      return db.select().from(pipelines).where(eq(pipelines.projectId, projectId));
+    }
+    return db.select().from(pipelines);
+  }
+
+  async getPipeline(id: number): Promise<Pipeline | undefined> {
+    const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.id, id));
+    return pipeline || undefined;
+  }
+
+  async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {
+    const [pipeline] = await db
+      .insert(pipelines)
+      .values(insertPipeline)
+      .returning();
+    return pipeline;
+  }
+
+  async updatePipeline(id: number, insertPipeline: Partial<InsertPipeline>): Promise<Pipeline | undefined> {
+    const [pipeline] = await db
+      .update(pipelines)
+      .set({ ...insertPipeline, updatedAt: new Date() })
+      .where(eq(pipelines.id, id))
+      .returning();
+    return pipeline || undefined;
+  }
+
+  async deletePipeline(id: number): Promise<boolean> {
+    const result = await db.delete(pipelines).where(eq(pipelines.id, id));
+    return result.rowCount > 0;
+  }
+
+  // Deployments
+  async getDeployments(pipelineId?: number): Promise<Deployment[]> {
+    if (pipelineId) {
+      return db.select().from(deployments).where(eq(deployments.pipelineId, pipelineId));
+    }
+    return db.select().from(deployments);
+  }
+
+  async getDeployment(id: number): Promise<Deployment | undefined> {
+    const [deployment] = await db.select().from(deployments).where(eq(deployments.id, id));
+    return deployment || undefined;
+  }
+
+  async createDeployment(insertDeployment: InsertDeployment): Promise<Deployment> {
+    const [deployment] = await db
+      .insert(deployments)
+      .values(insertDeployment)
+      .returning();
+    return deployment;
+  }
+
+  async updateDeployment(id: number, insertDeployment: Partial<InsertDeployment>): Promise<Deployment | undefined> {
+    const [deployment] = await db
+      .update(deployments)
+      .set({ ...insertDeployment, updatedAt: new Date() })
+      .where(eq(deployments.id, id))
+      .returning();
+    return deployment || undefined;
+  }
+
+  // Credentials
+  async getCredentials(): Promise<Credential[]> {
+    return db.select().from(credentials);
+  }
+
+  async getCredential(id: number): Promise<Credential | undefined> {
+    const [credential] = await db.select().from(credentials).where(eq(credentials.id, id));
+    return credential || undefined;
+  }
+
+  async createCredential(insertCredential: InsertCredential): Promise<Credential> {
+    const [credential] = await db
+      .insert(credentials)
+      .values(insertCredential)
+      .returning();
+    return credential;
+  }
+
+  async updateCredential(id: number, insertCredential: Partial<InsertCredential>): Promise<Credential | undefined> {
+    const [credential] = await db
+      .update(credentials)
+      .set({ ...insertCredential, updatedAt: new Date() })
+      .where(eq(credentials.id, id))
+      .returning();
+    return credential || undefined;
+  }
+
+  async deleteCredential(id: number): Promise<boolean> {
+    const result = await db.delete(credentials).where(eq(credentials.id, id));
+    return result.rowCount > 0;
+  }
+}
+
+export const storage = new DatabaseStorage();

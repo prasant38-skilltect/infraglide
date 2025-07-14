@@ -51,7 +51,7 @@ Preferred communication style: Simple, everyday language.
 - **Sidebar Navigation** - Application navigation with routing
 
 ### Backend Services
-- **Storage Layer** - In-memory implementation with interface for future database integration
+- **Storage Layer** - PostgreSQL database implementation with Drizzle ORM
 - **REST API** - CRUD operations for projects, pipelines, and deployments
 - **Validation** - Zod schema validation for all API inputs
 - **Error Handling** - Centralized error handling with proper HTTP status codes
@@ -116,12 +116,19 @@ Preferred communication style: Simple, everyday language.
 - CORS and security headers for production deployment
 
 ### Scalability Considerations
-- Storage interface allows swapping in-memory implementation for database
+- PostgreSQL database provides persistent, scalable data storage
 - Stateless server design for horizontal scaling
 - Client-side routing reduces server load
 - Optimistic updates improve perceived performance
 
 ## Recent Changes
+
+### January 14, 2025
+- **Integrated PostgreSQL Database**
+  - Replaced in-memory storage with persistent PostgreSQL database
+  - Implemented DatabaseStorage class with full CRUD operations
+  - Applied database schema migrations using `db:push` command
+  - All data now persists between server restarts
 
 ### January 12, 2025
 - **Added Credentials Management System**
