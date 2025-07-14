@@ -1,3 +1,4 @@
+import * as React from "react";
 import { useState, useEffect } from "react";
 import { X, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";

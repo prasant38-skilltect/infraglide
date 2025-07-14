@@ -1,5 +1,6 @@
 import { Handle, Position } from "reactflow";
 import { Server, Zap, Folder, Database, Table, Network, Scale, Trash2 } from "lucide-react";
+import * as React from "react";
 import { useState } from "react";
 import {
   ContextMenu,

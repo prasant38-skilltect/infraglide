@@ -1,4 +1,5 @@
 import { Server, Zap, Folder, Database, Table, Network, Scale, Cloud, Monitor, Shield, HardDrive, Cpu, Globe } from "lucide-react";
+import * as React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
