@@ -41,7 +41,7 @@ export default function PipelineDesigner() {
   const pipelineId = params.id ? parseInt(params.id) : null;
   const { toast } = useToast();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [nodes, setNodes, onNodesChangeOriginal] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
@@ -169,10 +169,55 @@ export default function PipelineDesigner() {
     },
   });
 
+  const getOptimalHandles = useCallback((sourceId: string, targetId: string) => {
+    const sourceNode = nodes.find(n => n.id === sourceId);
+    const targetNode = nodes.find(n => n.id === targetId);
+    
+    if (!sourceNode || !targetNode) return { sourceHandle: null, targetHandle: null };
+    
+    const sourceX = sourceNode.position.x;
+    const sourceY = sourceNode.position.y;
+    const targetX = targetNode.position.x;
+    const targetY = targetNode.position.y;
+    
+    const deltaX = targetX - sourceX;
+    const deltaY = targetY - sourceY;
+    
+    let sourceHandle = null;
+    let targetHandle = null;
+    
+    // Determine optimal source handle based on target position
+    if (Math.abs(deltaX) > Math.abs(deltaY)) {
+      // Horizontal connection preferred
+      if (deltaX > 0) {
+        sourceHandle = 'right';
+        targetHandle = 'left';
+      } else {
+        sourceHandle = 'left';
+        targetHandle = 'right';
+      }
+    } else {
+      // Vertical connection preferred
+      if (deltaY > 0) {
+        sourceHandle = 'bottom';
+        targetHandle = 'top';
+      } else {
+        sourceHandle = 'top';
+        targetHandle = 'bottom';
+      }
+    }
+    
+    return { sourceHandle, targetHandle };
+  }, [nodes]);
+
   const onConnect = useCallback(
     (params: Connection) => {
+      const { sourceHandle, targetHandle } = getOptimalHandles(params.source!, params.target!);
+      
       const newEdge = {
         ...params,
+        sourceHandle,
+        targetHandle,
         type: 'smoothstep',
         animated: true,
         style: {
@@ -189,8 +234,32 @@ export default function PipelineDesigner() {
       setEdges((eds) => addEdge(newEdge, eds));
       setHasUnsavedChanges(true);
     },
-    [setEdges]
+    [setEdges, getOptimalHandles]
   );
+
+  // Custom onNodesChange that updates edges when nodes move
+  const onNodesChange = useCallback((changes: any) => {
+    onNodesChangeOriginal(changes);
+    
+    // Check if any nodes moved and update edge handles accordingly
+    const hasMoveChanges = changes.some((change: any) => change.type === 'position' && change.positionAbsolute);
+    
+    if (hasMoveChanges) {
+      // Small delay to ensure node positions are updated
+      setTimeout(() => {
+        setEdges((eds) => eds.map((edge) => {
+          const { sourceHandle, targetHandle } = getOptimalHandles(edge.source, edge.target);
+          return {
+            ...edge,
+            sourceHandle,
+            targetHandle,
+          };
+        }));
+      }, 10);
+    }
+    
+    setHasUnsavedChanges(true);
+  }, [onNodesChangeOriginal, getOptimalHandles, setEdges]);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
