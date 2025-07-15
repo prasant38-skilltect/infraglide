@@ -125,6 +125,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 15, 2025
+- **Enhanced Configuration Modal**
+  - Added scrollbar to configure component popup for better navigation through all EC2 fields
+  - Fixed AWS Region dropdown selection issue by using undefined instead of empty strings
+  - Improved modal layout with proper padding and flex structure
+  - Added custom scrollbar styling with hover effects
+
+- **Setup Documentation**
+  - Created comprehensive SETUP.md with detailed installation instructions for both frontend and backend
+  - Included database setup options (Neon and local PostgreSQL)
+  - Added troubleshooting section and development tips
+  - Documented all available npm scripts and project structure
+
 ### January 14, 2025
 - **Added My Pipelines Management System**
   - New "My Pipelines" section in sidebar navigation with expandable provider panels
