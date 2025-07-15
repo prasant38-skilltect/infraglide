@@ -1,5 +1,13 @@
 import { Handle, Position } from "reactflow";
-import { Server, Zap, Folder, Database, Table, Network, Scale } from "lucide-react";
+import {
+  Server,
+  Zap,
+  Folder,
+  Database,
+  Table,
+  Network,
+  Scale,
+} from "lucide-react";
 
 const componentIcons = {
   ec2: Server,
@@ -31,8 +39,11 @@ interface AWSComponentNodeProps {
 }
 
 export function AWSComponentNode({ data, selected }: AWSComponentNodeProps) {
-  const Icon = componentIcons[data.type as keyof typeof componentIcons] || Server;
-  const colors = componentColors[data.type as keyof typeof componentColors] || componentColors.ec2;
+  const Icon =
+    componentIcons[data.type as keyof typeof componentIcons] || Server;
+  const colors =
+    componentColors[data.type as keyof typeof componentColors] ||
+    componentColors.ec2;
 
   const getDisplayInfo = () => {
     switch (data.type) {
@@ -56,26 +67,26 @@ export function AWSComponentNode({ data, selected }: AWSComponentNodeProps) {
   };
 
   return (
-    <div 
+    <div
       className={`min-w-32 bg-white border-2 ${colors.border} rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
         selected ? "ring-2 ring-blue-500" : ""
       }`}
     >
       <Handle type="target" position={Position.Top} className="w-2 h-2" />
-      
+
       <div className="flex items-center space-x-2 mb-2">
-        <div className={`w-6 h-6 ${colors.bg} rounded flex items-center justify-center`}>
+        <div
+          className={`w-6 h-6 ${colors.bg} rounded flex items-center justify-center`}
+        >
           <Icon className="text-white w-4 h-4" />
         </div>
         <span className="text-sm font-medium text-gray-900 truncate">
           {data.name}
         </span>
       </div>
-      
-      <p className="text-xs text-gray-600 truncate">
-        {getDisplayInfo()}
-      </p>
-      
+
+      <p className="text-xs text-gray-600 truncate">{getDisplayInfo()}</p>
+
       <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
     </div>
   );

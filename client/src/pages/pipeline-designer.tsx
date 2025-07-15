@@ -12,6 +12,7 @@ import ReactFlow, {
   Controls,
   Background,
   NodeTypes,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -101,7 +102,17 @@ export default function PipelineDesigner() {
           id: connection.id,
           source: connection.source,
           target: connection.target,
-          type: "default",
+          type: "smoothstep",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 20,
+            height: 20,
+            color: '#6b7280',
+          },
+          style: {
+            strokeWidth: 2,
+            stroke: '#6b7280',
+          },
         }));
         setEdges(loadedEdges);
       }
@@ -159,7 +170,22 @@ export default function PipelineDesigner() {
 
   const onConnect = useCallback(
     (params: Connection) => {
-      setEdges((eds) => addEdge(params, eds));
+      // Add arrow marker to all new connections
+      const connectionWithArrow = {
+        ...params,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#6b7280',
+        },
+        style: {
+          strokeWidth: 2,
+          stroke: '#6b7280',
+        },
+        type: 'smoothstep',
+      };
+      setEdges((eds) => addEdge(connectionWithArrow, eds));
       setHasUnsavedChanges(true);
     },
     [setEdges]

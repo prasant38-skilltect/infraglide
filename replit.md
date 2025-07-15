@@ -126,6 +126,13 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 15, 2025
+- **Enhanced Pipeline Canvas with Arrow Edges**
+  - Added directional arrow markers to all edge connections showing source-to-target flow
+  - Implemented ArrowClosed marker type with consistent styling (gray color, 20x20 size)
+  - Updated edge type to 'smoothstep' for better visual flow
+  - Applied arrow markers to both new connections and loaded pipeline edges
+  - Enhanced edge styling with 2px stroke width for better visibility
+
 - **Added VPC Network Configuration**
   - Added comprehensive VPC configuration with 9 mandatory fields
   - Implemented AWS Region dropdown using existing Aws_Region_Dropdown_options

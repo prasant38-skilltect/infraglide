@@ -1,4 +1,18 @@
-import { Server, Zap, Folder, Database, Table, Network, Scale, Cloud, Monitor, Shield, HardDrive, Cpu, Globe } from "lucide-react";
+import {
+  Server,
+  Zap,
+  Folder,
+  Database,
+  Table,
+  Network,
+  Scale,
+  Cloud,
+  Monitor,
+  Shield,
+  HardDrive,
+  Cpu,
+  Globe,
+} from "lucide-react";
 import * as React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,11 +42,11 @@ const awsComponents = [
       },
       {
         type: "lambda",
-        name: "Lambda Function", 
+        name: "Lambda Function",
         description: "Serverless compute",
         icon: Zap,
         gradient: "from-yellow-50 to-yellow-100",
-        border: "border-yellow-200", 
+        border: "border-yellow-200",
         iconBg: "bg-yellow-500",
       },
     ],
@@ -276,7 +290,10 @@ interface ComponentLibraryProps {
   onSavePrompt?: () => void;
 }
 
-export default function ComponentLibrary({ hasUnsavedChanges = false, onSavePrompt }: ComponentLibraryProps) {
+export default function ComponentLibrary({
+  hasUnsavedChanges = false,
+  onSavePrompt,
+}: ComponentLibraryProps) {
   const [selectedTab, setSelectedTab] = useState("aws");
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
@@ -318,7 +335,9 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
     <div className="space-y-4">
       {components.map((category) => (
         <div key={category.category}>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">{category.category}</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-3">
+            {category.category}
+          </h4>
           <div className="space-y-2">
             {category.items.map((component) => {
               const Icon = component.icon;
@@ -330,12 +349,18 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
                   onDragStart={(event) => onDragStart(event, component.type)}
                 >
                   <div className="flex items-center space-x-3">
-                    <div className={`w-8 h-8 ${component.iconBg} rounded flex items-center justify-center`}>
+                    <div
+                      className={`w-8 h-8 ${component.iconBg} rounded flex items-center justify-center`}
+                    >
                       <Icon className="text-white w-4 h-4" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{component.name}</p>
-                      <p className="text-xs text-gray-600">{component.description}</p>
+                      <p className="font-medium text-gray-900">
+                        {component.name}
+                      </p>
+                      <p className="text-xs text-gray-600">
+                        {component.description}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -351,26 +376,34 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
     <>
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Cloud Components</h3>
-          <p className="text-sm text-gray-600 mt-1">Drag components to the canvas</p>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Cloud Components
+          </h3>
+          <p className="text-sm text-gray-600 mt-1">
+            Drag components to the canvas
+          </p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
+          <Tabs
+            value={selectedTab}
+            onValueChange={handleTabChange}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
               <TabsTrigger value="aws">AWS</TabsTrigger>
               <TabsTrigger value="azure">Azure</TabsTrigger>
               <TabsTrigger value="gcp">GCP</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="aws" className="p-4 pt-4">
               {renderComponents(awsComponents)}
             </TabsContent>
-            
+
             <TabsContent value="azure" className="p-4 pt-4">
               {renderComponents(azureComponents)}
             </TabsContent>
-            
+
             <TabsContent value="gcp" className="p-4 pt-4">
               {renderComponents(gcpComponents)}
             </TabsContent>
@@ -378,24 +411,26 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
         </div>
       </div>
 
-    <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Save Pipeline?</AlertDialogTitle>
-          <AlertDialogDescription>
-            You have unsaved changes in your current pipeline. Do you want to save it before switching to {pendingTab?.toUpperCase()} components?
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleDiscardAndSwitch}>
-            No, discard changes
-          </AlertDialogCancel>
-          <AlertDialogAction onClick={handleSaveAndSwitch}>
-            Yes, save pipeline
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+      <AlertDialog open={showSaveDialog} onOpenChange={setShowSaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save Pipeline?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes in your current pipeline. Do you want to
+              save it before switching to {pendingTab?.toUpperCase()}{" "}
+              components?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDiscardAndSwitch}>
+              No, discard changes
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleSaveAndSwitch}>
+              Yes, save pipeline
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

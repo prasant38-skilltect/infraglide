@@ -10,6 +10,7 @@ import ReactFlow, {
   Background,
   NodeTypes,
   ReactFlowInstance,
+  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import { AWSComponentNode } from "./aws-components";
@@ -42,7 +43,23 @@ export default function PipelineCanvas({
   onInit,
 }: PipelineCanvasProps) {
   const onConnectHandler = useCallback(
-    (params: Connection) => onConnect(params),
+    (params: Connection) => {
+      // Add arrow marker to new connections
+      const connectionWithArrow = {
+        ...params,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 20,
+          height: 20,
+          color: '#6b7280',
+        },
+        style: {
+          strokeWidth: 2,
+          stroke: '#6b7280',
+        },
+      };
+      onConnect(connectionWithArrow);
+    },
     [onConnect]
   );
 

@@ -161,14 +161,14 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
                 {data.name}
               </span>
             </div>
-            <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
-              {getProviderBadge()}
-            </span>
+            {/* <span className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded">
+              {getProviderBadge()}11
+            </span> */}
           </div>
           
-          <p className="text-xs text-gray-600 truncate">
+          {/* <p className="text-xs text-gray-600 truncate">
             {getDisplayInfo()}
-          </p>
+          </p> */}
           
           <Handle type="source" position={Position.Bottom} className="w-2 h-2" />
         </div>
