@@ -362,7 +362,7 @@ export default function PropertiesPanel({
   );
 
   const renderS3Config = () => (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Basic Configuration
@@ -461,15 +461,16 @@ export default function PropertiesPanel({
   );
 
   const renderRDSConfig = () => (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Basic Configuration
         </h4>
         <div className="space-y-4">
+          {/* DB Instance Identifier - Mandatory */}
           <div>
             <Label className="text-xs font-medium text-gray-700">
-              DB Instance Identifier
+              DB Instance Identifier *
             </Label>
             <Input
               value={config.dbIdentifier || ""}
@@ -479,52 +480,224 @@ export default function PropertiesPanel({
             />
           </div>
 
+          {/* Allocated Storage - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Engine</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Allocated Storage (GB) *
+            </Label>
+            <Input
+              type="number"
+              value={config.allocatedStorage || ""}
+              onChange={(e) => updateConfig("allocatedStorage", e.target.value)}
+              placeholder="20"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Storage Type - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Storage Type *</Label>
             <Select
-              value={config.engine || "postgres"}
-              onValueChange={(value) => updateConfig("engine", value)}
+              value={config.storageType}
+              onValueChange={(value) => updateConfig("storageType", value)}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue />
+                <SelectValue placeholder="Select storage type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="postgres">PostgreSQL</SelectItem>
-                <SelectItem value="mysql">MySQL</SelectItem>
-                <SelectItem value="oracle">Oracle</SelectItem>
+                <SelectItem value="gp2">General Purpose SSD (gp2)</SelectItem>
+                <SelectItem value="gp3">General Purpose SSD (gp3)</SelectItem>
+                <SelectItem value="io1">Provisioned IOPS SSD (io1)</SelectItem>
+                <SelectItem value="io2">Provisioned IOPS SSD (io2)</SelectItem>
+                <SelectItem value="standard">Magnetic</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {/* Engine - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Engine *</Label>
+            <Select
+              value={config.engine}
+              onValueChange={(value) => updateConfig("engine", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select database engine" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mysql">MySQL</SelectItem>
+                <SelectItem value="postgres">PostgreSQL</SelectItem>
+                <SelectItem value="oracle-se2">Oracle SE2</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Engine Version - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Engine Version *</Label>
+            <Select
+              value={config.engineVersion}
+              onValueChange={(value) => updateConfig("engineVersion", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select engine version" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="8.0">8.0</SelectItem>
+                <SelectItem value="5.7">5.7</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Instance Class - Mandatory */}
           <div>
             <Label className="text-xs font-medium text-gray-700">
-              Instance Class
+              Instance Class *
             </Label>
             <Select
-              value={config.instanceClass || "db.t3.micro"}
+              value={config.instanceClass}
               onValueChange={(value) => updateConfig("instanceClass", value)}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue />
+                <SelectValue placeholder="Select instance class" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="db.t3.micro">db.t3.micro</SelectItem>
                 <SelectItem value="db.t3.small">db.t3.small</SelectItem>
-                <SelectItem value="db.t3.medium">db.t3.medium</SelectItem>
+                <SelectItem value="db.m5.large">db.m5.large</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
+          {/* Username - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Username *</Label>
+            <Input
+              value={config.username || ""}
+              onChange={(e) => updateConfig("username", e.target.value)}
+              placeholder="admin"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Password - Mandatory with validation */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Password *</Label>
+            <Input
+              type="password"
+              value={config.password || ""}
+              onChange={(e) => updateConfig("password", e.target.value)}
+              placeholder="Min 8 chars, upper/lower/number/symbol"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Minimum 8 characters including uppercase, lowercase, number, and symbol
+            </p>
+          </div>
+
+          {/* DB Subnet Group Name - Mandatory */}
           <div>
             <Label className="text-xs font-medium text-gray-700">
-              Allocated Storage (GB)
+              DB Subnet Group Name *
+            </Label>
+            <Input
+              value={config.dbSubnetGroupName || ""}
+              onChange={(e) => updateConfig("dbSubnetGroupName", e.target.value)}
+              placeholder="default"
+              className="mt-1"
+            />
+          </div>
+
+          {/* VPC Security Group ID - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              VPC Security Group ID *
+            </Label>
+            <Input
+              value={config.vpcSecurityGroupId || ""}
+              onChange={(e) => updateConfig("vpcSecurityGroupId", e.target.value)}
+              placeholder="sg-12345678"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Multi-AZ Deployment - Radio Button */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">Multi-AZ Deployment</Label>
+            <RadioGroup
+              value={config.multiAZ || "no"}
+              onValueChange={(value) => updateConfig("multiAZ", value)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="no" id="multiaz-no" />
+                <Label htmlFor="multiaz-no" className="text-sm">No</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="yes" id="multiaz-yes" />
+                <Label htmlFor="multiaz-yes" className="text-sm">Yes</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Publicly Accessible - Radio Button */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">Publicly Accessible</Label>
+            <RadioGroup
+              value={config.publiclyAccessible || "no"}
+              onValueChange={(value) => updateConfig("publiclyAccessible", value)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="no" id="public-no" />
+                <Label htmlFor="public-no" className="text-sm">No</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="yes" id="public-yes" />
+                <Label htmlFor="public-yes" className="text-sm">Yes</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Backup Retention Period - Number Input */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Backup Retention Period (days)
             </Label>
             <Input
               type="number"
-              value={config.allocatedStorage || "20"}
-              onChange={(e) => updateConfig("allocatedStorage", e.target.value)}
+              value={config.backupRetentionPeriod || "7"}
+              onChange={(e) => updateConfig("backupRetentionPeriod", e.target.value)}
+              placeholder="7"
               className="mt-1"
             />
+          </div>
+
+          {/* Skip Final Snapshot - Checkbox */}
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="skipFinalSnapshot"
+              checked={config.skipFinalSnapshot !== false}
+              onCheckedChange={(checked) => updateConfig("skipFinalSnapshot", checked)}
+            />
+            <Label htmlFor="skipFinalSnapshot" className="text-sm text-gray-700">
+              Skip Final Snapshot
+            </Label>
+          </div>
+
+          {/* Tags - Key-Value pairs */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Tags</Label>
+            <Textarea
+              value={config.tags || ""}
+              onChange={(e) => updateConfig("tags", e.target.value)}
+              placeholder="Name=MyRDSInstance, Environment=Dev"
+              className="mt-1"
+              rows={2}
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Comma-separated key=value pairs (e.g., Name=MyRDSInstance, Environment=Dev)
+            </p>
           </div>
         </div>
       </div>
@@ -532,7 +705,7 @@ export default function PropertiesPanel({
   );
 
   const renderDefaultConfig = () => (
-    <div className="space-y-6">
+    <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">
           Basic Configuration
@@ -599,10 +772,21 @@ export default function PropertiesPanel({
       case "s3":
         return config.awsRegion?.trim() && config.bucketName?.trim();
       case "rds":
+        // Password validation: min 8 chars, upper/lower/number/symbol
+        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+        const isPasswordValid = config.password && passwordRegex.test(config.password);
+        
         return (
           config.dbIdentifier?.trim() &&
+          config.allocatedStorage?.trim() &&
+          config.storageType?.trim() &&
           config.engine?.trim() &&
-          config.instanceClass?.trim()
+          config.engineVersion?.trim() &&
+          config.instanceClass?.trim() &&
+          config.username?.trim() &&
+          isPasswordValid &&
+          config.dbSubnetGroupName?.trim() &&
+          config.vpcSecurityGroupId?.trim()
         );
       default:
         return true;
@@ -697,6 +881,34 @@ export default function PropertiesPanel({
                       return `Missing required fields: ${s3MissingFields.join(", ")}`;
                     }
                   }
+                  
+                  // Show which fields are missing for RDS
+                  if (node.data.type === "rds") {
+                    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+                    const isPasswordValid = config.password && passwordRegex.test(config.password);
+                    
+                    const rdsRequiredFields = {
+                      dbIdentifier: config.dbIdentifier?.trim(),
+                      allocatedStorage: config.allocatedStorage?.trim(),
+                      storageType: config.storageType?.trim(),
+                      engine: config.engine?.trim(),
+                      engineVersion: config.engineVersion?.trim(),
+                      instanceClass: config.instanceClass?.trim(),
+                      username: config.username?.trim(),
+                      password: isPasswordValid ? "valid" : null,
+                      dbSubnetGroupName: config.dbSubnetGroupName?.trim(),
+                      vpcSecurityGroupId: config.vpcSecurityGroupId?.trim(),
+                    };
+                    
+                    const rdsMissingFields = Object.entries(rdsRequiredFields)
+                      .filter(([_, value]) => !value)
+                      .map(([key, _]) => key === "password" ? "password (invalid format)" : key);
+                    
+                    if (rdsMissingFields.length > 0) {
+                      return `Missing required fields: ${rdsMissingFields.join(", ")}`;
+                    }
+                  }
+                  
                   return "Please fill in all required fields";
                 })()}
           </p>
