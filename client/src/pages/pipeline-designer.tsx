@@ -12,7 +12,6 @@ import ReactFlow, {
   Controls,
   Background,
   NodeTypes,
-  MarkerType,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -25,7 +24,7 @@ import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Cloud } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -41,7 +40,7 @@ export default function PipelineDesigner() {
   const pipelineId = params.id ? parseInt(params.id) : null;
   const { toast } = useToast();
 
-  const [nodes, setNodes, onNodesChangeOriginal] = useNodesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
@@ -52,10 +51,9 @@ export default function PipelineDesigner() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [showPipelineMode, setShowPipelineMode] = useState(false);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -64,21 +62,10 @@ export default function PipelineDesigner() {
     return `newPipeline_${dateTime}`;
   };
 
-  // Handle provider selection from sidebar
-  const handleProviderSelect = (provider: string) => {
-    setSelectedProvider(provider);
-    setShowComponentLibrary(true);
-    setShowPipelineMode(false); // Reset pipeline mode when provider is selected
-  };
-
-  // Handle pipeline mode toggle from sidebar
-  const handlePipelineModeChange = (enabled: boolean) => {
-    setShowPipelineMode(enabled);
-    if (!enabled) {
-      setSelectedProvider(null);
-      setShowComponentLibrary(false);
-    }
-  };
+  // Always hide the sidebar when entering pipeline designer
+  useEffect(() => {
+    setIsSidebarCollapsed(true);
+  }, []);
 
 
 
@@ -114,18 +101,7 @@ export default function PipelineDesigner() {
           id: connection.id,
           source: connection.source,
           target: connection.target,
-          type: 'smoothstep',
-          animated: true,
-          style: {
-            stroke: '#3b82f6',
-            strokeWidth: 2,
-          },
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: '#3b82f6',
-            width: 20,
-            height: 20,
-          },
+          type: "default",
         }));
         setEdges(loadedEdges);
       }
@@ -181,97 +157,13 @@ export default function PipelineDesigner() {
     },
   });
 
-  const getOptimalHandles = useCallback((sourceId: string, targetId: string) => {
-    const sourceNode = nodes.find(n => n.id === sourceId);
-    const targetNode = nodes.find(n => n.id === targetId);
-    
-    if (!sourceNode || !targetNode) return { sourceHandle: null, targetHandle: null };
-    
-    const sourceX = sourceNode.position.x;
-    const sourceY = sourceNode.position.y;
-    const targetX = targetNode.position.x;
-    const targetY = targetNode.position.y;
-    
-    const deltaX = targetX - sourceX;
-    const deltaY = targetY - sourceY;
-    
-    let sourceHandle = null;
-    let targetHandle = null;
-    
-    // Determine optimal source handle based on target position
-    if (Math.abs(deltaX) > Math.abs(deltaY)) {
-      // Horizontal connection preferred
-      if (deltaX > 0) {
-        sourceHandle = 'right';
-        targetHandle = 'left';
-      } else {
-        sourceHandle = 'left';
-        targetHandle = 'right';
-      }
-    } else {
-      // Vertical connection preferred
-      if (deltaY > 0) {
-        sourceHandle = 'bottom';
-        targetHandle = 'top';
-      } else {
-        sourceHandle = 'top';
-        targetHandle = 'bottom';
-      }
-    }
-    
-    return { sourceHandle, targetHandle };
-  }, [nodes]);
-
   const onConnect = useCallback(
     (params: Connection) => {
-      const { sourceHandle, targetHandle } = getOptimalHandles(params.source!, params.target!);
-      
-      const newEdge = {
-        ...params,
-        sourceHandle,
-        targetHandle,
-        type: 'smoothstep',
-        animated: true,
-        style: {
-          stroke: '#3b82f6',
-          strokeWidth: 2,
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: '#3b82f6',
-          width: 20,
-          height: 20,
-        },
-      };
-      setEdges((eds) => addEdge(newEdge, eds));
+      setEdges((eds) => addEdge(params, eds));
       setHasUnsavedChanges(true);
     },
-    [setEdges, getOptimalHandles]
+    [setEdges]
   );
-
-  // Custom onNodesChange that updates edges when nodes move
-  const onNodesChange = useCallback((changes: any) => {
-    onNodesChangeOriginal(changes);
-    
-    // Check if any nodes moved and update edge handles accordingly
-    const hasMoveChanges = changes.some((change: any) => change.type === 'position' && change.positionAbsolute);
-    
-    if (hasMoveChanges) {
-      // Small delay to ensure node positions are updated
-      setTimeout(() => {
-        setEdges((eds) => eds.map((edge) => {
-          const { sourceHandle, targetHandle } = getOptimalHandles(edge.source, edge.target);
-          return {
-            ...edge,
-            sourceHandle,
-            targetHandle,
-          };
-        }));
-      }, 10);
-    }
-    
-    setHasUnsavedChanges(true);
-  }, [onNodesChangeOriginal, getOptimalHandles, setEdges]);
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
@@ -459,18 +351,22 @@ export default function PipelineDesigner() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <Sidebar 
-        showPipelineMode={showPipelineMode}
-        onPipelineModeChange={handlePipelineModeChange}
-        onProviderSelect={handleProviderSelect}
-        isPipelineDesigner={true}
-      />
+      {!isSidebarCollapsed && <Sidebar />}
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {isSidebarCollapsed && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsSidebarCollapsed(false)}
+                >
+                  <Menu className="w-4 h-4" />
+                </Button>
+              )}
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
                 <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
@@ -481,11 +377,10 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {selectedProvider && showComponentLibrary && (
+          {showComponentLibrary && (
             <ComponentLibrary 
               hasUnsavedChanges={hasUnsavedChanges}
               onSavePrompt={() => handleSavePipeline()}
-              selectedProvider={selectedProvider}
             />
           )}
           
@@ -615,14 +510,22 @@ export default function PipelineDesigner() {
                       Delete
                     </Button>
                   )}
-                  {selectedProvider && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowComponentLibrary(!showComponentLibrary)}
+                    title={showComponentLibrary ? "Hide components" : "Show components"}
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                  {!isSidebarCollapsed && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setShowComponentLibrary(!showComponentLibrary)}
-                      title={showComponentLibrary ? "Hide components" : "Show components"}
+                      onClick={() => setIsSidebarCollapsed(true)}
+                      title="Hide sidebar"
                     >
-                      <Plus className="w-4 h-4" />
+                      <X className="w-4 h-4" />
                     </Button>
                   )}
                 </div>
@@ -630,68 +533,28 @@ export default function PipelineDesigner() {
             </div>
 
             {/* React Flow Canvas */}
-            <div className="flex-1 bg-gray-50 relative">
-              {selectedProvider ? (
-                <ReactFlow
-                  nodes={nodes}
-                  edges={edges}
-                  onNodesChange={onNodesChange}
-                  onEdgesChange={onEdgesChange}
-                  onConnect={onConnect}
-                  onInit={setReactFlowInstance}
-                  onDrop={onDrop}
-                  onDragOver={onDragOver}
-                  onNodeClick={onNodeClick}
-                  nodeTypes={nodeTypes}
-                  fitView
-                  className="bg-gray-50"
-                  style={{
-                    backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
-                    backgroundSize: "20px 20px",
-                  }}
-                  connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                  connectionLineType="smoothstep"
-                  defaultEdgeOptions={{
-                    type: 'smoothstep',
-                    animated: true,
-                    style: {
-                      stroke: '#3b82f6',
-                      strokeWidth: 2,
-                    },
-                    markerEnd: {
-                      type: MarkerType.ArrowClosed,
-                      color: '#3b82f6',
-                      width: 20,
-                      height: 20,
-                    },
-                  }}
-                >
-                  <Controls />
-                  <Background />
-                </ReactFlow>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
-                  <div className="text-center max-w-md">
-                    <Cloud className="w-24 h-24 text-gray-300 mx-auto mb-6" />
-                    <h3 className="text-2xl font-semibold text-gray-700 mb-3">Welcome to Pipeline Designer</h3>
-                    <p className="text-gray-500 mb-6">Click "Pipelines" in the sidebar to select a cloud provider and start building your infrastructure.</p>
-                    <div className="flex justify-center space-x-4 text-sm text-gray-400">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
-                        <span>AWS</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
-                        <span>Azure</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                        <span>GCP</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
+            <div className="flex-1 bg-gray-50">
+              <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onInit={setReactFlowInstance}
+                onDrop={onDrop}
+                onDragOver={onDragOver}
+                onNodeClick={onNodeClick}
+                nodeTypes={nodeTypes}
+                fitView
+                className="bg-gray-50"
+                style={{
+                  backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
+                  backgroundSize: "20px 20px",
+                }}
+              >
+                <Controls />
+                <Background />
+              </ReactFlow>
             </div>
           </div>
 
