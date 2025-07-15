@@ -27,16 +27,105 @@ export const getComponentColor = (type: string) => {
 };
 
 export const validateComponent = (component: ComponentConfig) => {
+  const config = component.config || {};
+  
   switch (component.type) {
     case "ec2":
-      return !!(component.config.instanceName && component.config.instanceType && component.config.amiId);
+      const requiredEC2Fields = [
+        'instanceName', 'awsRegion', 'zone', 'amiId', 'machineType', 
+        'storageType', 'storageSize', 'network', 'subnetwork', 'securityGroup'
+      ];
+      return requiredEC2Fields.every(field => config[field]);
+      
     case "s3":
-      return !!component.config.bucketName;
+      const requiredS3Fields = ['bucketName', 'awsRegion'];
+      return requiredS3Fields.every(field => config[field]);
+      
     case "rds":
-      return !!(component.config.dbIdentifier && component.config.engine && component.config.instanceClass);
+      const requiredRDSFields = [
+        'dbIdentifier', 'allocatedStorage', 'storageType', 'engine', 'engineVersion',
+        'instanceClass', 'username', 'password', 'dbSubnetGroupName', 'vpcSecurityGroupId'
+      ];
+      return requiredRDSFields.every(field => config[field]);
+      
+    case "vpc":
+      const requiredVPCFields = [
+        'awsRegion', 'vpcCidrBlock', 'publicSubnetCidr', 'privateSubnetCidr',
+        'publicSubnetAz', 'privateSubnetAz', 'vpcName', 'publicSubnetName', 'privateSubnetName'
+      ];
+      return requiredVPCFields.every(field => config[field]);
+      
+    case "lambda":
+      const requiredLambdaFields = ['functionName', 'runtime', 'handler'];
+      return requiredLambdaFields.every(field => config[field]);
+      
+    case "alb":
+      const requiredALBFields = ['name', 'scheme', 'type'];
+      return requiredALBFields.every(field => config[field]);
+      
     default:
       return true;
   }
+};
+
+export const getValidationErrors = (component: ComponentConfig) => {
+  const config = component.config || {};
+  const errors: string[] = [];
+  
+  switch (component.type) {
+    case "ec2":
+      const requiredEC2Fields = [
+        'instanceName', 'awsRegion', 'zone', 'amiId', 'machineType', 
+        'storageType', 'storageSize', 'network', 'subnetwork', 'securityGroup'
+      ];
+      requiredEC2Fields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+      
+    case "s3":
+      const requiredS3Fields = ['bucketName', 'awsRegion'];
+      requiredS3Fields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+      
+    case "rds":
+      const requiredRDSFields = [
+        'dbIdentifier', 'allocatedStorage', 'storageType', 'engine', 'engineVersion',
+        'instanceClass', 'username', 'password', 'dbSubnetGroupName', 'vpcSecurityGroupId'
+      ];
+      requiredRDSFields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+      
+    case "vpc":
+      const requiredVPCFields = [
+        'awsRegion', 'vpcCidrBlock', 'publicSubnetCidr', 'privateSubnetCidr',
+        'publicSubnetAz', 'privateSubnetAz', 'vpcName', 'publicSubnetName', 'privateSubnetName'
+      ];
+      requiredVPCFields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+      
+    case "lambda":
+      const requiredLambdaFields = ['functionName', 'runtime', 'handler'];
+      requiredLambdaFields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+      
+    case "alb":
+      const requiredALBFields = ['name', 'scheme', 'type'];
+      requiredALBFields.forEach(field => {
+        if (!config[field]) errors.push(field);
+      });
+      break;
+  }
+  
+  return errors;
 };
 
 export const generateComponentName = (type: string) => {

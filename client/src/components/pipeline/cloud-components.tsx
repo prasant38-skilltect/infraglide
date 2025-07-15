@@ -68,6 +68,7 @@ interface CloudComponentNodeProps {
     type: string;
     name: string;
     config?: any;
+    validationError?: boolean;
   };
   selected?: boolean;
   id?: string;
@@ -146,7 +147,9 @@ export function CloudComponentNode({ data, selected, id }: CloudComponentNodePro
     <ContextMenu>
       <ContextMenuTrigger>
         <div 
-          className={`min-w-32 bg-white border-2 ${colors.border} rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
+          className={`min-w-32 bg-white border-2 ${
+            data.validationError ? "border-red-500" : colors.border
+          } rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow ${
             selected ? "ring-2 ring-blue-500" : ""
           }`}
         >

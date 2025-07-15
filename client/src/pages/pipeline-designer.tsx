@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { CloudComponentNode } from "@/components/pipeline/cloud-components";
+import { validateComponent, getValidationErrors } from "@/lib/pipeline-utils";
 import type { Pipeline, ComponentConfig } from "@shared/schema";
 
 const nodeTypes: NodeTypes = {
@@ -55,6 +56,7 @@ export default function PipelineDesigner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -84,17 +86,27 @@ export default function PipelineDesigner() {
       setPipelineRegion(pipeline.region);
       
       if (Array.isArray(pipeline.components)) {
-        const loadedNodes = pipeline.components.map((component: ComponentConfig) => ({
-          id: component.id,
-          type: "cloudComponent",
-          position: component.position,
-          data: {
-            type: component.type,
-            name: component.name,
-            config: component.config,
-          },
-        }));
+        const loadedNodes = pipeline.components.map((component: ComponentConfig) => {
+          const isValid = validateComponent(component);
+          return {
+            id: component.id,
+            type: "cloudComponent",
+            position: component.position,
+            data: {
+              type: component.type,
+              name: component.name,
+              config: component.config,
+              validationError: !isValid,
+            },
+          };
+        });
         setNodes(loadedNodes);
+        
+        // Set validation errors for loaded components
+        const errorNodes = loadedNodes
+          .filter(node => node.data.validationError)
+          .map(node => node.id);
+        setValidationErrors(new Set(errorNodes));
       }
 
       if (Array.isArray(pipeline.connections)) {
@@ -214,6 +226,7 @@ export default function PipelineDesigner() {
           type,
           name: `${type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
           config: {},
+          validationError: true, // New nodes start with validation error since they're empty
         },
       };
 
@@ -223,6 +236,9 @@ export default function PipelineDesigner() {
         setTimeout(() => autoSavePipeline(updatedNodes, edges), 1000);
         return updatedNodes;
       });
+      
+      // Add to validation errors since new nodes are empty
+      setValidationErrors(prev => new Set([...prev, newNode.id]));
       setHasUnsavedChanges(true);
     },
     [reactFlowInstance, setNodes, edges, pipelineName, pipelineRegion]
@@ -240,9 +256,38 @@ export default function PipelineDesigner() {
 
   const onUpdateNodeConfig = useCallback((nodeId: string, config: any) => {
     setNodes((nds) =>
-      nds.map((node) =>
-        node.id === nodeId ? { ...node, data: { ...node.data, config } } : node
-      )
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          const updatedNode = { ...node, data: { ...node.data, config } };
+          const isValid = validateComponent({
+            id: node.id,
+            type: node.data.type,
+            name: node.data.name,
+            config,
+            position: node.position
+          });
+          
+          // Update validation errors
+          setValidationErrors(prevErrors => {
+            const newErrors = new Set(prevErrors);
+            if (isValid) {
+              newErrors.delete(nodeId);
+            } else {
+              newErrors.add(nodeId);
+            }
+            return newErrors;
+          });
+          
+          return {
+            ...updatedNode,
+            data: {
+              ...updatedNode.data,
+              validationError: !isValid
+            }
+          };
+        }
+        return node;
+      })
     );
     setHasUnsavedChanges(true);
   }, [setNodes]);
@@ -256,6 +301,14 @@ export default function PipelineDesigner() {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
+    
+    // Remove from validation errors
+    setValidationErrors(prev => {
+      const newErrors = new Set(prev);
+      newErrors.delete(nodeId);
+      return newErrors;
+    });
+    
     setHasUnsavedChanges(true);
   }, [setNodes, setEdges]);
 
@@ -264,6 +317,56 @@ export default function PipelineDesigner() {
       handleDeleteNode(selectedNode.id);
     }
   }, [selectedNode, handleDeleteNode]);
+
+  const validateAllComponents = useCallback(() => {
+    const errors = new Set<string>();
+    const invalidComponents: string[] = [];
+
+    // Validate all nodes
+    nodes.forEach(node => {
+      const componentConfig = {
+        id: node.id,
+        type: node.data.type,
+        name: node.data.name,
+        config: node.data.config || {},
+        position: node.position
+      };
+      
+      const isValid = validateComponent(componentConfig);
+      if (!isValid) {
+        errors.add(node.id);
+        invalidComponents.push(node.data.name);
+      }
+    });
+
+    // Update validation errors state
+    setValidationErrors(errors);
+    
+    // Update nodes with validation error flags
+    setNodes(prevNodes => 
+      prevNodes.map(node => ({
+        ...node,
+        data: {
+          ...node.data,
+          validationError: errors.has(node.id)
+        }
+      }))
+    );
+
+    // Show toast message
+    if (errors.size > 0) {
+      toast({
+        title: "Validation Failed",
+        description: `Please fill mandatory fields for: ${invalidComponents.join(", ")}`,
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Validation Successful",
+        description: "All components are properly configured.",
+      });
+    }
+  }, [nodes, setNodes, toast]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -461,7 +564,7 @@ export default function PipelineDesigner() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => toast({ title: "Validate", description: "Validation functionality coming soon" })}
+                      onClick={validateAllComponents}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Validate
