@@ -70,10 +70,10 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   };
 
   const renderEC2Config = () => (
-    <div 
-      className="space-y-6"
-      style={{ maxHeight: "calc(100vh - 200px)" }}
-    >
+    <div className="space-y-6"
+      style={{maxHeight: "calc(100vh - 550px)"
+            }}
+      >
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
         <div className="space-y-4">
@@ -114,22 +114,12 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           {/* Zone - Mandatory */}
           <div>
             <Label className="text-xs font-medium text-gray-700">Zone *</Label>
-            <Select
-              value={config.zone || undefined}
-              onValueChange={(value) => updateConfig("zone", value)}
-              disabled={!config.awsRegion}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select Zone" />
-              </SelectTrigger>
-              <SelectContent>
-                {getZonesByRegion(config.awsRegion || "").map((zone) => (
-                  <SelectItem key={zone} value={zone}>
-                    {zone}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              value={config.zone || ""}
+              onChange={(e) => updateConfig("zone", e.target.value)}
+              placeholder="us-east-1a"
+              className="mt-1"
+            />
           </div>
 
           {/* AMI ID - Mandatory */}
@@ -519,27 +509,24 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
       <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <div className="space-y-6">
           {renderConfigForm()}
-
-          {/* Validation Status */}
-          <Card className={`${isConfigurationValid() ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-            <CardContent className="p-4">
-              <div className="flex items-center">
-                <CheckCircle className={`w-5 h-5 mr-2 ${isConfigurationValid() ? "text-green-500" : "text-red-500"}`} />
-                <span className={`text-sm font-medium ${isConfigurationValid() ? "text-green-800" : "text-red-800"}`}>
-                  {isConfigurationValid() ? "Configuration Valid" : "Configuration Incomplete"}
-                </span>
-              </div>
-              <p className={`text-xs mt-1 ${isConfigurationValid() ? "text-green-700" : "text-red-700"}`}>
-                {isConfigurationValid() 
-                  ? "All required fields are properly configured"
-                  : "Please fill in all required fields"
-                }
-              </p>
-            </CardContent>
-          </Card>
         </div>
       </div>
-
+      <Card className={`${isConfigurationValid() ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center">
+            <CheckCircle className={`w-5 h-5 mr-2 ${isConfigurationValid() ? "text-green-500" : "text-red-500"}`} />
+            <span className={`text-sm font-medium ${isConfigurationValid() ? "text-green-800" : "text-red-800"}`}>
+              {isConfigurationValid() ? "Configuration Valid" : "Configuration Incomplete"}
+            </span>
+          </div>
+          <p className={`text-xs mt-1 ${isConfigurationValid() ? "text-green-700" : "text-red-700"}`}>
+            {isConfigurationValid() 
+              ? "All required fields are properly configured"
+              : "Please fill in all required fields"
+            }
+          </p>
+        </CardContent>
+      </Card>
       {/* Footer */}
       <div className="p-6 border-t border-gray-200 bg-gray-50">
         <div className="flex justify-end space-x-3">
