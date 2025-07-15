@@ -447,13 +447,9 @@ export default function PipelineDesigner() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {!isSidebarCollapsed && (
-        <div className="w-64 transition-all duration-300 ease-in-out">
-          <Sidebar />
-        </div>
-      )}
+      {!isSidebarCollapsed && <Sidebar />}
       
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -478,16 +474,14 @@ export default function PipelineDesigner() {
 
         <div className="flex-1 flex overflow-hidden">
           {showComponentLibrary && (
-            <div className="w-80 bg-white border-r border-gray-200 overflow-hidden flex-shrink-0">
-              <ComponentLibrary 
-                hasUnsavedChanges={hasUnsavedChanges}
-                onSavePrompt={() => handleSavePipeline()}
-              />
-            </div>
+            <ComponentLibrary 
+              hasUnsavedChanges={hasUnsavedChanges}
+              onSavePrompt={() => handleSavePipeline()}
+            />
           )}
           
           {/* Canvas Area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          <div className="flex-1 flex flex-col">
             {/* Canvas Toolbar */}
             <div className="bg-gray-100 border-b border-gray-200 p-4">
               <div className="flex items-center justify-between">

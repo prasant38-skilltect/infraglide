@@ -131,11 +131,9 @@ export default function MyPipelines() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      <div className="transition-all duration-300 ease-in-out">
-        <Sidebar />
-      </div>
+      <Sidebar />
       
-      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
+      <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
