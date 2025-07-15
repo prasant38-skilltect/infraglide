@@ -89,7 +89,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           <div>
             <Label className="text-xs font-medium text-gray-700">AWS Region *</Label>
             <Select
-              value={config.awsRegion || ""}
+              value={config.awsRegion || undefined}
               onValueChange={(value) => {
                 updateConfig("awsRegion", value);
                 updateConfig("zone", ""); // Reset zone when region changes
@@ -112,7 +112,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           <div>
             <Label className="text-xs font-medium text-gray-700">Zone *</Label>
             <Select
-              value={config.zone || ""}
+              value={config.zone || undefined}
               onValueChange={(value) => updateConfig("zone", value)}
               disabled={!config.awsRegion}
             >
@@ -160,7 +160,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           <div>
             <Label className="text-xs font-medium text-gray-700">Storage Type *</Label>
             <Select
-              value={config.storageType || ""}
+              value={config.storageType || undefined}
               onValueChange={(value) => updateConfig("storageType", value)}
             >
               <SelectTrigger className="mt-1">
