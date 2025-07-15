@@ -489,9 +489,9 @@ export default function PipelineDesigner() {
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col min-w-0">
             {/* Canvas Toolbar */}
-            <div className="bg-gray-100 border-b border-gray-200 p-4 overflow-x-auto">
-              <div className="flex items-center justify-between min-w-max">
-                <div className="flex items-center space-x-4 flex-shrink-0">
+            <div className="bg-gray-100 border-b border-gray-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">{pipelineName}</span>
@@ -509,7 +509,7 @@ export default function PipelineDesigner() {
                   </div>
                   
                   {/* Action Buttons */}
-                  <div className="flex items-center space-x-2 flex-shrink-0">
+                  <div className="flex items-center space-x-2">
                     <Button 
                       variant="outline" 
                       size="sm"
@@ -577,7 +577,7 @@ export default function PipelineDesigner() {
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2 flex-shrink-0 ml-4">
+                <div className="flex items-center space-x-2">
                   <Button
                     variant="ghost"
                     size="sm"
