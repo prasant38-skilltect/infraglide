@@ -6,9 +6,10 @@ interface SidebarProps {
   showPipelineMode?: boolean;
   onPipelineModeChange?: (enabled: boolean) => void;
   onProviderSelect?: (provider: string) => void;
+  isPipelineDesigner?: boolean;
 }
 
-export default function Sidebar({ showPipelineMode = false, onPipelineModeChange, onProviderSelect }: SidebarProps) {
+export default function Sidebar({ showPipelineMode = false, onPipelineModeChange, onProviderSelect, isPipelineDesigner = false }: SidebarProps) {
   const [location] = useLocation();
 
   const navigation = [
@@ -35,10 +36,11 @@ export default function Sidebar({ showPipelineMode = false, onPipelineModeChange
   };
 
   const handleNavigationClick = (item: any, event: React.MouseEvent) => {
-    if (item.isPipelineEntry && onPipelineModeChange) {
+    if (item.isPipelineEntry && isPipelineDesigner && onPipelineModeChange) {
       event.preventDefault();
       onPipelineModeChange(true);
     }
+    // For non-pipeline designer pages, let the Link handle navigation normally
   };
 
   const handleProviderClick = (provider: string) => {
@@ -76,7 +78,7 @@ export default function Sidebar({ showPipelineMode = false, onPipelineModeChange
             const Icon = item.icon;
             const isCurrentActive = isActive(item.href);
             
-            if (item.isPipelineEntry) {
+            if (item.isPipelineEntry && isPipelineDesigner) {
               return (
                 <div
                   key={item.name}
