@@ -355,23 +355,23 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
           <p className="text-sm text-gray-600 mt-1">Drag components to the canvas</p>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
+        <div className="flex-1 overflow-hidden">
+          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3 mx-4 mt-4 flex-shrink-0">
               <TabsTrigger value="aws">AWS</TabsTrigger>
               <TabsTrigger value="azure">Azure</TabsTrigger>
               <TabsTrigger value="gcp">GCP</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="aws" className="p-4 pt-4">
+            <TabsContent value="aws" className="p-4 pt-4 flex-1 overflow-y-auto">
               {renderComponents(awsComponents)}
             </TabsContent>
             
-            <TabsContent value="azure" className="p-4 pt-4">
+            <TabsContent value="azure" className="p-4 pt-4 flex-1 overflow-y-auto">
               {renderComponents(azureComponents)}
             </TabsContent>
             
-            <TabsContent value="gcp" className="p-4 pt-4">
+            <TabsContent value="gcp" className="p-4 pt-4 flex-1 overflow-y-auto">
               {renderComponents(gcpComponents)}
             </TabsContent>
           </Tabs>
