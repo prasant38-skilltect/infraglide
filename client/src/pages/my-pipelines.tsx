@@ -278,17 +278,19 @@ export default function MyPipelines() {
                                   <Button 
                                     variant="outline" 
                                     size="sm" 
-                                    onClick={() => handleImport()}
+                                    asChild
                                     className="flex-1 text-xs h-8"
                                   >
-                                    <Upload className="w-3 h-3 mr-1" />
-                                    Import
+                                    <Link href={`/pipeline-designer?id=${pipeline.id}`}>
+                                      <Eye className="w-3 h-3 mr-1" />
+                                      View
+                                    </Link>
                                   </Button>
                                   <Button 
-                                    variant="outline" 
+                                    variant="ghost" 
                                     size="sm" 
                                     onClick={() => handleDelete(pipeline.id)}
-                                    className="text-red-600 hover:text-red-700 hover:bg-red-50 text-xs h-8"
+                                    className="h-8 w-8 p-0 text-red-600"
                                   >
                                     <Trash2 className="w-3 h-3" />
                                   </Button>

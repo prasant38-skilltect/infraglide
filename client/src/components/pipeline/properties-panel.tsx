@@ -1,12 +1,13 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
-import { X, CheckCircle } from "lucide-react";
+import { X, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Node } from "reactflow";
 
@@ -29,13 +30,53 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
     onUpdateConfig(node.id, newConfig);
   };
 
+  // AWS Region and Storage Type dropdown options
+  const Aws_Region_Dropdown_options = [
+    { label: "US East (Ohio)", value: "us-east-2" },
+    { label: "US East (N. Virginia)", value: "us-east-1" },
+    { label: "US West (N. California)", value: "us-west-1" },
+  ];
+
+  const StorageType = [
+    { label: "General Purpose SSD", value: "gp2, gp3" },
+    { label: "Provisioned IOPS SSD", value: "io1, io2" },
+    { label: "Throughput-optimized HDD", value: "st1" },
+  ];
+
+  const getZonesByRegion = (region: string) => {
+    const zones = {
+      "us-east-1": ["us-east-1a", "us-east-1b", "us-east-1c"],
+      "us-east-2": ["us-east-2a", "us-east-2b", "us-east-2c"],
+      "us-west-1": ["us-west-1a", "us-west-1b", "us-west-1c"],
+    };
+    return zones[region as keyof typeof zones] || [];
+  };
+
+  const addLabel = () => {
+    const labels = config.labels || [];
+    updateConfig("labels", [...labels, { key: "", value: "" }]);
+  };
+
+  const updateLabel = (index: number, field: "key" | "value", value: string) => {
+    const labels = [...(config.labels || [])];
+    labels[index] = { ...labels[index], [field]: value };
+    updateConfig("labels", labels);
+  };
+
+  const removeLabel = (index: number) => {
+    const labels = [...(config.labels || [])];
+    labels.splice(index, 1);
+    updateConfig("labels", labels);
+  };
+
   const renderEC2Config = () => (
     <div className="space-y-6">
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
         <div className="space-y-4">
+          {/* Instance Name - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Instance Name</Label>
+            <Label className="text-xs font-medium text-gray-700">Instance Name *</Label>
             <Input
               value={config.instanceName || ""}
               onChange={(e) => updateConfig("instanceName", e.target.value)}
@@ -44,26 +85,53 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
             />
           </div>
           
+          {/* AWS Region - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Instance Type</Label>
+            <Label className="text-xs font-medium text-gray-700">AWS Region *</Label>
             <Select
-              value={config.instanceType || "t3.micro"}
-              onValueChange={(value) => updateConfig("instanceType", value)}
+              value={config.awsRegion || ""}
+              onValueChange={(value) => {
+                updateConfig("awsRegion", value);
+                updateConfig("zone", ""); // Reset zone when region changes
+              }}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue />
+                <SelectValue placeholder="Select AWS Region" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="t3.micro">t3.micro</SelectItem>
-                <SelectItem value="t3.small">t3.small</SelectItem>
-                <SelectItem value="t3.medium">t3.medium</SelectItem>
-                <SelectItem value="t3.large">t3.large</SelectItem>
+                {Aws_Region_Dropdown_options.map((region) => (
+                  <SelectItem key={region.value} value={region.value}>
+                    {region.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Zone - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">AMI ID</Label>
+            <Label className="text-xs font-medium text-gray-700">Zone *</Label>
+            <Select
+              value={config.zone || ""}
+              onValueChange={(value) => updateConfig("zone", value)}
+              disabled={!config.awsRegion}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select Zone" />
+              </SelectTrigger>
+              <SelectContent>
+                {getZonesByRegion(config.awsRegion || "").map((zone) => (
+                  <SelectItem key={zone} value={zone}>
+                    {zone}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* AMI ID - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">AMI ID *</Label>
             <Input
               value={config.amiId || ""}
               onChange={(e) => updateConfig("amiId", e.target.value)}
@@ -71,80 +139,175 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
               className="mt-1"
             />
           </div>
-        </div>
-      </div>
 
-      <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Security</h4>
-        <div className="space-y-4">
+          {/* Machine Type - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Security Group</Label>
-            <Select
-              value={config.securityGroup || ""}
-              onValueChange={(value) => updateConfig("securityGroup", value)}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select security group" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sg-web-server">sg-web-server</SelectItem>
-                <SelectItem value="sg-default">sg-default</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label className="text-xs font-medium text-gray-700">Key Pair</Label>
-            <Select
-              value={config.keyPair || ""}
-              onValueChange={(value) => updateConfig("keyPair", value)}
-            >
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="Select key pair" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="my-key-pair">my-key-pair</SelectItem>
-                <SelectItem value="production-keys">production-keys</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Advanced Settings</h4>
-        <div className="space-y-4">
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="monitoring"
-              checked={config.monitoring || false}
-              onCheckedChange={(checked) => updateConfig("monitoring", checked)}
-            />
-            <Label htmlFor="monitoring" className="text-sm text-gray-700">
-              Enable detailed monitoring
-            </Label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="autoScaling"
-              checked={config.autoScaling || false}
-              onCheckedChange={(checked) => updateConfig("autoScaling", checked)}
-            />
-            <Label htmlFor="autoScaling" className="text-sm text-gray-700">
-              Enable auto scaling
-            </Label>
-          </div>
-          
-          <div>
-            <Label className="text-xs font-medium text-gray-700">User Data Script</Label>
-            <Textarea
-              value={config.userData || ""}
-              onChange={(e) => updateConfig("userData", e.target.value)}
-              placeholder="#!/bin/bash"
-              rows={4}
+            <Label className="text-xs font-medium text-gray-700">Machine Type *</Label>
+            <Input
+              value={config.machineType || ""}
+              onChange={(e) => updateConfig("machineType", e.target.value)}
+              placeholder="t3.micro"
               className="mt-1"
             />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Storage Configuration</h4>
+        <div className="space-y-4">
+          {/* Storage Type - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Storage Type *</Label>
+            <Select
+              value={config.storageType || ""}
+              onValueChange={(value) => updateConfig("storageType", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select Storage Type" />
+              </SelectTrigger>
+              <SelectContent>
+                {StorageType.map((storage) => (
+                  <SelectItem key={storage.value} value={storage.value}>
+                    {storage.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Storage Size - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Storage Size (GB) *</Label>
+            <Input
+              value={config.storageSize || ""}
+              onChange={(e) => updateConfig("storageSize", e.target.value)}
+              placeholder="20"
+              type="number"
+              className="mt-1"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Network Configuration</h4>
+        <div className="space-y-4">
+          {/* Network - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Network *</Label>
+            <Input
+              value={config.network || ""}
+              onChange={(e) => updateConfig("network", e.target.value)}
+              placeholder="vpc-12345678"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Subnetwork - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Subnetwork *</Label>
+            <Input
+              value={config.subnetwork || ""}
+              onChange={(e) => updateConfig("subnetwork", e.target.value)}
+              placeholder="subnet-12345678"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Security Group - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Security Group *</Label>
+            <Input
+              value={config.securityGroup || ""}
+              onChange={(e) => updateConfig("securityGroup", e.target.value)}
+              placeholder="sg-12345678"
+              className="mt-1"
+            />
+          </div>
+
+          {/* IP Address Public - Radio Button (Default disabled) */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">IP Address Public</Label>
+            <RadioGroup
+              value={config.ipAddressPublic || "disabled"}
+              onValueChange={(value) => updateConfig("ipAddressPublic", value)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="disabled" id="ip-disabled" />
+                <Label htmlFor="ip-disabled" className="text-sm">Disabled</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="enabled" id="ip-enabled" />
+                <Label htmlFor="ip-enabled" className="text-sm">Enabled</Label>
+              </div>
+            </RadioGroup>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">Metadata</h4>
+        <div className="space-y-4">
+          {/* Tags - String, Text */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Tags</Label>
+            <Textarea
+              value={config.tags || ""}
+              onChange={(e) => updateConfig("tags", e.target.value)}
+              placeholder="Environment=Production, Team=Backend"
+              className="mt-1"
+              rows={2}
+            />
+            <p className="text-xs text-gray-500 mt-1">Comma-separated tags</p>
+          </div>
+
+          {/* Labels - Key-Value pair */}
+          <div>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-gray-700">Labels</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addLabel}
+                className="h-7 px-2"
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add Label
+              </Button>
+            </div>
+            <div className="space-y-2 mt-2">
+              {(config.labels || []).map((label: any, index: number) => (
+                <div key={index} className="flex items-center space-x-2">
+                  <Input
+                    value={label.key || ""}
+                    onChange={(e) => updateLabel(index, "key", e.target.value)}
+                    placeholder="Key"
+                    className="flex-1"
+                  />
+                  <Input
+                    value={label.value || ""}
+                    onChange={(e) => updateLabel(index, "value", e.target.value)}
+                    placeholder="Value"
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeLabel(index)}
+                    className="h-8 w-8 p-0 text-red-600"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </Button>
+                </div>
+              ))}
+              {(!config.labels || config.labels.length === 0) && (
+                <p className="text-xs text-gray-500">No labels added yet</p>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -306,7 +469,16 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   const isConfigurationValid = () => {
     switch (node.data.type) {
       case "ec2":
-        return config.instanceName && config.instanceType && config.amiId;
+        return config.instanceName && 
+               config.awsRegion && 
+               config.zone && 
+               config.amiId && 
+               config.machineType && 
+               config.storageType && 
+               config.storageSize && 
+               config.network && 
+               config.subnetwork && 
+               config.securityGroup;
       case "s3":
         return config.bucketName;
       case "rds":
