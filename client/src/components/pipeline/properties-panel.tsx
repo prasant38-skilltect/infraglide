@@ -704,6 +704,159 @@ export default function PropertiesPanel({
     </div>
   );
 
+  const renderVPCConfig = () => (
+    <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
+      <div>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          VPC Configuration
+        </h4>
+        <div className="space-y-4">
+          {/* AWS Region - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">AWS Region *</Label>
+            <Select
+              value={config.awsRegion}
+              onValueChange={(value) => {
+                console.log("VPC AWS Region selected:", value);
+                updateConfig("awsRegion", value);
+              }}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select AWS Region" />
+              </SelectTrigger>
+              <SelectContent>
+                {Aws_Region_Dropdown_options.map((region) => (
+                  <SelectItem key={region.value} value={region.value}>
+                    {region.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* VPC CIDR Block - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              VPC CIDR Block *
+            </Label>
+            <Input
+              value={config.vpcCidrBlock || ""}
+              onChange={(e) => updateConfig("vpcCidrBlock", e.target.value)}
+              placeholder="10.0.0.0/16"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Example: 10.0.0.0/16</p>
+          </div>
+
+          {/* CIDR Block for Public Subnet - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              CIDR Block for Public Subnet *
+            </Label>
+            <Input
+              value={config.publicSubnetCidr || ""}
+              onChange={(e) => updateConfig("publicSubnetCidr", e.target.value)}
+              placeholder="10.0.1.0/24"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Example: 10.0.1.0/24</p>
+          </div>
+
+          {/* CIDR Block for Private Subnet - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              CIDR Block for Private Subnet *
+            </Label>
+            <Input
+              value={config.privateSubnetCidr || ""}
+              onChange={(e) => updateConfig("privateSubnetCidr", e.target.value)}
+              placeholder="10.0.2.0/24"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Example: 10.0.2.0/24</p>
+          </div>
+
+          {/* Availability Zone for Public Subnet - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Availability Zone for Public Subnet *
+            </Label>
+            <Select
+              value={config.publicSubnetAZ}
+              onValueChange={(value) => updateConfig("publicSubnetAZ", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select availability zone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zone1">Zone 1</SelectItem>
+                <SelectItem value="zone2">Zone 2</SelectItem>
+                <SelectItem value="zone3">Zone 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Availability Zone for Private Subnet - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Availability Zone for Private Subnet *
+            </Label>
+            <Select
+              value={config.privateSubnetAZ}
+              onValueChange={(value) => updateConfig("privateSubnetAZ", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select availability zone" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="zone1">Zone 1</SelectItem>
+                <SelectItem value="zone2">Zone 2</SelectItem>
+                <SelectItem value="zone3">Zone 3</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* VPC Name - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">VPC Name *</Label>
+            <Input
+              value={config.vpcName || ""}
+              onChange={(e) => updateConfig("vpcName", e.target.value)}
+              placeholder="my-vpc"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Public Subnet Name - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Public Subnet Name *
+            </Label>
+            <Input
+              value={config.publicSubnetName || ""}
+              onChange={(e) => updateConfig("publicSubnetName", e.target.value)}
+              placeholder="public-subnet"
+              className="mt-1"
+            />
+          </div>
+
+          {/* Private Subnet Name - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Private Subnet Name *
+            </Label>
+            <Input
+              value={config.privateSubnetName || ""}
+              onChange={(e) => updateConfig("privateSubnetName", e.target.value)}
+              placeholder="private-subnet"
+              className="mt-1"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderDefaultConfig = () => (
     <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
       <div>
@@ -734,6 +887,8 @@ export default function PropertiesPanel({
         return renderS3Config();
       case "rds":
         return renderRDSConfig();
+      case "vpc":
+        return renderVPCConfig();
       default:
         return renderDefaultConfig();
     }
@@ -787,6 +942,18 @@ export default function PropertiesPanel({
           isPasswordValid &&
           config.dbSubnetGroupName?.trim() &&
           config.vpcSecurityGroupId?.trim()
+        );
+      case "vpc":
+        return (
+          config.awsRegion?.trim() &&
+          config.vpcCidrBlock?.trim() &&
+          config.publicSubnetCidr?.trim() &&
+          config.privateSubnetCidr?.trim() &&
+          config.publicSubnetAZ?.trim() &&
+          config.privateSubnetAZ?.trim() &&
+          config.vpcName?.trim() &&
+          config.publicSubnetName?.trim() &&
+          config.privateSubnetName?.trim()
         );
       default:
         return true;
@@ -906,6 +1073,29 @@ export default function PropertiesPanel({
                     
                     if (rdsMissingFields.length > 0) {
                       return `Missing required fields: ${rdsMissingFields.join(", ")}`;
+                    }
+                  }
+                  
+                  // Show which fields are missing for VPC
+                  if (node.data.type === "vpc") {
+                    const vpcRequiredFields = {
+                      awsRegion: config.awsRegion?.trim(),
+                      vpcCidrBlock: config.vpcCidrBlock?.trim(),
+                      publicSubnetCidr: config.publicSubnetCidr?.trim(),
+                      privateSubnetCidr: config.privateSubnetCidr?.trim(),
+                      publicSubnetAZ: config.publicSubnetAZ?.trim(),
+                      privateSubnetAZ: config.privateSubnetAZ?.trim(),
+                      vpcName: config.vpcName?.trim(),
+                      publicSubnetName: config.publicSubnetName?.trim(),
+                      privateSubnetName: config.privateSubnetName?.trim(),
+                    };
+                    
+                    const vpcMissingFields = Object.entries(vpcRequiredFields)
+                      .filter(([_, value]) => !value)
+                      .map(([key, _]) => key);
+                    
+                    if (vpcMissingFields.length > 0) {
+                      return `Missing required fields: ${vpcMissingFields.join(", ")}`;
                     }
                   }
                   
