@@ -86,27 +86,21 @@ export default function PipelineDesigner() {
       setPipelineRegion(pipeline.region);
       
       if (Array.isArray(pipeline.components)) {
-        const loadedNodes = pipeline.components.map((component: ComponentConfig) => {
-          const isValid = validateComponent(component);
-          return {
-            id: component.id,
-            type: "cloudComponent",
-            position: component.position,
-            data: {
-              type: component.type,
-              name: component.name,
-              config: component.config,
-              validationError: !isValid,
-            },
-          };
-        });
+        const loadedNodes = pipeline.components.map((component: ComponentConfig) => ({
+          id: component.id,
+          type: "cloudComponent",
+          position: component.position,
+          data: {
+            type: component.type,
+            name: component.name,
+            config: component.config,
+            validationError: false, // Don't show validation errors until validate is clicked
+          },
+        }));
         setNodes(loadedNodes);
         
-        // Set validation errors for loaded components
-        const errorNodes = loadedNodes
-          .filter(node => node.data.validationError)
-          .map(node => node.id);
-        setValidationErrors(new Set(errorNodes));
+        // Clear validation errors for loaded components
+        setValidationErrors(new Set());
       }
 
       if (Array.isArray(pipeline.connections)) {
@@ -226,7 +220,7 @@ export default function PipelineDesigner() {
           type,
           name: `${type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
           config: {},
-          validationError: true, // New nodes start with validation error since they're empty
+          validationError: false, // New nodes don't show validation error until validate is clicked
         },
       };
 
@@ -237,8 +231,6 @@ export default function PipelineDesigner() {
         return updatedNodes;
       });
       
-      // Add to validation errors since new nodes are empty
-      setValidationErrors(prev => new Set([...prev, newNode.id]));
       setHasUnsavedChanges(true);
     },
     [reactFlowInstance, setNodes, edges, pipelineName, pipelineRegion]
@@ -258,33 +250,7 @@ export default function PipelineDesigner() {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
-          const updatedNode = { ...node, data: { ...node.data, config } };
-          const isValid = validateComponent({
-            id: node.id,
-            type: node.data.type,
-            name: node.data.name,
-            config,
-            position: node.position
-          });
-          
-          // Update validation errors
-          setValidationErrors(prevErrors => {
-            const newErrors = new Set(prevErrors);
-            if (isValid) {
-              newErrors.delete(nodeId);
-            } else {
-              newErrors.add(nodeId);
-            }
-            return newErrors;
-          });
-          
-          return {
-            ...updatedNode,
-            data: {
-              ...updatedNode.data,
-              validationError: !isValid
-            }
-          };
+          return { ...node, data: { ...node.data, config } };
         }
         return node;
       })
@@ -301,14 +267,6 @@ export default function PipelineDesigner() {
     setNodes((nds) => nds.filter((node) => node.id !== nodeId));
     setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
     setSelectedNode(null);
-    
-    // Remove from validation errors
-    setValidationErrors(prev => {
-      const newErrors = new Set(prev);
-      newErrors.delete(nodeId);
-      return newErrors;
-    });
-    
     setHasUnsavedChanges(true);
   }, [setNodes, setEdges]);
 

@@ -128,13 +128,13 @@ Preferred communication style: Simple, everyday language.
 ### January 15, 2025
 - **Implemented Comprehensive Validation System**
   - Added validate functionality to check all components for mandatory field completion
-  - Implemented red border highlighting for nodes with missing mandatory fields
-  - Added validation error state management with real-time updates during configuration
+  - Implemented red border highlighting for nodes with missing mandatory fields (only shown on validate button click)
+  - Added validation error state management triggered by validate button
   - Created comprehensive validation logic for all component types (EC2, S3, RDS, VPC, Lambda, ALB)
   - Added validation error messages showing specific components needing attention
-  - New components automatically marked as invalid until properly configured
-  - Existing pipelines loaded with validation state based on current configuration
-  - Enhanced user experience with visual feedback and clear error messaging
+  - Components show normal borders until validate button is clicked
+  - Validation errors displayed only when user explicitly requests validation
+  - Enhanced user experience with on-demand validation feedback and clear error messaging
 
 - **Enhanced Pipeline Canvas with Arrow Edges**
   - Added directional arrow markers to all edge connections showing source-to-target flow
