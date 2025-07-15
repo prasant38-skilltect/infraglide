@@ -274,12 +274,20 @@ const gcpComponents = [
 interface ComponentLibraryProps {
   hasUnsavedChanges?: boolean;
   onSavePrompt?: () => void;
+  selectedProvider?: string | null;
 }
 
-export default function ComponentLibrary({ hasUnsavedChanges = false, onSavePrompt }: ComponentLibraryProps) {
-  const [selectedTab, setSelectedTab] = useState("aws");
+export default function ComponentLibrary({ hasUnsavedChanges = false, onSavePrompt, selectedProvider }: ComponentLibraryProps) {
+  const [selectedTab, setSelectedTab] = useState(selectedProvider || "aws");
   const [pendingTab, setPendingTab] = useState<string | null>(null);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
+
+  // Update selected tab when provider changes from sidebar
+  React.useEffect(() => {
+    if (selectedProvider && selectedProvider !== selectedTab) {
+      setSelectedTab(selectedProvider);
+    }
+  }, [selectedProvider]);
 
   const handleTabChange = (value: string) => {
     if (hasUnsavedChanges && selectedTab !== value) {
@@ -347,34 +355,53 @@ export default function ComponentLibrary({ hasUnsavedChanges = false, onSaveProm
     </div>
   );
 
+  const getProviderDisplayName = (provider: string) => {
+    switch (provider) {
+      case 'aws': return 'AWS';
+      case 'azure': return 'Azure';
+      case 'gcp': return 'GCP';
+      default: return provider.toUpperCase();
+    }
+  };
+
   return (
     <>
       <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Cloud Components</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {selectedProvider ? `${getProviderDisplayName(selectedProvider)} Components` : 'Cloud Components'}
+          </h3>
           <p className="text-sm text-gray-600 mt-1">Drag components to the canvas</p>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
-              <TabsTrigger value="aws">AWS</TabsTrigger>
-              <TabsTrigger value="azure">Azure</TabsTrigger>
-              <TabsTrigger value="gcp">GCP</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="aws" className="p-4 pt-4">
-              {renderComponents(awsComponents)}
-            </TabsContent>
-            
-            <TabsContent value="azure" className="p-4 pt-4">
-              {renderComponents(azureComponents)}
-            </TabsContent>
-            
-            <TabsContent value="gcp" className="p-4 pt-4">
-              {renderComponents(gcpComponents)}
-            </TabsContent>
-          </Tabs>
+          {selectedProvider ? (
+            <div className="p-4">
+              {selectedTab === "aws" && renderComponents(awsComponents)}
+              {selectedTab === "azure" && renderComponents(azureComponents)}
+              {selectedTab === "gcp" && renderComponents(gcpComponents)}
+            </div>
+          ) : (
+            <Tabs value={selectedTab} onValueChange={handleTabChange} className="w-full">
+              <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
+                <TabsTrigger value="aws">AWS</TabsTrigger>
+                <TabsTrigger value="azure">Azure</TabsTrigger>
+                <TabsTrigger value="gcp">GCP</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="aws" className="p-4 pt-4">
+                {renderComponents(awsComponents)}
+              </TabsContent>
+              
+              <TabsContent value="azure" className="p-4 pt-4">
+                {renderComponents(azureComponents)}
+              </TabsContent>
+              
+              <TabsContent value="gcp" className="p-4 pt-4">
+                {renderComponents(gcpComponents)}
+              </TabsContent>
+            </Tabs>
+          )}
         </div>
       </div>
 

@@ -25,7 +25,7 @@ import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Cloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -52,9 +52,10 @@ export default function PipelineDesigner() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showPipelineMode, setShowPipelineMode] = useState(false);
+  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -63,10 +64,19 @@ export default function PipelineDesigner() {
     return `newPipeline_${dateTime}`;
   };
 
-  // Always hide the sidebar when entering pipeline designer
-  useEffect(() => {
-    setIsSidebarCollapsed(true);
-  }, []);
+  // Handle provider selection from sidebar
+  const handleProviderSelect = (provider: string) => {
+    setSelectedProvider(provider);
+    setShowComponentLibrary(true);
+  };
+
+  // Handle pipeline mode toggle from sidebar
+  const handlePipelineModeChange = (enabled: boolean) => {
+    setShowPipelineMode(enabled);
+    if (!enabled) {
+      setSelectedProvider(null);
+    }
+  };
 
 
 
@@ -447,22 +457,17 @@ export default function PipelineDesigner() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {!isSidebarCollapsed && <Sidebar />}
+      <Sidebar 
+        showPipelineMode={showPipelineMode}
+        onPipelineModeChange={handlePipelineModeChange}
+        onProviderSelect={handleProviderSelect}
+      />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {isSidebarCollapsed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsSidebarCollapsed(false)}
-                >
-                  <Menu className="w-4 h-4" />
-                </Button>
-              )}
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
                 <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
@@ -474,10 +479,35 @@ export default function PipelineDesigner() {
 
         <div className="flex-1 flex overflow-hidden">
           {showComponentLibrary && (
-            <ComponentLibrary 
-              hasUnsavedChanges={hasUnsavedChanges}
-              onSavePrompt={() => handleSavePipeline()}
-            />
+            selectedProvider ? (
+              <ComponentLibrary 
+                hasUnsavedChanges={hasUnsavedChanges}
+                onSavePrompt={() => handleSavePipeline()}
+                selectedProvider={selectedProvider}
+              />
+            ) : (
+              <div className="w-80 bg-white border-r border-gray-200 flex flex-col items-center justify-center p-8">
+                <div className="text-center">
+                  <Cloud className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Cloud Provider</h3>
+                  <p className="text-sm text-gray-600 mb-4">Choose a cloud provider from the sidebar to start designing your infrastructure pipeline.</p>
+                  <div className="space-y-2 text-xs text-gray-500">
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                      <span>AWS</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <span>Azure</span>
+                    </div>
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                      <span>GCP</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
           )}
           
           {/* Canvas Area */}
@@ -614,16 +644,6 @@ export default function PipelineDesigner() {
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
-                  {!isSidebarCollapsed && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSidebarCollapsed(true)}
-                      title="Hide sidebar"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
                 </div>
               </div>
             </div>
