@@ -513,7 +513,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
       </div>
       
       {/* Content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
         <div className="space-y-6">
           {renderConfigForm()}
 
