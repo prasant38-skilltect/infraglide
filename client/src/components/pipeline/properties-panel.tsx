@@ -30,7 +30,7 @@ export default function PropertiesPanel({
 }: PropertiesPanelProps) {
   console.log("PropertiesPanel opened with node:", node);
   console.log("Initial node.data.config:", node.data.config);
-  
+
   const [config, setConfig] = useState(node.data.config || {});
 
   useEffect(() => {
@@ -121,7 +121,7 @@ export default function PropertiesPanel({
               onValueChange={(value) => {
                 console.log("option value:", value);
                 updateConfig("awsRegion", value);
-                updateConfig("zone", ""); // Reset zone when region changes
+                // updateConfig("zone", ""); // Reset zone when region changes
               }}
             >
               <SelectTrigger className="mt-1">
@@ -368,57 +368,92 @@ export default function PropertiesPanel({
           Basic Configuration
         </h4>
         <div className="space-y-4">
+          {/* AWS Region - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">
-              Bucket Name
-            </Label>
-            <Input
-              value={config.bucketName || ""}
-              onChange={(e) => updateConfig("bucketName", e.target.value)}
-              placeholder="my-bucket-name"
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs font-medium text-gray-700">
-              Storage Class
-            </Label>
+            <Label className="text-xs font-medium text-gray-700">AWS Region *</Label>
             <Select
-              value={config.storageClass || "STANDARD"}
-              onValueChange={(value) => updateConfig("storageClass", value)}
+              value={config.awsRegion}
+              onValueChange={(value) => {
+                console.log("S3 AWS Region selected:", value);
+                updateConfig("awsRegion", value);
+              }}
             >
               <SelectTrigger className="mt-1">
-                <SelectValue />
+                <SelectValue placeholder="Select AWS Region" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="STANDARD">Standard</SelectItem>
-                <SelectItem value="STANDARD_IA">Standard-IA</SelectItem>
-                <SelectItem value="GLACIER">Glacier</SelectItem>
+                {Aws_Region_Dropdown_options.map((region) => (
+                  <SelectItem key={region.value} value={region.value}>
+                    {region.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="versioning"
-              checked={config.versioning || false}
-              onCheckedChange={(checked) => updateConfig("versioning", checked)}
-            />
-            <Label htmlFor="versioning" className="text-sm text-gray-700">
-              Enable versioning
+          {/* Bucket Name - Mandatory */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">
+              Bucket Name (Globally Unique) *
             </Label>
+            <Input
+              value={config.bucketName || ""}
+              onChange={(e) => updateConfig("bucketName", e.target.value)}
+              placeholder="my-unique-bucket-name-123"
+              className="mt-1"
+            />
+            <p className="text-xs text-gray-500 mt-1">Must be globally unique across all AWS accounts</p>
+          </div>
+          
+          {/* Versioning - Radio Button (Default disabled) */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">Versioning</Label>
+            <RadioGroup
+              value={config.versioning || "disabled"}
+              onValueChange={(value) => updateConfig("versioning", value)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="disabled" id="versioning-disabled" />
+                <Label htmlFor="versioning-disabled" className="text-sm">Disabled</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="enabled" id="versioning-enabled" />
+                <Label htmlFor="versioning-enabled" className="text-sm">Enabled</Label>
+              </div>
+            </RadioGroup>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="publicRead"
-              checked={config.publicRead || false}
-              onCheckedChange={(checked) => updateConfig("publicRead", checked)}
+          {/* ACL - Radio Button (Public or Private) */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">Access Control List (ACL)</Label>
+            <RadioGroup
+              value={config.acl || "private"}
+              onValueChange={(value) => updateConfig("acl", value)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="private" id="acl-private" />
+                <Label htmlFor="acl-private" className="text-sm">Private</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="public" id="acl-public" />
+                <Label htmlFor="acl-public" className="text-sm">Public</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {/* Tags - Text Field */}
+          <div>
+            <Label className="text-xs font-medium text-gray-700">Tags</Label>
+            <Textarea
+              value={config.tags || ""}
+              onChange={(e) => updateConfig("tags", e.target.value)}
+              placeholder="Environment=Production, Team=Backend"
+              className="mt-1"
+              rows={2}
             />
-            <Label htmlFor="publicRead" className="text-sm text-gray-700">
-              Public read access
-            </Label>
+            <p className="text-xs text-gray-500 mt-1">Comma-separated tags</p>
           </div>
         </div>
       </div>
@@ -562,7 +597,7 @@ export default function PropertiesPanel({
           (value) => value && value.length > 0,
         );
       case "s3":
-        return config.bucketName?.trim();
+        return config.awsRegion?.trim() && config.bucketName?.trim();
       case "rds":
         return (
           config.dbIdentifier?.trim() &&
@@ -646,6 +681,20 @@ export default function PropertiesPanel({
 
                     if (missingFields.length > 0) {
                       return `Missing required fields: ${missingFields.join(", ")}`;
+                    }
+                  }
+                  // Show which fields are missing for S3
+                  if (node.data.type === "s3") {
+                    const s3RequiredFields = {
+                      awsRegion: config.awsRegion?.trim(),
+                      bucketName: config.bucketName?.trim(),
+                    };
+                    const s3MissingFields = Object.entries(s3RequiredFields)
+                      .filter(([_, value]) => !value)
+                      .map(([key, _]) => key);
+                    
+                    if (s3MissingFields.length > 0) {
+                      return `Missing required fields: ${s3MissingFields.join(", ")}`;
                     }
                   }
                   return "Please fill in all required fields";

@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 15, 2025
+- **Enhanced S3 Bucket Configuration**
+  - Added mandatory AWS Region dropdown using existing Aws_Region_Dropdown_options
+  - Updated Bucket Name field to be mandatory with globally unique requirement
+  - Changed Versioning from checkbox to radio button (Enabled/Disabled, default disabled)
+  - Added ACL configuration as radio button (Public/Private, default private)
+  - Added Tags text field for comma-separated tag management
+  - Updated validation logic to require both awsRegion and bucketName for S3 components
+  - Added specific field validation feedback for S3 configuration errors
+
+### January 15, 2025
 - **Enhanced Configuration Modal**
   - Added scrollbar to configure component popup for better navigation through all EC2 fields
   - Fixed AWS Region dropdown selection issue by using undefined instead of empty strings
