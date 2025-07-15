@@ -70,10 +70,10 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   };
 
   const renderEC2Config = () => (
-    <div className="space-y-6"
-      style={{maxHeight: "calc(100vh - 200px)"
-            }}
-      >
+    <div 
+      className="space-y-6"
+      style={{ maxHeight: "calc(100vh - 200px)" }}
+    >
       <div>
         <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
         <div className="space-y-4">
