@@ -447,9 +447,13 @@ export default function PipelineDesigner() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {!isSidebarCollapsed && <Sidebar />}
+      <div className={`transition-all duration-300 ease-in-out ${
+        isSidebarCollapsed ? 'w-0 -ml-64' : 'w-64 ml-0'
+      } overflow-hidden`}>
+        <Sidebar />
+      </div>
       
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
