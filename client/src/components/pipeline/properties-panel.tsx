@@ -462,20 +462,34 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   const isConfigurationValid = () => {
     switch (node.data.type) {
       case "ec2":
-        return config.instanceName && 
-               config.awsRegion && 
-               config.zone && 
-               config.amiId && 
-               config.machineType && 
-               config.storageType && 
-               config.storageSize && 
-               config.network && 
-               config.subnetwork && 
-               config.securityGroup;
+        const requiredFields = {
+          instanceName: config.instanceName?.trim(),
+          awsRegion: config.awsRegion?.trim(),
+          zone: config.zone?.trim(),
+          amiId: config.amiId?.trim(),
+          machineType: config.machineType?.trim(),
+          storageType: config.storageType?.trim(),
+          storageSize: config.storageSize?.trim(),
+          network: config.network?.trim(),
+          subnetwork: config.subnetwork?.trim(),
+          securityGroup: config.securityGroup?.trim()
+        };
+        
+        // Debug: Log missing fields and current config
+        const missingFields = Object.entries(requiredFields)
+          .filter(([_, value]) => !value)
+          .map(([key, _]) => key);
+        
+        if (missingFields.length > 0) {
+          console.log("Missing EC2 fields:", missingFields);
+          console.log("Current config:", config);
+        }
+        
+        return Object.values(requiredFields).every(value => value && value.length > 0);
       case "s3":
-        return config.bucketName;
+        return config.bucketName?.trim();
       case "rds":
-        return config.dbIdentifier && config.engine && config.instanceClass;
+        return config.dbIdentifier?.trim() && config.engine?.trim() && config.instanceClass?.trim();
       default:
         return true;
     }
@@ -522,7 +536,31 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           <p className={`text-xs mt-1 ${isConfigurationValid() ? "text-green-700" : "text-red-700"}`}>
             {isConfigurationValid() 
               ? "All required fields are properly configured"
-              : "Please fill in all required fields"
+              : (() => {
+                  // Show which fields are missing for EC2
+                  if (node.data.type === "ec2") {
+                    const requiredFields = {
+                      instanceName: config.instanceName?.trim(),
+                      awsRegion: config.awsRegion?.trim(),
+                      zone: config.zone?.trim(),
+                      amiId: config.amiId?.trim(),
+                      machineType: config.machineType?.trim(),
+                      storageType: config.storageType?.trim(),
+                      storageSize: config.storageSize?.trim(),
+                      network: config.network?.trim(),
+                      subnetwork: config.subnetwork?.trim(),
+                      securityGroup: config.securityGroup?.trim()
+                    };
+                    const missingFields = Object.entries(requiredFields)
+                      .filter(([_, value]) => !value)
+                      .map(([key, _]) => key);
+                    
+                    if (missingFields.length > 0) {
+                      return `Missing required fields: ${missingFields.join(", ")}`;
+                    }
+                  }
+                  return "Please fill in all required fields";
+                })()
             }
           </p>
         </CardContent>
@@ -534,7 +572,12 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
             Cancel
           </Button>
           <Button 
-            onClick={onClose}
+            onClick={() => {
+              if (isConfigurationValid()) {
+                onUpdateConfig(node.id, config);
+                onClose();
+              }
+            }}
             disabled={!isConfigurationValid()}
           >
             <CheckCircle className="w-4 h-4 mr-2" />
