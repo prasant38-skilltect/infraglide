@@ -4,7 +4,13 @@ import { X, CheckCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -17,17 +23,29 @@ interface PropertiesPanelProps {
   onClose: () => void;
 }
 
-export default function PropertiesPanel({ node, onUpdateConfig, onClose }: PropertiesPanelProps) {
+export default function PropertiesPanel({
+  node,
+  onUpdateConfig,
+  onClose,
+}: PropertiesPanelProps) {
+  console.log("PropertiesPanel opened with node:", node);
+  console.log("Initial node.data.config:", node.data.config);
+  
   const [config, setConfig] = useState(node.data.config || {});
 
   useEffect(() => {
+    console.log("useEffect triggered, node.data.config:", node.data.config);
     setConfig(node.data.config || {});
   }, [node]);
 
   const updateConfig = (key: string, value: any) => {
+    console.log(`updateConfig called: ${key} = ${value}`);
+    console.log("Current config before update:", config);
     const newConfig = { ...config, [key]: value };
+    console.log("newConfig after update:", newConfig);
     setConfig(newConfig);
     onUpdateConfig(node.id, newConfig);
+    console.log("Config state should be updated, current config:", config);
   };
 
   // AWS Region and Storage Type dropdown options
@@ -57,7 +75,11 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
     updateConfig("labels", [...labels, { key: "", value: "" }]);
   };
 
-  const updateLabel = (index: number, field: "key" | "value", value: string) => {
+  const updateLabel = (
+    index: number,
+    field: "key" | "value",
+    value: string,
+  ) => {
     const labels = [...(config.labels || [])];
     labels[index] = { ...labels[index], [field]: value };
     updateConfig("labels", labels);
@@ -70,16 +92,17 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   };
 
   const renderEC2Config = () => (
-    <div className="space-y-6"
-      style={{maxHeight: "calc(100vh - 550px)"
-            }}
-      >
+    <div className="space-y-6" style={{ maxHeight: "calc(100vh - 550px)" }}>
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Basic Configuration
+        </h4>
         <div className="space-y-4">
           {/* Instance Name - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Instance Name *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Instance Name *
+            </Label>
             <Input
               value={config.instanceName || ""}
               onChange={(e) => updateConfig("instanceName", e.target.value)}
@@ -87,13 +110,16 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
               className="mt-1"
             />
           </div>
-          
+
           {/* AWS Region - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">AWS Region *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              AWS Region *
+            </Label>
             <Select
-              value={config.awsRegion || undefined}
+              value={config.awsRegion}
               onValueChange={(value) => {
+                console.log("option value:", value);
                 updateConfig("awsRegion", value);
                 updateConfig("zone", ""); // Reset zone when region changes
               }}
@@ -124,7 +150,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* AMI ID - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">AMI ID *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              AMI ID *
+            </Label>
             <Input
               value={config.amiId || ""}
               onChange={(e) => updateConfig("amiId", e.target.value)}
@@ -135,7 +163,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* Machine Type - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Machine Type *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Machine Type *
+            </Label>
             <Input
               value={config.machineType || ""}
               onChange={(e) => updateConfig("machineType", e.target.value)}
@@ -147,11 +177,15 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
       </div>
 
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Storage Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Storage Configuration
+        </h4>
         <div className="space-y-4">
           {/* Storage Type - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Storage Type *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Storage Type *
+            </Label>
             <Select
               value={config.storageType || undefined}
               onValueChange={(value) => updateConfig("storageType", value)}
@@ -171,7 +205,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* Storage Size - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Storage Size (GB) *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Storage Size (GB) *
+            </Label>
             <Input
               value={config.storageSize || ""}
               onChange={(e) => updateConfig("storageSize", e.target.value)}
@@ -184,11 +220,15 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
       </div>
 
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Network Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Network Configuration
+        </h4>
         <div className="space-y-4">
           {/* Network - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Network *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Network *
+            </Label>
             <Input
               value={config.network || ""}
               onChange={(e) => updateConfig("network", e.target.value)}
@@ -199,7 +239,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* Subnetwork - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Subnetwork *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Subnetwork *
+            </Label>
             <Input
               value={config.subnetwork || ""}
               onChange={(e) => updateConfig("subnetwork", e.target.value)}
@@ -210,7 +252,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* Security Group - Mandatory */}
           <div>
-            <Label className="text-xs font-medium text-gray-700">Security Group *</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Security Group *
+            </Label>
             <Input
               value={config.securityGroup || ""}
               onChange={(e) => updateConfig("securityGroup", e.target.value)}
@@ -221,7 +265,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
 
           {/* IP Address Public - Radio Button (Default disabled) */}
           <div>
-            <Label className="text-xs font-medium text-gray-700 mb-2 block">IP Address Public</Label>
+            <Label className="text-xs font-medium text-gray-700 mb-2 block">
+              IP Address Public
+            </Label>
             <RadioGroup
               value={config.ipAddressPublic || "disabled"}
               onValueChange={(value) => updateConfig("ipAddressPublic", value)}
@@ -229,11 +275,15 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="disabled" id="ip-disabled" />
-                <Label htmlFor="ip-disabled" className="text-sm">Disabled</Label>
+                <Label htmlFor="ip-disabled" className="text-sm">
+                  Disabled
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="enabled" id="ip-enabled" />
-                <Label htmlFor="ip-enabled" className="text-sm">Enabled</Label>
+                <Label htmlFor="ip-enabled" className="text-sm">
+                  Enabled
+                </Label>
               </div>
             </RadioGroup>
           </div>
@@ -259,7 +309,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           {/* Labels - Key-Value pair */}
           <div>
             <div className="flex items-center justify-between">
-              <Label className="text-xs font-medium text-gray-700">Labels</Label>
+              <Label className="text-xs font-medium text-gray-700">
+                Labels
+              </Label>
               <Button
                 type="button"
                 variant="outline"
@@ -282,7 +334,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
                   />
                   <Input
                     value={label.value || ""}
-                    onChange={(e) => updateLabel(index, "value", e.target.value)}
+                    onChange={(e) =>
+                      updateLabel(index, "value", e.target.value)
+                    }
                     placeholder="Value"
                     className="flex-1"
                   />
@@ -310,10 +364,14 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   const renderS3Config = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Basic Configuration
+        </h4>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs font-medium text-gray-700">Bucket Name</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Bucket Name
+            </Label>
             <Input
               value={config.bucketName || ""}
               onChange={(e) => updateConfig("bucketName", e.target.value)}
@@ -321,9 +379,11 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
               className="mt-1"
             />
           </div>
-          
+
           <div>
-            <Label className="text-xs font-medium text-gray-700">Storage Class</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Storage Class
+            </Label>
             <Select
               value={config.storageClass || "STANDARD"}
               onValueChange={(value) => updateConfig("storageClass", value)}
@@ -368,10 +428,14 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   const renderRDSConfig = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Basic Configuration
+        </h4>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs font-medium text-gray-700">DB Instance Identifier</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              DB Instance Identifier
+            </Label>
             <Input
               value={config.dbIdentifier || ""}
               onChange={(e) => updateConfig("dbIdentifier", e.target.value)}
@@ -379,7 +443,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
               className="mt-1"
             />
           </div>
-          
+
           <div>
             <Label className="text-xs font-medium text-gray-700">Engine</Label>
             <Select
@@ -398,7 +462,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           </div>
 
           <div>
-            <Label className="text-xs font-medium text-gray-700">Instance Class</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Instance Class
+            </Label>
             <Select
               value={config.instanceClass || "db.t3.micro"}
               onValueChange={(value) => updateConfig("instanceClass", value)}
@@ -415,7 +481,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           </div>
 
           <div>
-            <Label className="text-xs font-medium text-gray-700">Allocated Storage (GB)</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Allocated Storage (GB)
+            </Label>
             <Input
               type="number"
               value={config.allocatedStorage || "20"}
@@ -431,10 +499,14 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
   const renderDefaultConfig = () => (
     <div className="space-y-6">
       <div>
-        <h4 className="text-sm font-medium text-gray-700 mb-3">Basic Configuration</h4>
+        <h4 className="text-sm font-medium text-gray-700 mb-3">
+          Basic Configuration
+        </h4>
         <div className="space-y-4">
           <div>
-            <Label className="text-xs font-medium text-gray-700">Resource Name</Label>
+            <Label className="text-xs font-medium text-gray-700">
+              Resource Name
+            </Label>
             <Input
               value={config.name || node.data.name}
               onChange={(e) => updateConfig("name", e.target.value)}
@@ -472,24 +544,31 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           storageSize: config.storageSize?.trim(),
           network: config.network?.trim(),
           subnetwork: config.subnetwork?.trim(),
-          securityGroup: config.securityGroup?.trim()
+          securityGroup: config.securityGroup?.trim(),
         };
-        
+
         // Debug: Log missing fields and current config
         const missingFields = Object.entries(requiredFields)
           .filter(([_, value]) => !value)
           .map(([key, _]) => key);
-        
+
         if (missingFields.length > 0) {
           console.log("Missing EC2 fields:", missingFields);
+          console.log("config.awsRegion", config.awsRegion);
           console.log("Current config:", config);
         }
-        
-        return Object.values(requiredFields).every(value => value && value.length > 0);
+
+        return Object.values(requiredFields).every(
+          (value) => value && value.length > 0,
+        );
       case "s3":
         return config.bucketName?.trim();
       case "rds":
-        return config.dbIdentifier?.trim() && config.engine?.trim() && config.instanceClass?.trim();
+        return (
+          config.dbIdentifier?.trim() &&
+          config.engine?.trim() &&
+          config.instanceClass?.trim()
+        );
       default:
         return true;
     }
@@ -507,7 +586,9 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
               </span>
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-gray-900">Configure Component</h3>
+              <h3 className="text-xl font-semibold text-gray-900">
+                Configure Component
+              </h3>
               <p className="text-sm text-gray-600">
                 {node.data.name} ({node.data.type.toUpperCase()})
               </p>
@@ -518,23 +599,31 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           </Button>
         </div>
       </div>
-      
+
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-        <div className="space-y-6">
-          {renderConfigForm()}
-        </div>
+        <div className="space-y-6">{renderConfigForm()}</div>
       </div>
-      <Card className={`${isConfigurationValid() ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+      <Card
+        className={`${isConfigurationValid() ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}
+      >
         <CardContent className="p-4">
           <div className="flex items-center">
-            <CheckCircle className={`w-5 h-5 mr-2 ${isConfigurationValid() ? "text-green-500" : "text-red-500"}`} />
-            <span className={`text-sm font-medium ${isConfigurationValid() ? "text-green-800" : "text-red-800"}`}>
-              {isConfigurationValid() ? "Configuration Valid" : "Configuration Incomplete"}
+            <CheckCircle
+              className={`w-5 h-5 mr-2 ${isConfigurationValid() ? "text-green-500" : "text-red-500"}`}
+            />
+            <span
+              className={`text-sm font-medium ${isConfigurationValid() ? "text-green-800" : "text-red-800"}`}
+            >
+              {isConfigurationValid()
+                ? "Configuration Valid"
+                : "Configuration Incomplete"}
             </span>
           </div>
-          <p className={`text-xs mt-1 ${isConfigurationValid() ? "text-green-700" : "text-red-700"}`}>
-            {isConfigurationValid() 
+          <p
+            className={`text-xs mt-1 ${isConfigurationValid() ? "text-green-700" : "text-red-700"}`}
+          >
+            {isConfigurationValid()
               ? "All required fields are properly configured"
               : (() => {
                   // Show which fields are missing for EC2
@@ -549,19 +638,18 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
                       storageSize: config.storageSize?.trim(),
                       network: config.network?.trim(),
                       subnetwork: config.subnetwork?.trim(),
-                      securityGroup: config.securityGroup?.trim()
+                      securityGroup: config.securityGroup?.trim(),
                     };
                     const missingFields = Object.entries(requiredFields)
                       .filter(([_, value]) => !value)
                       .map(([key, _]) => key);
-                    
+
                     if (missingFields.length > 0) {
                       return `Missing required fields: ${missingFields.join(", ")}`;
                     }
                   }
                   return "Please fill in all required fields";
-                })()
-            }
+                })()}
           </p>
         </CardContent>
       </Card>
@@ -571,7 +659,7 @@ export default function PropertiesPanel({ node, onUpdateConfig, onClose }: Prope
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               if (isConfigurationValid()) {
                 onUpdateConfig(node.id, config);
