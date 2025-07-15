@@ -68,6 +68,7 @@ export default function PipelineDesigner() {
   const handleProviderSelect = (provider: string) => {
     setSelectedProvider(provider);
     setShowComponentLibrary(true);
+    setShowPipelineMode(false); // Reset pipeline mode when provider is selected
   };
 
   // Handle pipeline mode toggle from sidebar
@@ -75,6 +76,7 @@ export default function PipelineDesigner() {
     setShowPipelineMode(enabled);
     if (!enabled) {
       setSelectedProvider(null);
+      setShowComponentLibrary(false);
     }
   };
 
@@ -479,36 +481,12 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {showComponentLibrary && (
-            selectedProvider ? (
-              <ComponentLibrary 
-                hasUnsavedChanges={hasUnsavedChanges}
-                onSavePrompt={() => handleSavePipeline()}
-                selectedProvider={selectedProvider}
-              />
-            ) : (
-              <div className="w-80 bg-white border-r border-gray-200 flex flex-col items-center justify-center p-8">
-                <div className="text-center">
-                  <Cloud className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">Select a Cloud Provider</h3>
-                  <p className="text-sm text-gray-600 mb-4">Choose a cloud provider from the sidebar to start designing your infrastructure pipeline.</p>
-                  <div className="space-y-2 text-xs text-gray-500">
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-                      <span>AWS</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      <span>Azure</span>
-                    </div>
-                    <div className="flex items-center justify-center space-x-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <span>GCP</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
+          {selectedProvider && showComponentLibrary && (
+            <ComponentLibrary 
+              hasUnsavedChanges={hasUnsavedChanges}
+              onSavePrompt={() => handleSavePipeline()}
+              selectedProvider={selectedProvider}
+            />
           )}
           
           {/* Canvas Area */}
@@ -637,57 +615,83 @@ export default function PipelineDesigner() {
                       Delete
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowComponentLibrary(!showComponentLibrary)}
-                    title={showComponentLibrary ? "Hide components" : "Show components"}
-                  >
-                    <Plus className="w-4 h-4" />
-                  </Button>
+                  {selectedProvider && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowComponentLibrary(!showComponentLibrary)}
+                      title={showComponentLibrary ? "Hide components" : "Show components"}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* React Flow Canvas */}
-            <div className="flex-1 bg-gray-50">
-              <ReactFlow
-                nodes={nodes}
-                edges={edges}
-                onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
-                onConnect={onConnect}
-                onInit={setReactFlowInstance}
-                onDrop={onDrop}
-                onDragOver={onDragOver}
-                onNodeClick={onNodeClick}
-                nodeTypes={nodeTypes}
-                fitView
-                className="bg-gray-50"
-                style={{
-                  backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
-                  backgroundSize: "20px 20px",
-                }}
-                connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
-                connectionLineType="smoothstep"
-                defaultEdgeOptions={{
-                  type: 'smoothstep',
-                  animated: true,
-                  style: {
-                    stroke: '#3b82f6',
-                    strokeWidth: 2,
-                  },
-                  markerEnd: {
-                    type: MarkerType.ArrowClosed,
-                    color: '#3b82f6',
-                    width: 20,
-                    height: 20,
-                  },
-                }}
-              >
-                <Controls />
-                <Background />
-              </ReactFlow>
+            <div className="flex-1 bg-gray-50 relative">
+              {selectedProvider ? (
+                <ReactFlow
+                  nodes={nodes}
+                  edges={edges}
+                  onNodesChange={onNodesChange}
+                  onEdgesChange={onEdgesChange}
+                  onConnect={onConnect}
+                  onInit={setReactFlowInstance}
+                  onDrop={onDrop}
+                  onDragOver={onDragOver}
+                  onNodeClick={onNodeClick}
+                  nodeTypes={nodeTypes}
+                  fitView
+                  className="bg-gray-50"
+                  style={{
+                    backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
+                    backgroundSize: "20px 20px",
+                  }}
+                  connectionLineStyle={{ stroke: '#3b82f6', strokeWidth: 2 }}
+                  connectionLineType="smoothstep"
+                  defaultEdgeOptions={{
+                    type: 'smoothstep',
+                    animated: true,
+                    style: {
+                      stroke: '#3b82f6',
+                      strokeWidth: 2,
+                    },
+                    markerEnd: {
+                      type: MarkerType.ArrowClosed,
+                      color: '#3b82f6',
+                      width: 20,
+                      height: 20,
+                    },
+                  }}
+                >
+                  <Controls />
+                  <Background />
+                </ReactFlow>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+                  <div className="text-center max-w-md">
+                    <Cloud className="w-24 h-24 text-gray-300 mx-auto mb-6" />
+                    <h3 className="text-2xl font-semibold text-gray-700 mb-3">Welcome to Pipeline Designer</h3>
+                    <p className="text-gray-500 mb-6">Click "Pipelines" in the sidebar to select a cloud provider and start building your infrastructure.</p>
+                    <div className="flex justify-center space-x-4 text-sm text-gray-400">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-orange-400 rounded-full"></div>
+                        <span>AWS</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-blue-400 rounded-full"></div>
+                        <span>Azure</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                        <span>GCP</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
