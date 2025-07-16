@@ -95,6 +95,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/pipelines/check-name/:name", async (req, res) => {
+    try {
+      const name = req.params.name;
+      const existingPipelines = await storage.getPipelinesByName(name);
+      const exists = existingPipelines.length > 0;
+      const latestVersion = exists ? Math.max(...existingPipelines.map(p => p.version)) : 0;
+      
+      res.json({ 
+        exists, 
+        latestVersion,
+        nextVersion: latestVersion + 1 
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check pipeline name" });
+    }
+  });
+
   app.post("/api/pipelines", async (req, res) => {
     try {
       const validatedData = insertPipelineSchema.parse(req.body);

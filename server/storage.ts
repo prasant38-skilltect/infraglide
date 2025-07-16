@@ -26,6 +26,7 @@ export interface IStorage {
   // Pipelines
   getPipelines(projectId?: number): Promise<Pipeline[]>;
   getPipeline(id: number): Promise<Pipeline | undefined>;
+  getPipelinesByName(name: string): Promise<Pipeline[]>;
   createPipeline(pipeline: InsertPipeline): Promise<Pipeline>;
   updatePipeline(id: number, pipeline: Partial<InsertPipeline>): Promise<Pipeline | undefined>;
   deletePipeline(id: number): Promise<boolean>;
@@ -116,6 +117,11 @@ export class MemStorage implements IStorage {
 
   async getPipeline(id: number): Promise<Pipeline | undefined> {
     return this.pipelines.get(id);
+  }
+
+  async getPipelinesByName(name: string): Promise<Pipeline[]> {
+    const allPipelines = Array.from(this.pipelines.values());
+    return allPipelines.filter(pipeline => pipeline.name === name);
   }
 
   async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {
@@ -278,6 +284,10 @@ export class DatabaseStorage implements IStorage {
   async getPipeline(id: number): Promise<Pipeline | undefined> {
     const [pipeline] = await db.select().from(pipelines).where(eq(pipelines.id, id));
     return pipeline || undefined;
+  }
+
+  async getPipelinesByName(name: string): Promise<Pipeline[]> {
+    return db.select().from(pipelines).where(eq(pipelines.name, name));
   }
 
   async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {

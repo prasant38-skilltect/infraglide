@@ -13,6 +13,7 @@ export const pipelines = pgTable("pipelines", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  version: integer("version").notNull().default(1),
   projectId: integer("project_id").references(() => projects.id),
   region: text("region").notNull().default("us-east-1"),
   components: jsonb("components").notNull().default([]),

@@ -22,6 +22,7 @@ import PropertiesPanel from "@/components/pipeline/properties-panel";
 
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
 import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
+import VersionConflictModal from "@/components/modals/version-conflict-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,6 +53,12 @@ export default function PipelineDesigner() {
 
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showVersionConflictModal, setShowVersionConflictModal] = useState(false);
+  const [conflictData, setConflictData] = useState<{
+    exists: boolean;
+    latestVersion: number;
+    nextVersion: number;
+  } | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
@@ -127,6 +134,13 @@ export default function PipelineDesigner() {
       setPipelineName(generatePipelineName());
     }
   }, [pipeline, setNodes, setEdges]);
+
+  const checkPipelineNameMutation = useMutation({
+    mutationFn: async (name: string) => {
+      const response = await apiRequest("GET", `/api/pipelines/check-name/${encodeURIComponent(name)}`);
+      return response.json();
+    },
+  });
 
   const savePipelineMutation = useMutation({
     mutationFn: async (pipelineData: any) => {
@@ -350,11 +364,88 @@ export default function PipelineDesigner() {
     return 'AWS';
   };
 
-  const handleSavePipeline = () => {
+  const handleSavePipeline = async () => {
+    // If editing existing pipeline, save directly
+    if (pipelineId) {
+      const pipelineData = {
+        name: pipelineName,
+        description: pipelineDescription,
+        region: pipelineRegion,
+        components: nodes.map((node) => ({
+          id: node.id,
+          type: node.data.type,
+          name: node.data.name,
+          position: node.position,
+          config: node.data.config || {},
+        })),
+        connections: edges.map((edge) => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          type: edge.type || 'default',
+        })),
+      };
+      savePipelineMutation.mutate(pipelineData);
+      return;
+    }
+
+    // For new pipelines, check name conflicts
+    try {
+      const checkResult = await checkPipelineNameMutation.mutateAsync(pipelineName);
+      
+      if (checkResult.exists) {
+        // Show conflict modal
+        setConflictData(checkResult);
+        setShowVersionConflictModal(true);
+      } else {
+        // No conflict, save directly with version 1
+        const pipelineData = {
+          name: pipelineName,
+          description: pipelineDescription,
+          region: pipelineRegion,
+          version: 1,
+          components: nodes.map((node) => ({
+            id: node.id,
+            type: node.data.type,
+            name: node.data.name,
+            position: node.position,
+            config: node.data.config || {},
+          })),
+          connections: edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            type: edge.type || 'default',
+          })),
+        };
+        savePipelineMutation.mutate(pipelineData);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to check pipeline name. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditPipeline = (name: string, description: string) => {
+    setPipelineName(name);
+    setPipelineDescription(description);
+  };
+
+  const handleEditName = () => {
+    setShowEditModal(true);
+  };
+
+  const handleSaveNewVersion = () => {
+    if (!conflictData) return;
+    
     const pipelineData = {
       name: pipelineName,
       description: pipelineDescription,
       region: pipelineRegion,
+      version: conflictData.nextVersion,
       components: nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
@@ -369,13 +460,8 @@ export default function PipelineDesigner() {
         type: edge.type || 'default',
       })),
     };
-
+    
     savePipelineMutation.mutate(pipelineData);
-  };
-
-  const handleEditPipeline = (name: string, description: string) => {
-    setPipelineName(name);
-    setPipelineDescription(description);
   };
 
   const handleDeployPipeline = (deploymentData: any) => {
@@ -640,6 +726,16 @@ export default function PipelineDesigner() {
         onSave={handleEditPipeline}
         initialName={pipelineName}
         initialDescription={pipelineDescription}
+      />
+
+      <VersionConflictModal
+        isOpen={showVersionConflictModal}
+        onClose={() => setShowVersionConflictModal(false)}
+        pipelineName={pipelineName}
+        latestVersion={conflictData?.latestVersion || 0}
+        nextVersion={conflictData?.nextVersion || 1}
+        onEditName={handleEditName}
+        onSaveNewVersion={handleSaveNewVersion}
       />
     </div>
   );

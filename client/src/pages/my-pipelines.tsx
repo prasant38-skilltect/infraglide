@@ -303,6 +303,11 @@ export default function MyPipelines() {
                             <div className="flex flex-col">
                               <span className="font-semibold text-gray-900">
                                 {pipeline.name}
+                                {pipeline.version > 1 && (
+                                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                    v{pipeline.version}
+                                  </span>
+                                )}
                               </span>
                               <span className="text-xs text-gray-500">
                                 ID: {pipeline.id}
