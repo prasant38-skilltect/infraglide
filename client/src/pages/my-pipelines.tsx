@@ -90,13 +90,13 @@ export default function MyPipelines() {
   };
 
   const toggleRowExpansion = (pipelineName: string) => {
-    const newExpandedRows = new Set(expandedRows);
-    if (newExpandedRows.has(pipelineName)) {
-      newExpandedRows.delete(pipelineName);
+    if (expandedRows.has(pipelineName)) {
+      // If clicking on the already expanded row, collapse it
+      setExpandedRows(new Set());
     } else {
-      newExpandedRows.add(pipelineName);
+      // Expand only the clicked row, collapse all others
+      setExpandedRows(new Set([pipelineName]));
     }
-    setExpandedRows(newExpandedRows);
   };
 
   const getCloudProvider = (pipeline: Pipeline) => {
