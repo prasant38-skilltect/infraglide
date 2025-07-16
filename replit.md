@@ -126,6 +126,18 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 16, 2025
+- **Redesigned My Pipelines Page with Table Format**
+  - Replaced expandable provider sections with comprehensive data table
+  - Added four main columns: Pipeline Name, Provider, Description, Created At
+  - Implemented full sorting functionality for all columns with visual indicators
+  - Added pagination support with 10 items per page by default
+  - Enhanced provider badges with color coding (AWS=orange, Azure=blue, GCP=green)
+  - Added pipeline ID display as secondary information
+  - Implemented smart pagination with ellipsis for large datasets
+  - Added "Showing X to Y of Z pipelines" counter
+  - Preserved existing export, import, and delete functionality
+  - Maintained responsive design with proper column widths
+
 - **Removed Auto-Save Functionality**
   - Eliminated automatic pipeline saving when dragging components to canvas
   - Removed auto-save trigger after adding components (1-second delay)

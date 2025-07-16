@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Upload, Trash2, Edit3, Eye, Plus, Layers, ChevronDown, ChevronRight } from "lucide-react";
+import { Download, Upload, Trash2, Edit3, Eye, Plus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 
 import Sidebar from "@/components/layout/sidebar";
@@ -9,26 +9,29 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { Pipeline } from "@shared/schema";
+
+type SortField = 'name' | 'provider' | 'description' | 'createdAt';
+type SortDirection = 'asc' | 'desc';
 
 export default function MyPipelines() {
   const { toast } = useToast();
-  const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({
-    AWS: true,
-    Azure: true,
-    GCP: true,
-  });
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
-
-  const toggleProvider = (provider: string) => {
-    setExpandedProviders(prev => ({
-      ...prev,
-      [provider]: !prev[provider]
-    }));
-  };
 
   const handleExport = (pipeline: Pipeline) => {
     const dataStr = JSON.stringify(pipeline, null, 2);
@@ -85,10 +88,6 @@ export default function MyPipelines() {
     });
   };
 
-  const getVersionName = (pipeline: Pipeline) => {
-    return `Version ${pipeline.id}`;
-  };
-
   const getCloudProvider = (pipeline: Pipeline) => {
     if (!Array.isArray(pipeline.components) || pipeline.components.length === 0) {
       return 'Unknown';
@@ -102,210 +101,326 @@ export default function MyPipelines() {
     return 'AWS';
   };
 
-  const groupPipelinesByProvider = (pipelines: Pipeline[]) => {
-    const groups = {
-      AWS: [] as Pipeline[],
-      Azure: [] as Pipeline[],
-      GCP: [] as Pipeline[]
-    };
-    
-    pipelines.forEach(pipeline => {
-      const provider = getCloudProvider(pipeline);
-      if (provider in groups) {
-        groups[provider as keyof typeof groups].push(pipeline);
-      }
-    });
-    
-    return groups;
-  };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) {
+      return <ChevronUp className="w-4 h-4 text-gray-400" />;
+    }
+    return sortDirection === 'asc' ? 
+      <ChevronUp className="w-4 h-4 text-gray-700" /> : 
+      <ChevronDown className="w-4 h-4 text-gray-700" />;
+  };
+
+  const sortedAndPaginatedPipelines = useMemo(() => {
+    // Sort pipelines
+    const sorted = [...pipelines].sort((a, b) => {
+      let aValue: string | number;
+      let bValue: string | number;
+
+      switch (sortField) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'provider':
+          aValue = getCloudProvider(a);
+          bValue = getCloudProvider(b);
+          break;
+        case 'description':
+          aValue = (a.description || '').toLowerCase();
+          bValue = (b.description || '').toLowerCase();
+          break;
+        case 'createdAt':
+          aValue = new Date(a.createdAt).getTime();
+          bValue = new Date(b.createdAt).getTime();
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+
+      if (sortDirection === 'asc') {
+        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+      } else {
+        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+      }
+    });
+
+    // Paginate
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    
+    return {
+      paginatedPipelines: sorted.slice(startIndex, endIndex),
+      totalPages: Math.ceil(sorted.length / itemsPerPage),
+      totalItems: sorted.length
+    };
+  }, [pipelines, sortField, sortDirection, currentPage, itemsPerPage]);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const getProviderBadgeColor = (provider: string) => {
+    switch (provider) {
+      case 'AWS':
+        return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'Azure':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'GCP':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen">
+        <Sidebar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading pipelines...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen">
       <Sidebar />
-      
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">My Pipelines</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage your saved pipeline versions</p>
+              <p className="text-sm text-gray-600 mt-1">
+                Manage and organize your cloud infrastructure pipelines
+              </p>
             </div>
             <div className="flex items-center space-x-3">
-              <Button onClick={handleImport} variant="outline">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleImport}
+              >
                 <Upload className="w-4 h-4 mr-2" />
-                Import Pipeline
+                Import
               </Button>
+              <Link href="/pipeline-designer">
+                <Button size="sm">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Pipeline
+                </Button>
+              </Link>
             </div>
           </div>
         </header>
 
-        {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          {isLoading ? (
-            <div className="space-y-6">
-              {['AWS', 'Azure', 'GCP'].map((provider) => (
-                <div key={provider} className="border border-gray-200 rounded-lg bg-white shadow-sm">
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        <ChevronDown className="w-5 h-5 text-gray-500 animate-pulse" />
-                        <span className={`w-3 h-3 rounded-full animate-pulse ${
-                          provider === 'AWS' ? 'bg-orange-300' : 
-                          provider === 'Azure' ? 'bg-blue-300' : 
-                          'bg-red-300'
-                        }`}></span>
-                      </div>
-                      <div className="h-5 bg-gray-200 rounded w-16 animate-pulse"></div>
-                      <div className="h-5 bg-gray-200 rounded w-12 animate-pulse"></div>
-                    </div>
-                  </div>
-                  <div className="border-t border-gray-200 p-4">
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                      {[...Array(4)].map((_, i) => (
-                        <Card key={i} className="animate-pulse">
-                          <CardHeader className="pb-2">
-                            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/2 mt-1"></div>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <div className="h-3 bg-gray-200 rounded w-2/3 mb-3"></div>
-                            <div className="flex space-x-1">
-                              <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                              <div className="h-8 bg-gray-200 rounded flex-1"></div>
-                              <div className="h-8 bg-gray-200 rounded w-8"></div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Pipeline Overview</CardTitle>
+              <CardDescription>
+                {sortedAndPaginatedPipelines.totalItems} total pipelines
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[300px]">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('name')}
+                          className="h-auto p-0 font-semibold justify-start"
+                        >
+                          Pipeline Name
+                          {getSortIcon('name')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-[120px]">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('provider')}
+                          className="h-auto p-0 font-semibold justify-start"
+                        >
+                          Provider
+                          {getSortIcon('provider')}
+                        </Button>
+                      </TableHead>
+                      <TableHead>
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('description')}
+                          className="h-auto p-0 font-semibold justify-start"
+                        >
+                          Description
+                          {getSortIcon('description')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-[180px]">
+                        <Button
+                          variant="ghost"
+                          onClick={() => handleSort('createdAt')}
+                          className="h-auto p-0 font-semibold justify-start"
+                        >
+                          Created At
+                          {getSortIcon('createdAt')}
+                        </Button>
+                      </TableHead>
+                      <TableHead className="w-[120px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedAndPaginatedPipelines.paginatedPipelines.map((pipeline) => {
+                      const provider = getCloudProvider(pipeline);
+                      return (
+                        <TableRow key={pipeline.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex flex-col">
+                              <span className="font-semibold text-gray-900">
+                                {pipeline.name}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                ID: {pipeline.id}
+                              </span>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : pipelines.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Layers className="w-8 h-8 text-gray-400" />
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={getProviderBadgeColor(provider)}
+                            >
+                              {provider}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-700">
+                              {pipeline.description || "No description"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-600">
+                              {formatDate(pipeline.createdAt)}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleExport(pipeline)}
+                                title="Export pipeline"
+                              >
+                                <Download className="w-4 h-4" />
+                              </Button>
+                              <Link href={`/pipeline-designer?id=${pipeline.id}`}>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  title="Edit pipeline"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                </Button>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(pipeline.id)}
+                                title="Delete pipeline"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No pipelines yet</h3>
-              <p className="text-gray-600 mb-6">Drag and drop components on the canvas to automatically save pipelines</p>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {Object.entries(groupPipelinesByProvider(pipelines)).map(([provider, providerPipelines]) => (
-                <div key={provider} className="border border-gray-200 rounded-lg bg-white shadow-sm">
-                  {/* Provider Header */}
-                  <div 
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                    onClick={() => toggleProvider(provider)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        {expandedProviders[provider] ? (
-                          <ChevronDown className="w-5 h-5 text-gray-500" />
-                        ) : (
-                          <ChevronRight className="w-5 h-5 text-gray-500" />
-                        )}
-                        <span className={`w-3 h-3 rounded-full ${
-                          provider === 'AWS' ? 'bg-orange-500' : 
-                          provider === 'Azure' ? 'bg-blue-500' : 
-                          'bg-red-500'
-                        }`}></span>
-                      </div>
-                      <h2 className="text-lg font-semibold text-gray-900">{provider}</h2>
-                      <Badge variant="secondary" className="ml-2">
-                        {providerPipelines.length} {providerPipelines.length === 1 ? 'pipeline' : 'pipelines'}
-                      </Badge>
-                    </div>
-                  </div>
 
-                  {/* Provider Content */}
-                  {expandedProviders[provider] && (
-                    <div className="border-t border-gray-200 p-4">
-                      {providerPipelines.length === 0 ? (
-                        <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                          <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
-                            <Layers className="w-6 h-6 text-gray-400" />
-                          </div>
-                          <p className="text-gray-500 text-sm">No {provider} pipelines yet</p>
-                          <p className="text-gray-400 text-xs mt-1">
-                            Drag {provider} components to the canvas to create pipelines
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                          {providerPipelines.map((pipeline) => (
-                            <Card key={pipeline.id} className="hover:shadow-md transition-shadow">
-                              <CardHeader className="pb-2">
-                                <div className="flex items-start justify-between">
-                                  <div className="flex-1 min-w-0">
-                                    <CardTitle className="text-sm font-medium truncate">
-                                      {getVersionName(pipeline)}
-                                    </CardTitle>
-                                    <CardDescription className="text-xs mt-1">
-                                      {pipeline.components && Array.isArray(pipeline.components) ? 
-                                        `${pipeline.components.length} components` : 
-                                        "No components"}
-                                    </CardDescription>
-                                  </div>
-                                </div>
-                              </CardHeader>
-                              <CardContent className="pt-0">
-                                <div className="text-xs text-gray-500 mb-3">
-                                  {pipeline.createdAt ? formatDate(pipeline.createdAt) : 'N/A'}
-                                </div>
-                                <div className="flex space-x-1">
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    onClick={() => handleExport(pipeline)}
-                                    className="flex-1 text-xs h-8"
-                                  >
-                                    <Download className="w-3 h-3 mr-1" />
-                                    Export
-                                  </Button>
-                                  <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    asChild
-                                    className="flex-1 text-xs h-8"
-                                  >
-                                    <Link href={`/pipeline-designer?id=${pipeline.id}`}>
-                                      <Eye className="w-3 h-3 mr-1" />
-                                      View
-                                    </Link>
-                                  </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    onClick={() => handleDelete(pipeline.id)}
-                                    className="h-8 w-8 p-0 text-red-600"
-                                  >
-                                    <Trash2 className="w-3 h-3" />
-                                  </Button>
-                                </div>
-                              </CardContent>
-                            </Card>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+              {/* Pagination */}
+              <div className="flex items-center justify-between mt-4">
+                <div className="flex items-center space-x-2 text-sm text-gray-600">
+                  <span>
+                    Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+                    {Math.min(currentPage * itemsPerPage, sortedAndPaginatedPipelines.totalItems)} of{' '}
+                    {sortedAndPaginatedPipelines.totalItems} pipelines
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </Button>
+                  
+                  {/* Page numbers */}
+                  {Array.from({ length: sortedAndPaginatedPipelines.totalPages }, (_, i) => i + 1)
+                    .filter(page => 
+                      page === 1 || 
+                      page === sortedAndPaginatedPipelines.totalPages || 
+                      Math.abs(page - currentPage) <= 1
+                    )
+                    .map((page, index, array) => {
+                      const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                      return (
+                        <React.Fragment key={page}>
+                          {showEllipsis && (
+                            <span className="px-2 text-gray-400">...</span>
+                          )}
+                          <Button
+                            variant={currentPage === page ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => handlePageChange(page)}
+                          >
+                            {page}
+                          </Button>
+                        </React.Fragment>
+                      );
+                    })}
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === sortedAndPaginatedPipelines.totalPages}
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
