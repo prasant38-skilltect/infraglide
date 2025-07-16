@@ -224,16 +224,11 @@ export default function PipelineDesigner() {
         },
       };
 
-      setNodes((nds) => {
-        const updatedNodes = nds.concat(newNode);
-        // Auto-save after adding component
-        setTimeout(() => autoSavePipeline(updatedNodes, edges), 1000);
-        return updatedNodes;
-      });
+      setNodes((nds) => nds.concat(newNode));
       
       setHasUnsavedChanges(true);
     },
-    [reactFlowInstance, setNodes, edges, pipelineName, pipelineRegion]
+    [reactFlowInstance, setNodes]
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -342,34 +337,7 @@ export default function PipelineDesigner() {
     return () => window.removeEventListener('deleteNode', handleDeleteEvent as EventListener);
   }, [handleDeleteNode]);
 
-  const autoSavePipeline = (currentNodes: Node[], currentEdges: any[]) => {
-    if (currentNodes.length === 0) return; // Don't save empty pipelines
-    
-    const cloudProvider = getCloudProvider(currentNodes);
-    const versionNumber = Date.now(); // Use timestamp for unique versions
-    
-    const pipelineData = {
-      name: `${cloudProvider}_Pipeline_${versionNumber}`,
-      description: `Auto-saved ${cloudProvider} pipeline - ${new Date().toLocaleString()}`,
-      region: pipelineRegion,
-      components: currentNodes.map((node) => ({
-        id: node.id,
-        type: node.data.type,
-        name: node.data.name,
-        position: node.position,
-        config: node.data.config || {},
-      })),
-      connections: currentEdges.map((edge) => ({
-        id: edge.id,
-        source: edge.source,
-        target: edge.target,
-        type: edge.type || 'default',
-      })),
-    };
 
-    // Use the mutation to save pipeline
-    savePipelineMutation.mutate(pipelineData);
-  };
 
   const getCloudProvider = (nodes: Node[]) => {
     if (!nodes || nodes.length === 0) return 'Unknown';
@@ -465,10 +433,7 @@ export default function PipelineDesigner() {
 
         <div className="flex-1 flex overflow-hidden">
           {showComponentLibrary && (
-            <ComponentLibrary 
-              hasUnsavedChanges={hasUnsavedChanges}
-              onSavePrompt={() => handleSavePipeline()}
-            />
+            <ComponentLibrary />
           )}
           
           {/* Canvas Area */}
@@ -538,10 +503,11 @@ export default function PipelineDesigner() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => toast({ title: "Create", description: "Create functionality coming soon" })}
+                      onClick={handleSavePipeline}
+                      disabled={savePipelineMutation.isPending}
                     >
                       <Plus className="w-4 h-4 mr-1" />
-                      Create
+                      {savePipelineMutation.isPending ? "Creating..." : "Create"}
                     </Button>
                     <Button 
                       variant="outline" 

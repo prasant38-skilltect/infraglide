@@ -125,6 +125,16 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 16, 2025
+- **Removed Auto-Save Functionality**
+  - Eliminated automatic pipeline saving when dragging components to canvas
+  - Removed auto-save trigger after adding components (1-second delay)
+  - Simplified ComponentLibrary to remove unsaved changes handling
+  - Removed save prompt dialogs when switching between cloud provider tabs
+  - Updated Create button to be the only way to save pipelines manually
+  - Create button now shows loading state during save operation
+  - Pipeline saving only occurs when user explicitly clicks Create button
+
 ### January 15, 2025
 - **Implemented Comprehensive Validation System**
   - Added validate functionality to check all components for mandatory field completion
