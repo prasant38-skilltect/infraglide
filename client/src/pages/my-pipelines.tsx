@@ -28,6 +28,7 @@ export default function MyPipelines() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -88,6 +89,16 @@ export default function MyPipelines() {
     });
   };
 
+  const toggleRowExpansion = (pipelineName: string) => {
+    const newExpandedRows = new Set(expandedRows);
+    if (newExpandedRows.has(pipelineName)) {
+      newExpandedRows.delete(pipelineName);
+    } else {
+      newExpandedRows.add(pipelineName);
+    }
+    setExpandedRows(newExpandedRows);
+  };
+
   const getCloudProvider = (pipeline: Pipeline) => {
     if (!Array.isArray(pipeline.components) || pipeline.components.length === 0) {
       return 'Unknown';
@@ -130,9 +141,35 @@ export default function MyPipelines() {
       <ChevronDown className="w-4 h-4 text-gray-700" />;
   };
 
+  const groupedPipelines = useMemo(() => {
+    // Group pipelines by name
+    const grouped = pipelines.reduce((acc, pipeline) => {
+      if (!acc[pipeline.name]) {
+        acc[pipeline.name] = [];
+      }
+      acc[pipeline.name].push(pipeline);
+      return acc;
+    }, {} as Record<string, Pipeline[]>);
+
+    // Sort versions within each group (highest version first)
+    Object.keys(grouped).forEach(name => {
+      grouped[name].sort((a, b) => b.version - a.version);
+    });
+
+    return grouped;
+  }, [pipelines]);
+
   const sortedAndPaginatedPipelines = useMemo(() => {
-    // Sort pipelines
-    const sorted = [...pipelines].sort((a, b) => {
+    // Get the main pipeline (latest version) for each group for sorting
+    const mainPipelines = Object.entries(groupedPipelines).map(([name, versions]) => ({
+      name,
+      pipeline: versions[0], // Latest version
+      versions,
+      totalVersions: versions.length
+    }));
+
+    // Sort main pipelines
+    const sorted = mainPipelines.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 
@@ -142,16 +179,16 @@ export default function MyPipelines() {
           bValue = b.name.toLowerCase();
           break;
         case 'provider':
-          aValue = getCloudProvider(a);
-          bValue = getCloudProvider(b);
+          aValue = getCloudProvider(a.pipeline);
+          bValue = getCloudProvider(b.pipeline);
           break;
         case 'description':
-          aValue = (a.description || '').toLowerCase();
-          bValue = (b.description || '').toLowerCase();
+          aValue = (a.pipeline.description || '').toLowerCase();
+          bValue = (b.pipeline.description || '').toLowerCase();
           break;
         case 'createdAt':
-          aValue = new Date(a.createdAt).getTime();
-          bValue = new Date(b.createdAt).getTime();
+          aValue = new Date(a.pipeline.createdAt).getTime();
+          bValue = new Date(b.pipeline.createdAt).getTime();
           break;
         default:
           aValue = a.name.toLowerCase();
@@ -170,11 +207,11 @@ export default function MyPipelines() {
     const endIndex = startIndex + itemsPerPage;
     
     return {
-      paginatedPipelines: sorted.slice(startIndex, endIndex),
+      paginatedGroups: sorted.slice(startIndex, endIndex),
       totalPages: Math.ceil(sorted.length / itemsPerPage),
       totalItems: sorted.length
     };
-  }, [pipelines, sortField, sortDirection, currentPage, itemsPerPage]);
+  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -291,77 +328,126 @@ export default function MyPipelines() {
                           {getSortIcon('createdAt')}
                         </Button>
                       </TableHead>
-                      <TableHead className="w-[120px]">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedPipelines.paginatedPipelines.map((pipeline) => {
+                    {sortedAndPaginatedPipelines.paginatedGroups.map((group) => {
+                      const { name, pipeline, versions, totalVersions } = group;
                       const provider = getCloudProvider(pipeline);
+                      const isExpanded = expandedRows.has(name);
+                      
                       return (
-                        <TableRow key={pipeline.id}>
-                          <TableCell className="font-medium">
-                            <div className="flex flex-col">
-                              <span className="font-semibold text-gray-900">
-                                {pipeline.name}
-                                {pipeline.version > 1 && (
-                                  <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                    v{pipeline.version}
-                                  </span>
-                                )}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                ID: {pipeline.id}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={getProviderBadgeColor(provider)}
-                            >
-                              {provider}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-gray-700">
-                              {pipeline.description || "No description"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-gray-600">
-                              {formatDate(pipeline.createdAt)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleExport(pipeline)}
-                                title="Export pipeline"
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                              <Link href={`/pipeline-designer?id=${pipeline.id}`}>
+                        <React.Fragment key={name}>
+                          {/* Main row */}
+                          <TableRow 
+                            className="cursor-pointer hover:bg-gray-50"
+                            onClick={() => toggleRowExpansion(name)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center space-x-2">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  title="Edit pipeline"
+                                  className="p-1 h-6 w-6"
                                 >
-                                  <Edit3 className="w-4 h-4" />
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-4 h-4" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4" />
+                                  )}
                                 </Button>
-                              </Link>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDelete(pipeline.id)}
-                                title="Delete pipeline"
+                                <div className="flex flex-col">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-semibold text-gray-900">
+                                      {name}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                      {totalVersions} version{totalVersions > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-500">
+                                    Latest: v{pipeline.version} (ID: {pipeline.id})
+                                  </span>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={getProviderBadgeColor(provider)}
                               >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                                {provider}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-700">
+                                {pipeline.description || "No description"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-600">
+                                {formatDate(pipeline.createdAt)}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                          
+                          {/* Expanded version rows */}
+                          {isExpanded && versions.map((version) => (
+                            <TableRow key={version.id} className="bg-gray-50">
+                              <TableCell className="pl-12">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-gray-800">
+                                      Version {version.version}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      ID: {version.id} • Created: {formatDate(version.createdAt)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center space-x-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleExport(version);
+                                      }}
+                                      className="h-8 px-2"
+                                    >
+                                      <Download className="w-3 h-3 mr-1" />
+                                      Export
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(version.id);
+                                      }}
+                                      className="h-8 px-2 text-red-600 hover:text-red-800"
+                                    >
+                                      <Trash2 className="w-3 h-3 mr-1" />
+                                      Delete
+                                    </Button>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-xs text-gray-500">v{version.version}</span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-gray-600 text-sm">
+                                  {version.description || "No description"}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-gray-500 text-sm">
+                                  {formatDate(version.createdAt)}
+                                </span>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>
