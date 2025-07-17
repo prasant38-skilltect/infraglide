@@ -29,7 +29,7 @@ export default function Sidebar() {
           <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
             <Cloud className="text-white w-5 h-5" />
           </div>
-          <h1 className="text-xl font-bold text-gray-900">CloudFlow</h1>
+          <h1 className="text-xl font-bold text-gray-900">InfraGlide</h1>
         </div>
       </div>
 

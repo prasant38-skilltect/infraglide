@@ -1,8 +1,8 @@
-# CloudFlow - AWS Infrastructure Pipeline Designer
+# InfraGlide - AWS Infrastructure Pipeline Designer
 
 ## Overview
 
-CloudFlow is a full-stack web application for designing and managing AWS infrastructure pipelines through a visual drag-and-drop interface. The application allows users to create, configure, and deploy AWS infrastructure components like EC2 instances, S3 buckets, RDS databases, Lambda functions, and more through an intuitive visual canvas.
+InfraGlide is a full-stack web application for designing and managing AWS infrastructure pipelines through a visual drag-and-drop interface. The application allows users to create, configure, and deploy AWS infrastructure components like EC2 instances, S3 buckets, RDS databases, Lambda functions, and more through an intuitive visual canvas.
 
 ## User Preferences
 
@@ -124,6 +124,13 @@ Preferred communication style: Simple, everyday language.
 - Optimistic updates improve perceived performance
 
 ## Recent Changes
+
+### January 17, 2025
+- **Rebranded Project Name from CloudFlow to InfraGlide**
+  - Updated project title in HTML head tag and sidebar branding
+  - Updated documentation files (replit.md, SETUP.md) with new project name
+  - Changed visual branding throughout the application interface
+  - Maintained all existing functionality while updating project identity
 
 ### January 16, 2025
 - **Redesigned My Pipelines Page with Table Format**

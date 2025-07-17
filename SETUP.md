@@ -1,4 +1,4 @@
-# CloudFlow - Project Setup Guide
+# InfraGlide - Project Setup Guide
 
 ## Prerequisites
 
