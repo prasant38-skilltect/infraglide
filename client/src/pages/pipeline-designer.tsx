@@ -755,6 +755,76 @@ export default function PipelineDesigner() {
     );
   };
 
+
+
+  const handleExportPipeline = async () => {
+    try {
+      // Capture canvas snapshot
+      const snapshot = await captureCanvasSnapshot();
+
+      // Convert nodes to ComponentConfig format
+      const components = nodes.map((node) => ({
+        id: node.id,
+        type: node.data.type,
+        name: node.data.name || node.data.type,
+        position: node.position,
+        config: node.data.config || {},
+      }));
+
+      // Convert edges to connection format
+      const connections = edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type || "default",
+      }));
+
+      // Create pipeline object matching database schema
+      const pipelineData = {
+        id: null, // Will be set when saved to database
+        name: pipelineName || "",
+        description: pipelineDescription || "",
+        version: 1,
+        projectId: null,
+        region: pipelineRegion || "",
+        components: components,
+        connections: connections,
+        snapshot: snapshot || "",
+        credentialName: "",
+        credentialUsername: "",
+        credentialPassword: "",
+        isTemplate: false,
+        status: "draft",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Create and download JSON file
+      const dataStr = JSON.stringify(pipelineData, null, 2);
+      const dataUri =
+        "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+      const exportFileDefaultName = `${(pipelineName || "pipeline").replace(/\s+/g, "_")}.json`;
+
+      const linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
+
+      toast({
+        title: "Pipeline exported",
+        description: `${pipelineName || "Pipeline"} has been exported successfully.`,
+      });
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast({
+        title: "Export failed",
+        description: "Failed to export pipeline. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       {!isSidebarCollapsed && <Sidebar />}
@@ -832,12 +902,7 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Export",
-                          description: "Export functionality coming soon",
-                        })
-                      }
+                      onClick={handleExportPipeline}
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export
