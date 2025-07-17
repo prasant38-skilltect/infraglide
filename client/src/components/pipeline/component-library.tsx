@@ -16,6 +16,8 @@ import {
 import * as React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ProviderSwitchModal from "@/components/modals/provider-switch-modal";
+import { Node } from "reactflow";
 
 
 const awsComponents = [
@@ -276,14 +278,48 @@ const gcpComponents = [
   },
 ];
 
-interface ComponentLibraryProps {}
+interface ComponentLibraryProps {
+  nodes?: Node[];
+  onClearCanvas?: () => void;
+}
 
-export default function ComponentLibrary({}: ComponentLibraryProps) {
+export default function ComponentLibrary({ nodes = [], onClearCanvas }: ComponentLibraryProps) {
   const [selectedTab, setSelectedTab] = useState("aws");
+  const [showProviderSwitchModal, setShowProviderSwitchModal] = useState(false);
+  const [targetProvider, setTargetProvider] = useState("");
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
     event.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleTabChange = (newTab: string) => {
+    // Check if canvas is empty (no nodes)
+    if (nodes.length === 0) {
+      // Canvas is empty, allow switching
+      setSelectedTab(newTab);
+      return;
+    }
+
+    // Canvas has components, show confirmation modal
+    setTargetProvider(newTab);
+    setShowProviderSwitchModal(true);
+  };
+
+  const handleConfirmSwitch = () => {
+    setSelectedTab(targetProvider);
+    setShowProviderSwitchModal(false);
+    setTargetProvider("");
+    
+    // Clear the canvas when switching providers
+    if (onClearCanvas) {
+      onClearCanvas();
+    }
+  };
+
+  const handleCancelSwitch = () => {
+    setShowProviderSwitchModal(false);
+    setTargetProvider("");
   };
 
   const renderComponents = (components: typeof awsComponents) => (
@@ -342,7 +378,7 @@ export default function ComponentLibrary({}: ComponentLibraryProps) {
         <div className="flex-1 overflow-y-auto">
           <Tabs
             value={selectedTab}
-            onValueChange={setSelectedTab}
+            onValueChange={handleTabChange}
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
@@ -366,7 +402,12 @@ export default function ComponentLibrary({}: ComponentLibraryProps) {
         </div>
       </div>
 
-
+      <ProviderSwitchModal
+        isOpen={showProviderSwitchModal}
+        onClose={handleCancelSwitch}
+        onConfirm={handleConfirmSwitch}
+        targetProvider={targetProvider}
+      />
     </>
   );
 }

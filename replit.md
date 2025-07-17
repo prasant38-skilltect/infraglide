@@ -126,6 +126,14 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 17, 2025
+- **Implemented Provider Switching Confirmation System**
+  - Added ProviderSwitchModal component to prevent accidental loss of work when switching cloud providers
+  - Canvas automatically checks if empty before allowing provider switch (AWS/Azure/GCP)
+  - Shows confirmation popup with warning message when canvas has components
+  - Provides Cancel and "Switch to {Provider}" action buttons as requested
+  - Clears canvas completely when user confirms provider switch to maintain consistency
+  - Enhanced user experience with clear warnings about unsaved changes
+
 - **Implemented Complete Import/Export Functionality for Pipeline Designer**
   - Added Export functionality that creates JSON files matching My Pipelines format with all database fields
   - Created ImportPipelineModal component with drag-and-drop file upload interface

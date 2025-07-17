@@ -757,6 +757,14 @@ export default function PipelineDesigner() {
     );
   };
 
+  const handleClearCanvas = () => {
+    setNodes([]);
+    setEdges([]);
+    setValidationErrors(new Set());
+    setSelectedNode(null);
+    setShowPropertiesPanel(false);
+  };
+
 
 
   const handleExportPipeline = async () => {
@@ -917,7 +925,7 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {showComponentLibrary && <ComponentLibrary />}
+          {showComponentLibrary && <ComponentLibrary nodes={nodes} onClearCanvas={handleClearCanvas} />}
 
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
