@@ -26,7 +26,7 @@ import VersionConflictModal from "@/components/modals/version-conflict-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X } from "lucide-react";
+import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -592,7 +592,11 @@ export default function PipelineDesigner() {
                       onClick={handleSavePipeline}
                       disabled={savePipelineMutation.isPending}
                     >
-                      <Plus className="w-4 h-4 mr-1" />
+                      {savePipelineMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-1" />
+                      )}
                       {savePipelineMutation.isPending ? "Creating..." : "Create"}
                     </Button>
                     <Button 
