@@ -22,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Sidebar from "@/components/layout/sidebar";
-import { Plus, Edit, Trash2, Key, Cloud, Database } from "lucide-react";
+import { Plus, Edit, Trash2, Key, Cloud, Database, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Credential } from "@shared/schema";
@@ -33,6 +33,8 @@ export default function Credentials() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
   const [selectedProvider, setSelectedProvider] = useState<string>("All");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -118,6 +120,8 @@ export default function Credentials() {
       password: "",
       provider: "",
     });
+    setShowPassword(false);
+    setShowEditPassword(false);
   };
 
   const handleCreate = () => {
@@ -398,13 +402,28 @@ export default function Credentials() {
             
             <div>
               <Label className="text-sm font-medium text-gray-700">Password</Label>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="secret-access-key or password"
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="secret-access-key or password"
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
             
             <div>
@@ -475,12 +494,27 @@ export default function Credentials() {
             
             <div>
               <Label className="text-sm font-medium text-gray-700">Password</Label>
-              <Input
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="mt-1"
-              />
+              <div className="relative mt-1">
+                <Input
+                  type={showEditPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowEditPassword(!showEditPassword)}
+                >
+                  {showEditPassword ? (
+                    <EyeOff className="h-4 w-4 text-gray-400" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-gray-400" />
+                  )}
+                </Button>
+              </div>
             </div>
             
             <div>
