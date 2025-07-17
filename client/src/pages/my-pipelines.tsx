@@ -17,6 +17,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import type { Pipeline } from "@shared/schema";
 
 type SortField = 'name' | 'provider' | 'description' | 'createdAt';
@@ -29,6 +31,7 @@ export default function MyPipelines() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedProvider, setSelectedProvider] = useState<string>("All");
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -168,8 +171,13 @@ export default function MyPipelines() {
       totalVersions: versions.length
     }));
 
+    // Filter by provider
+    const filtered = selectedProvider === "All" 
+      ? mainPipelines 
+      : mainPipelines.filter(group => getCloudProvider(group.pipeline) === selectedProvider);
+
     // Sort main pipelines
-    const sorted = mainPipelines.sort((a, b) => {
+    const sorted = filtered.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
 
@@ -211,7 +219,7 @@ export default function MyPipelines() {
       totalPages: Math.ceil(sorted.length / itemsPerPage),
       totalItems: sorted.length
     };
-  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider]);
+  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider, selectedProvider]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -257,6 +265,25 @@ export default function MyPipelines() {
               </p>
             </div>
             <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="provider-filter" className="text-sm font-medium text-gray-700">
+                  Filter:
+                </Label>
+                <Select value={selectedProvider} onValueChange={(value) => {
+                  setSelectedProvider(value);
+                  setCurrentPage(1); // Reset to first page when filtering
+                }}>
+                  <SelectTrigger id="provider-filter" className="w-32">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="AWS">AWS</SelectItem>
+                    <SelectItem value="Azure">Azure</SelectItem>
+                    <SelectItem value="GCP">GCP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
@@ -331,69 +358,72 @@ export default function MyPipelines() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedPipelines.paginatedGroups.map((group) => {
+                    {sortedAndPaginatedPipelines.paginatedGroups.flatMap((group) => {
                       const { name, pipeline, versions, totalVersions } = group;
                       const provider = getCloudProvider(pipeline);
                       const isExpanded = expandedRows.has(name);
                       
-                      return (
-                        <React.Fragment key={name}>
-                          {/* Main row */}
-                          <TableRow 
-                            className="cursor-pointer hover:bg-gray-50"
-                            onClick={() => toggleRowExpansion(name)}
-                          >
-                            <TableCell className="font-medium">
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="p-1 h-6 w-6"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDown className="w-4 h-4" />
-                                  ) : (
-                                    <ChevronRight className="w-4 h-4" />
-                                  )}
-                                </Button>
-                                <div className="flex flex-col">
-                                  <div className="flex items-center space-x-2">
-                                    <span className="font-semibold text-gray-900">
-                                      {name}
-                                    </span>
-                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                                      {totalVersions} version{totalVersions > 1 ? 's' : ''}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-gray-500">
-                                    Latest: v{pipeline.version} (ID: {pipeline.id})
+                      const rows = [
+                        // Main row
+                        <TableRow 
+                          key={name}
+                          className="cursor-pointer hover:bg-gray-50"
+                          onClick={() => toggleRowExpansion(name)}
+                        >
+                          <TableCell className="font-medium">
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="p-1 h-6 w-6"
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="w-4 h-4" />
+                                ) : (
+                                  <ChevronRight className="w-4 h-4" />
+                                )}
+                              </Button>
+                              <div className="flex flex-col">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-semibold text-gray-900">
+                                    {name}
+                                  </span>
+                                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                    {totalVersions} version{totalVersions > 1 ? 's' : ''}
                                   </span>
                                 </div>
+                                <span className="text-xs text-gray-500">
+                                  Latest: v{pipeline.version} (ID: {pipeline.id})
+                                </span>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={getProviderBadgeColor(provider)}
-                              >
-                                {provider}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-gray-700">
-                                {pipeline.description || "No description"}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-gray-600">
-                                {formatDate(pipeline.createdAt)}
-                              </span>
-                            </TableCell>
-                          </TableRow>
-                          
-                          {/* Expanded version rows */}
-                          {isExpanded && versions.map((version) => (
-                            <TableRow key={version.id} className="bg-gray-50">
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={getProviderBadgeColor(provider)}
+                            >
+                              {provider}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-700">
+                              {pipeline.description || "No description"}
+                            </span>
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-gray-600">
+                              {formatDate(pipeline.createdAt)}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      ];
+                      
+                      // Add expanded version rows if expanded
+                      if (isExpanded) {
+                        versions.forEach((version) => {
+                          rows.push(
+                            <TableRow key={`${name}-${version.id}`} className="bg-gray-50">
                               <TableCell className="pl-12">
                                 <div className="flex items-center justify-between">
                                   <div className="flex flex-col">
@@ -446,9 +476,11 @@ export default function MyPipelines() {
                                 </span>
                               </TableCell>
                             </TableRow>
-                          ))}
-                        </React.Fragment>
-                      );
+                          );
+                        });
+                      }
+                      
+                      return rows;
                     })}
                   </TableBody>
                 </Table>
