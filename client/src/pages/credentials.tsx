@@ -32,6 +32,7 @@ export default function Credentials() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState<string>("All");
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -175,7 +176,12 @@ export default function Credentials() {
     }
   };
 
-  const groupedCredentials = credentials.reduce((acc, credential) => {
+  // Filter credentials based on selected provider
+  const filteredCredentials = selectedProvider === "All" 
+    ? credentials 
+    : credentials.filter(credential => credential.provider.toLowerCase() === selectedProvider.toLowerCase());
+
+  const groupedCredentials = filteredCredentials.reduce((acc, credential) => {
     const provider = credential.provider;
     if (!acc[provider]) {
       acc[provider] = [];
@@ -195,13 +201,31 @@ export default function Credentials() {
               <h2 className="text-2xl font-bold text-gray-900">Credentials</h2>
               <p className="text-sm text-gray-600 mt-1">Manage your cloud provider credentials</p>
             </div>
-            <Button 
-              onClick={() => setShowCreateModal(true)}
-              className="bg-primary hover:bg-blue-600"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Credential
-            </Button>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="provider-filter" className="text-sm font-medium text-gray-700">
+                  Filter:
+                </Label>
+                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
+                  <SelectTrigger id="provider-filter" className="w-32">
+                    <SelectValue placeholder="All" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="AWS">AWS</SelectItem>
+                    <SelectItem value="Azure">Azure</SelectItem>
+                    <SelectItem value="GCP">GCP</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-primary hover:bg-blue-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Credential
+              </Button>
+            </div>
           </div>
         </header>
 
@@ -211,11 +235,13 @@ export default function Credentials() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Credentials</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    {selectedProvider === "All" ? "Total Credentials" : `${selectedProvider} Credentials`}
+                  </CardTitle>
                   <Key className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{credentials.length}</div>
+                  <div className="text-2xl font-bold">{filteredCredentials.length}</div>
                 </CardContent>
               </Card>
 
@@ -247,7 +273,9 @@ export default function Credentials() {
             {/* Credentials Table */}
             <Card>
               <CardHeader>
-                <CardTitle>All Credentials</CardTitle>
+                <CardTitle>
+                  {selectedProvider === "All" ? "All Credentials" : `${selectedProvider} Credentials`}
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
@@ -259,11 +287,18 @@ export default function Credentials() {
                       </div>
                     ))}
                   </div>
-                ) : credentials.length === 0 ? (
+                ) : filteredCredentials.length === 0 ? (
                   <div className="text-center py-8">
                     <Key className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No credentials</h3>
-                    <p className="mt-1 text-sm text-gray-500">Get started by adding your first credential.</p>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">
+                      {selectedProvider === "All" ? "No credentials" : `No ${selectedProvider} credentials`}
+                    </h3>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {selectedProvider === "All" 
+                        ? "Get started by adding your first credential." 
+                        : `No credentials found for ${selectedProvider}. Try changing the filter or add a new credential.`
+                      }
+                    </p>
                     <div className="mt-6">
                       <Button onClick={() => setShowCreateModal(true)}>
                         <Plus className="w-4 h-4 mr-2" />
