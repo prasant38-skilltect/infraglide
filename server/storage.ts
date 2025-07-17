@@ -130,12 +130,18 @@ export class MemStorage implements IStorage {
     const pipeline: Pipeline = {
       ...insertPipeline,
       id,
+      name: insertPipeline.name,
       description: insertPipeline.description || null,
+      version: insertPipeline.version || 1,
       region: insertPipeline.region || "us-east-1",
       status: insertPipeline.status || "draft",
       projectId: insertPipeline.projectId || null,
       components: insertPipeline.components || [],
       connections: insertPipeline.connections || [],
+      snapshot: insertPipeline.snapshot || null,
+      credentialName: insertPipeline.credentialName || null,
+      credentialUsername: insertPipeline.credentialUsername || null,
+      credentialPassword: insertPipeline.credentialPassword || null,
       isTemplate: insertPipeline.isTemplate || false,
       createdAt: now,
       updatedAt: now,
@@ -262,7 +268,7 @@ export class DatabaseStorage implements IStorage {
   async updateProject(id: number, insertProject: Partial<InsertProject>): Promise<Project | undefined> {
     const [project] = await db
       .update(projects)
-      .set({ ...insertProject, updatedAt: new Date() })
+      .set(insertProject)
       .where(eq(projects.id, id))
       .returning();
     return project || undefined;
@@ -270,7 +276,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteProject(id: number): Promise<boolean> {
     const result = await db.delete(projects).where(eq(projects.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Pipelines
@@ -309,7 +315,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePipeline(id: number): Promise<boolean> {
     const result = await db.delete(pipelines).where(eq(pipelines.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Deployments
@@ -336,7 +342,7 @@ export class DatabaseStorage implements IStorage {
   async updateDeployment(id: number, insertDeployment: Partial<InsertDeployment>): Promise<Deployment | undefined> {
     const [deployment] = await db
       .update(deployments)
-      .set({ ...insertDeployment, updatedAt: new Date() })
+      .set(insertDeployment)
       .where(eq(deployments.id, id))
       .returning();
     return deployment || undefined;
@@ -371,7 +377,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteCredential(id: number): Promise<boolean> {
     const result = await db.delete(credentials).where(eq(credentials.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
