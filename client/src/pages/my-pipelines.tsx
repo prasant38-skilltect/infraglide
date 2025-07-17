@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Download, Upload, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Download, Upload, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import type { Pipeline } from "@shared/schema";
 
 type SortField = 'name' | 'provider' | 'description' | 'createdAt';
@@ -32,6 +33,7 @@ export default function MyPipelines() {
   const [itemsPerPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedProvider, setSelectedProvider] = useState<string>("All");
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -212,10 +214,30 @@ export default function MyPipelines() {
       totalVersions: versions.length
     }));
 
+    // Filter by search query
+    const searchFiltered = searchQuery 
+      ? mainPipelines.filter(group => {
+          const pipeline = group.pipeline;
+          const searchLower = searchQuery.toLowerCase();
+          
+          // Search in name
+          if (group.name.toLowerCase().includes(searchLower)) return true;
+          
+          // Search in description
+          if (pipeline.description && pipeline.description.toLowerCase().includes(searchLower)) return true;
+          
+          // Search in creation date (formatted)
+          const createdDate = new Date(pipeline.createdAt).toLocaleDateString();
+          if (createdDate.includes(searchLower)) return true;
+          
+          return false;
+        })
+      : mainPipelines;
+
     // Filter by provider
     const filtered = selectedProvider === "All" 
-      ? mainPipelines 
-      : mainPipelines.filter(group => getCloudProvider(group.pipeline) === selectedProvider);
+      ? searchFiltered 
+      : searchFiltered.filter(group => getCloudProvider(group.pipeline) === selectedProvider);
 
     // Sort main pipelines
     const sorted = filtered.sort((a, b) => {
@@ -260,7 +282,7 @@ export default function MyPipelines() {
       totalPages: Math.ceil(sorted.length / itemsPerPage),
       totalItems: sorted.length
     };
-  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider, selectedProvider]);
+  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider, selectedProvider, searchQuery]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -305,7 +327,19 @@ export default function MyPipelines() {
                 Manage and organize your cloud infrastructure pipelines
               </p>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="Search pipelines..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1); // Reset to first page when searching
+                  }}
+                  className="pl-10 w-64"
+                />
+              </div>
               <div className="flex items-center space-x-2">
                 <Label htmlFor="provider-filter" className="text-sm font-medium text-gray-700">
                   Filter:
@@ -334,7 +368,12 @@ export default function MyPipelines() {
             <CardHeader>
               <CardTitle>Pipeline Overview</CardTitle>
               <CardDescription>
-                {sortedAndPaginatedPipelines.totalItems} total pipelines
+                {searchQuery ? (
+                  `${sortedAndPaginatedPipelines.totalItems} pipeline${sortedAndPaginatedPipelines.totalItems !== 1 ? 's' : ''} found for "${searchQuery}"`
+                ) : (
+                  `${sortedAndPaginatedPipelines.totalItems} total pipelines`
+                )}
+                {selectedProvider !== "All" && ` (${selectedProvider} only)`}
               </CardDescription>
             </CardHeader>
             <CardContent>
