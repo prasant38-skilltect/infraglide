@@ -732,6 +732,8 @@ export default function PipelineDesigner() {
                       {pipelineDescription && (
                         <span className="text-sm text-gray-600">{pipelineDescription}</span>
                       )}
+                      {/* Debug info */}
+                      <span style={{fontSize: '10px', color: 'red'}}>Debug: name="{pipelineName}", desc="{pipelineDescription}"</span>
                     </div>
                     <Button
                       variant="ghost"
