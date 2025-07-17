@@ -18,6 +18,9 @@ export const pipelines = pgTable("pipelines", {
   region: text("region").notNull().default("us-east-1"),
   components: jsonb("components").notNull().default([]),
   connections: jsonb("connections").notNull().default([]),
+  credentialName: text("credential_name"),
+  credentialUsername: text("credential_username"),
+  credentialPassword: text("credential_password"),
   isTemplate: boolean("is_template").default(false),
   status: text("status").notNull().default("draft"), // draft, deployed, failed
   createdAt: timestamp("created_at").defaultNow().notNull(),

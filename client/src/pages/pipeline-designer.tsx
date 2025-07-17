@@ -23,6 +23,8 @@ import PropertiesPanel from "@/components/pipeline/properties-panel";
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
 import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import VersionConflictModal from "@/components/modals/version-conflict-modal";
+import CredentialSelectionModal from "@/components/modals/credential-selection-modal";
+import AddCredentialModal from "@/components/modals/add-credential-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,7 +34,7 @@ import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { CloudComponentNode } from "@/components/pipeline/cloud-components";
 import { validateComponent, getValidationErrors } from "@/lib/pipeline-utils";
-import type { Pipeline, ComponentConfig } from "@shared/schema";
+import type { Pipeline, ComponentConfig, Credential } from "@shared/schema";
 
 const nodeTypes: NodeTypes = {
   cloudComponent: CloudComponentNode,
@@ -54,6 +56,8 @@ export default function PipelineDesigner() {
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showVersionConflictModal, setShowVersionConflictModal] = useState(false);
+  const [showCredentialSelectionModal, setShowCredentialSelectionModal] = useState(false);
+  const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -83,6 +87,11 @@ export default function PipelineDesigner() {
   const { data: pipeline } = useQuery<Pipeline>({
     queryKey: ["/api/pipelines", pipelineId],
     enabled: !!pipelineId,
+  });
+
+  // Load credentials for validation
+  const { data: credentials = [] } = useQuery<Credential[]>({
+    queryKey: ["/api/credentials"],
   });
 
   // Load pipeline data into the canvas
@@ -389,7 +398,7 @@ export default function PipelineDesigner() {
       return;
     }
 
-    // For new pipelines, check name conflicts
+    // For new pipelines, first check name conflicts
     try {
       const checkResult = await checkPipelineNameMutation.mutateAsync(pipelineName);
       
@@ -398,27 +407,8 @@ export default function PipelineDesigner() {
         setConflictData(checkResult);
         setShowVersionConflictModal(true);
       } else {
-        // No conflict, save directly with version 1
-        const pipelineData = {
-          name: pipelineName,
-          description: pipelineDescription,
-          region: pipelineRegion,
-          version: 1,
-          components: nodes.map((node) => ({
-            id: node.id,
-            type: node.data.type,
-            name: node.data.name,
-            position: node.position,
-            config: node.data.config || {},
-          })),
-          connections: edges.map((edge) => ({
-            id: edge.id,
-            source: edge.source,
-            target: edge.target,
-            type: edge.type || 'default',
-          })),
-        };
-        savePipelineMutation.mutate(pipelineData);
+        // Name is unique, now check credentials
+        await handleCredentialValidation();
       }
     } catch (error) {
       toast({
@@ -426,6 +416,82 @@ export default function PipelineDesigner() {
         description: "Failed to check pipeline name. Please try again.",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleCredentialValidation = async () => {
+    const provider = getCloudProvider(nodes);
+    const providerCredentials = credentials.filter(cred => cred.provider === provider);
+
+    if (providerCredentials.length > 0) {
+      // Show credential selection modal
+      setShowCredentialSelectionModal(true);
+    } else {
+      // Show add credential modal
+      setShowAddCredentialModal(true);
+    }
+  };
+
+  const handleCredentialSelected = (credential: Credential) => {
+    setShowCredentialSelectionModal(false);
+    savePipelineWithCredential(credential);
+  };
+
+  const handleCredentialAdded = (credential: Credential) => {
+    setShowAddCredentialModal(false);
+    savePipelineWithCredential(credential);
+  };
+
+  const savePipelineWithCredential = (credential: Credential) => {
+    const pipelineData = {
+      name: pipelineName,
+      description: pipelineDescription,
+      region: pipelineRegion,
+      version: 1,
+      credentialName: credential.name,
+      credentialUsername: credential.username,
+      credentialPassword: credential.password,
+      components: nodes.map((node) => ({
+        id: node.id,
+        type: node.data.type,
+        name: node.data.name,
+        position: node.position,
+        config: node.data.config || {},
+      })),
+      connections: edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type || 'default',
+      })),
+    };
+    savePipelineMutation.mutate(pipelineData);
+  };
+
+  // Update the credential handlers to use the correct save function
+  const [isVersionConflictFlow, setIsVersionConflictFlow] = useState(false);
+  
+  const handleCredentialValidationWrapper = async () => {
+    await handleCredentialValidation();
+  };
+
+  const handleCredentialSelectedWrapper = (credential: Credential) => {
+    setShowCredentialSelectionModal(false);
+    if (isVersionConflictFlow) {
+      saveNewVersionWithCredential(credential);
+      setIsVersionConflictFlow(false);
+    } else {
+      savePipelineWithCredential(credential);
+    }
+  };
+
+  const handleCredentialAddedWrapper = (credential: Credential) => {
+    setShowAddCredentialModal(false);
+    if (isVersionConflictFlow) {
+      saveNewVersionWithCredential(credential);
+      setIsVersionConflictFlow(false);
+    } else {
+      savePipelineWithCredential(credential);
     }
   };
 
@@ -438,7 +504,18 @@ export default function PipelineDesigner() {
     setShowEditModal(true);
   };
 
-  const handleSaveNewVersion = () => {
+  const handleSaveNewVersion = async () => {
+    if (!conflictData) return;
+    
+    // Close version conflict modal first
+    setShowVersionConflictModal(false);
+    setIsVersionConflictFlow(true);
+    
+    // Now proceed with credential validation
+    await handleCredentialValidation();
+  };
+
+  const saveNewVersionWithCredential = (credential: Credential) => {
     if (!conflictData) return;
     
     const pipelineData = {
@@ -446,6 +523,9 @@ export default function PipelineDesigner() {
       description: pipelineDescription,
       region: pipelineRegion,
       version: conflictData.nextVersion,
+      credentialName: credential.name,
+      credentialUsername: credential.username,
+      credentialPassword: credential.password,
       components: nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
@@ -740,6 +820,21 @@ export default function PipelineDesigner() {
         nextVersion={conflictData?.nextVersion || 1}
         onEditName={handleEditName}
         onSaveNewVersion={handleSaveNewVersion}
+      />
+
+      <CredentialSelectionModal
+        open={showCredentialSelectionModal}
+        onClose={() => setShowCredentialSelectionModal(false)}
+        onSelect={handleCredentialSelectedWrapper}
+        credentials={credentials.filter(cred => cred.provider === getCloudProvider(nodes))}
+        provider={getCloudProvider(nodes)}
+      />
+
+      <AddCredentialModal
+        open={showAddCredentialModal}
+        onClose={() => setShowAddCredentialModal(false)}
+        onAdd={handleCredentialAddedWrapper}
+        provider={getCloudProvider(nodes)}
       />
     </div>
   );
