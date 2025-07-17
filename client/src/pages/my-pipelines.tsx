@@ -1,8 +1,7 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Download, Upload, Trash2, Edit3, Eye, Plus, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
-import { Link } from "wouter";
+import { Download, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
@@ -52,36 +51,6 @@ export default function MyPipelines() {
       title: "Pipeline exported",
       description: `${pipeline.name} has been exported successfully.`,
     });
-  };
-
-  const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const importedPipeline = JSON.parse(e.target?.result as string);
-            // TODO: Implement import logic
-            toast({
-              title: "Import functionality",
-              description: "Import functionality will be implemented soon.",
-            });
-          } catch (error) {
-            toast({
-              title: "Import failed",
-              description: "Invalid pipeline file format.",
-              variant: "destructive",
-            });
-          }
-        };
-        reader.readAsText(file);
-      }
-    };
-    input.click();
   };
 
   const handleDelete = (pipelineId: number) => {
@@ -284,20 +253,6 @@ export default function MyPipelines() {
                   </SelectContent>
                 </Select>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleImport}
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Import
-              </Button>
-              <Link href="/pipeline-designer">
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Pipeline
-                </Button>
-              </Link>
             </div>
           </div>
         </header>
