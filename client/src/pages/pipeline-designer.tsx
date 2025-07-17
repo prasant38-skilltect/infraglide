@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useParams } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import ReactFlow, {
@@ -27,8 +27,31 @@ import CredentialSelectionModal from "@/components/modals/credential-selection-m
 import AddCredentialModal from "@/components/modals/add-credential-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Save, Rocket, ZoomIn, ZoomOut, Maximize, Edit3, Trash2, Upload, Download, CheckCircle, Eye, Plus, Zap, Menu, X, Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Save,
+  Rocket,
+  ZoomIn,
+  ZoomOut,
+  Maximize,
+  Edit3,
+  Trash2,
+  Upload,
+  Download,
+  CheckCircle,
+  Eye,
+  Plus,
+  Zap,
+  Menu,
+  X,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
@@ -55,8 +78,10 @@ export default function PipelineDesigner() {
 
   const [showDeployModal, setShowDeployModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [showVersionConflictModal, setShowVersionConflictModal] = useState(false);
-  const [showCredentialSelectionModal, setShowCredentialSelectionModal] = useState(false);
+  const [showVersionConflictModal, setShowVersionConflictModal] =
+    useState(false);
+  const [showCredentialSelectionModal, setShowCredentialSelectionModal] =
+    useState(false);
   const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
@@ -67,37 +92,48 @@ export default function PipelineDesigner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Set<string>>(new Set());
+  const [validationErrors, setValidationErrors] = useState<Set<string>>(
+    new Set(),
+  );
+  
+  // Track if we've imported data to prevent auto-generation from overriding it
+  const hasImportedData = useRef(false);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
     const now = new Date();
-    const dateTime = now.toISOString().slice(0, 19).replace(/[T:]/g, '-').replace(/-/g, '');
+    const dateTime = now
+      .toISOString()
+      .slice(0, 19)
+      .replace(/[T:]/g, "-")
+      .replace(/-/g, "");
     return `newPipeline_${dateTime}`;
   };
 
   // Capture the canvas as an image
-  const captureCanvasSnapshot = useCallback(async (): Promise<string | null> => {
+  const captureCanvasSnapshot = useCallback(async (): Promise<
+    string | null
+  > => {
     if (!reactFlowInstance) return null;
-    
+
     try {
       // Get the viewport element
-      const viewportElement = document.querySelector('.react-flow__viewport');
+      const viewportElement = document.querySelector(".react-flow__viewport");
       if (!viewportElement) return null;
 
       // Use html2canvas to capture the canvas
-      const { default: html2canvas } = await import('html2canvas');
+      const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(viewportElement as HTMLElement, {
-        backgroundColor: '#ffffff',
+        backgroundColor: "#ffffff",
         scale: 0.5, // Reduce size for storage efficiency
         useCORS: true,
         allowTaint: true,
       });
 
       // Convert to base64
-      return canvas.toDataURL('image/png');
+      return canvas.toDataURL("image/png");
     } catch (error) {
-      console.error('Failed to capture canvas:', error);
+      console.error("Failed to capture canvas:", error);
       return null;
     }
   }, [reactFlowInstance]);
@@ -109,67 +145,81 @@ export default function PipelineDesigner() {
 
   // Check for imported pipeline data from sessionStorage
   useEffect(() => {
-    const importedData = sessionStorage.getItem('importedPipelineData');
-    
-    if (importedData && !pipelineId) { // Only load if not editing an existing pipeline
+    const importedData = sessionStorage.getItem("importedPipelineData");
+
+    if (importedData && !pipelineId) {
+      // Only load if not editing an existing pipeline
       try {
         const pipelineData = JSON.parse(importedData);
-        
+
         // Set pipeline metadata
         setPipelineName(pipelineData.name);
         setPipelineDescription(pipelineData.description || "");
-        setPipelineRegion(pipelineData.region || 'us-east-1');
+        setPipelineRegion(pipelineData.region || "us-east-1");
         
+        // Mark that we've imported data
+        hasImportedData.current = true;
+
         // Load components to canvas
-        if (Array.isArray(pipelineData.components) && pipelineData.components.length > 0) {
-          const loadedNodes = pipelineData.components.map((component: ComponentConfig) => ({
-            id: component.id,
-            type: "cloudComponent",
-            position: component.position,
-            data: {
-              type: component.type,
-              name: component.name,
-              config: component.config,
-              validationError: false,
-            },
-          }));
+        if (
+          Array.isArray(pipelineData.components) &&
+          pipelineData.components.length > 0
+        ) {
+          const loadedNodes = pipelineData.components.map(
+            (component: ComponentConfig) => ({
+              id: component.id,
+              type: "cloudComponent",
+              position: component.position,
+              data: {
+                type: component.type,
+                name: component.name,
+                config: component.config,
+                validationError: false,
+              },
+            }),
+          );
           setNodes(loadedNodes);
         }
 
         // Load connections
-        if (Array.isArray(pipelineData.connections) && pipelineData.connections.length > 0) {
-          const loadedEdges = pipelineData.connections.map((connection: any) => ({
-            id: connection.id,
-            source: connection.source,
-            target: connection.target,
-            type: "smoothstep",
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: '#6b7280',
-            },
-            style: {
-              strokeWidth: 2,
-              stroke: '#6b7280',
-            },
-          }));
+        if (
+          Array.isArray(pipelineData.connections) &&
+          pipelineData.connections.length > 0
+        ) {
+          const loadedEdges = pipelineData.connections.map(
+            (connection: any) => ({
+              id: connection.id,
+              source: connection.source,
+              target: connection.target,
+              type: "smoothstep",
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: "#6b7280",
+              },
+              style: {
+                strokeWidth: 2,
+                stroke: "#6b7280",
+              },
+            }),
+          );
           setEdges(loadedEdges);
         }
 
         // Clear validation errors
         setValidationErrors(new Set());
-        
+
         // Clear sessionStorage to prevent reloading on refresh
-        sessionStorage.removeItem('importedPipelineData');
-        
+        sessionStorage.removeItem("importedPipelineData");
+
         toast({
           title: "Pipeline imported successfully",
           description: `${pipelineData.name} has been loaded in the designer.`,
         });
       } catch (error) {
-        console.error('Failed to load imported pipeline:', error);
-        sessionStorage.removeItem('importedPipelineData');
+        console.error("Failed to load imported pipeline:", error);
+        sessionStorage.removeItem("importedPipelineData");
         toast({
           title: "Import failed",
           description: "Failed to load imported pipeline data.",
@@ -178,8 +228,6 @@ export default function PipelineDesigner() {
       }
     }
   }, [pipelineId, toast]);
-
-
 
   // Load existing pipeline if editing
   const { data: pipeline } = useQuery<Pipeline>({
@@ -196,23 +244,26 @@ export default function PipelineDesigner() {
   useEffect(() => {
     if (pipeline) {
       setPipelineName(pipeline.name);
+      console.log("Line No 200:", pipeline.name);
       setPipelineDescription(pipeline.description || "");
       setPipelineRegion(pipeline.region);
-      
+
       if (Array.isArray(pipeline.components)) {
-        const loadedNodes = pipeline.components.map((component: ComponentConfig) => ({
-          id: component.id,
-          type: "cloudComponent",
-          position: component.position,
-          data: {
-            type: component.type,
-            name: component.name,
-            config: component.config,
-            validationError: false, // Don't show validation errors until validate is clicked
-          },
-        }));
+        const loadedNodes = pipeline.components.map(
+          (component: ComponentConfig) => ({
+            id: component.id,
+            type: "cloudComponent",
+            position: component.position,
+            data: {
+              type: component.type,
+              name: component.name,
+              config: component.config,
+              validationError: false, // Don't show validation errors until validate is clicked
+            },
+          }),
+        );
         setNodes(loadedNodes);
-        
+
         // Clear validation errors for loaded components
         setValidationErrors(new Set());
       }
@@ -227,31 +278,36 @@ export default function PipelineDesigner() {
             type: MarkerType.ArrowClosed,
             width: 20,
             height: 20,
-            color: '#6b7280',
+            color: "#6b7280",
           },
           style: {
             strokeWidth: 2,
-            stroke: '#6b7280',
+            stroke: "#6b7280",
           },
         }));
         setEdges(loadedEdges);
       }
-    } else if (!pipelineId && pipelineName === "New Pipeline") {
-      // Auto-generate name for new pipelines (only if still using default name)
+    } else if (!pipelineId && pipelineName === "New Pipeline" && !hasImportedData.current) {
+      // Auto-generate name for new pipelines (only if still using default name and haven't imported)
       setPipelineName(generatePipelineName());
     }
-  }, [pipeline, pipelineName, setNodes, setEdges]);
+  }, [pipeline, setNodes, setEdges]);
 
   const checkPipelineNameMutation = useMutation({
     mutationFn: async (name: string) => {
-      const response = await apiRequest("GET", `/api/pipelines/check-name/${encodeURIComponent(name)}`);
+      const response = await apiRequest(
+        "GET",
+        `/api/pipelines/check-name/${encodeURIComponent(name)}`,
+      );
       return response.json();
     },
   });
 
   const savePipelineMutation = useMutation({
     mutationFn: async (pipelineData: any) => {
-      const url = pipelineId ? `/api/pipelines/${pipelineId}` : "/api/pipelines";
+      const url = pipelineId
+        ? `/api/pipelines/${pipelineId}`
+        : "/api/pipelines";
       const method = pipelineId ? "PUT" : "POST";
       const response = await apiRequest(method, url, pipelineData);
       return response.json();
@@ -276,7 +332,11 @@ export default function PipelineDesigner() {
 
   const createDeploymentMutation = useMutation({
     mutationFn: async (deploymentData: any) => {
-      const response = await apiRequest("POST", "/api/deployments", deploymentData);
+      const response = await apiRequest(
+        "POST",
+        "/api/deployments",
+        deploymentData,
+      );
       return response.json();
     },
     onSuccess: () => {
@@ -304,26 +364,26 @@ export default function PipelineDesigner() {
           type: MarkerType.ArrowClosed,
           width: 20,
           height: 20,
-          color: '#6b7280',
+          color: "#6b7280",
         },
         style: {
           strokeWidth: 2,
-          stroke: '#6b7280',
+          stroke: "#6b7280",
         },
-        type: 'smoothstep',
+        type: "smoothstep",
       };
       setEdges((eds) => addEdge(connectionWithArrow, eds));
       setHasUnsavedChanges(true);
     },
-    [setEdges]
+    [setEdges],
   );
 
   const onDrop = useCallback(
     (event: React.DragEvent) => {
       event.preventDefault();
-      
+
       const type = event.dataTransfer.getData("application/reactflow");
-      
+
       if (typeof type === "undefined" || !type || !reactFlowInstance) {
         return;
       }
@@ -346,10 +406,10 @@ export default function PipelineDesigner() {
       };
 
       setNodes((nds) => nds.concat(newNode));
-      
+
       setHasUnsavedChanges(true);
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance, setNodes],
   );
 
   const onDragOver = useCallback((event: React.DragEvent) => {
@@ -362,50 +422,61 @@ export default function PipelineDesigner() {
     setShowPropertiesPanel(true);
   }, []);
 
-  const onUpdateNodeConfig = useCallback((nodeId: string, config: any) => {
-    setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          return { ...node, data: { ...node.data, config } };
-        }
-        return node;
-      })
-    );
-    setHasUnsavedChanges(true);
-  }, [setNodes]);
+  const onUpdateNodeConfig = useCallback(
+    (nodeId: string, config: any) => {
+      setNodes((nds) =>
+        nds.map((node) => {
+          if (node.id === nodeId) {
+            return { ...node, data: { ...node.data, config } };
+          }
+          return node;
+        }),
+      );
+      setHasUnsavedChanges(true);
+    },
+    [setNodes],
+  );
 
   const onClosePropertiesPanel = useCallback(() => {
     setShowPropertiesPanel(false);
     setSelectedNode(null);
   }, []);
 
-  const handleDeleteNode = useCallback((nodeId: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== nodeId));
-    setEdges((eds) => eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId));
-    setSelectedNode(null);
-    setHasUnsavedChanges(true);
-  }, [setNodes, setEdges]);
+  const handleDeleteNode = useCallback(
+    (nodeId: string) => {
+      setNodes((nds) => nds.filter((node) => node.id !== nodeId));
+      setEdges((eds) =>
+        eds.filter((edge) => edge.source !== nodeId && edge.target !== nodeId),
+      );
+      setSelectedNode(null);
+      setHasUnsavedChanges(true);
+    },
+    [setNodes, setEdges],
+  );
 
-  const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'Delete' && selectedNode) {
-      handleDeleteNode(selectedNode.id);
-    }
-  }, [selectedNode, handleDeleteNode]);
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (event.key === "Delete" && selectedNode) {
+        handleDeleteNode(selectedNode.id);
+      }
+    },
+    [selectedNode, handleDeleteNode],
+  );
 
   const validateAllComponents = useCallback(() => {
     const errors = new Set<string>();
     const invalidComponents: string[] = [];
 
     // Validate all nodes
-    nodes.forEach(node => {
+    nodes.forEach((node) => {
       const componentConfig = {
         id: node.id,
         type: node.data.type,
         name: node.data.name,
         config: node.data.config || {},
-        position: node.position
+        position: node.position,
       };
-      
+
       const isValid = validateComponent(componentConfig);
       if (!isValid) {
         errors.add(node.id);
@@ -415,16 +486,16 @@ export default function PipelineDesigner() {
 
     // Update validation errors state
     setValidationErrors(errors);
-    
+
     // Update nodes with validation error flags
-    setNodes(prevNodes => 
-      prevNodes.map(node => ({
+    setNodes((prevNodes) =>
+      prevNodes.map((node) => ({
         ...node,
         data: {
           ...node.data,
-          validationError: errors.has(node.id)
-        }
-      }))
+          validationError: errors.has(node.id),
+        },
+      })),
     );
 
     // Show toast message
@@ -443,8 +514,8 @@ export default function PipelineDesigner() {
   }, [nodes, setNodes, toast]);
 
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
   // Listen for custom delete events from context menu
@@ -454,21 +525,23 @@ export default function PipelineDesigner() {
       handleDeleteNode(nodeId);
     };
 
-    window.addEventListener('deleteNode', handleDeleteEvent as EventListener);
-    return () => window.removeEventListener('deleteNode', handleDeleteEvent as EventListener);
+    window.addEventListener("deleteNode", handleDeleteEvent as EventListener);
+    return () =>
+      window.removeEventListener(
+        "deleteNode",
+        handleDeleteEvent as EventListener,
+      );
   }, [handleDeleteNode]);
 
-
-
   const getCloudProvider = (nodes: Node[]) => {
-    if (!nodes || nodes.length === 0) return 'Unknown';
-    
+    if (!nodes || nodes.length === 0) return "Unknown";
+
     const firstNode = nodes[0];
     const componentType = firstNode.data.type;
-    
-    if (componentType.startsWith('gcp-')) return 'GCP';
-    if (componentType.startsWith('azure-')) return 'Azure';
-    return 'AWS';
+
+    if (componentType.startsWith("gcp-")) return "GCP";
+    if (componentType.startsWith("azure-")) return "Azure";
+    return "AWS";
   };
 
   const handleSavePipeline = async () => {
@@ -476,7 +549,7 @@ export default function PipelineDesigner() {
     if (pipelineId) {
       // Capture canvas snapshot
       const snapshot = await captureCanvasSnapshot();
-      
+
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
@@ -493,7 +566,7 @@ export default function PipelineDesigner() {
           id: edge.id,
           source: edge.source,
           target: edge.target,
-          type: edge.type || 'default',
+          type: edge.type || "default",
         })),
       };
       savePipelineMutation.mutate(pipelineData);
@@ -502,8 +575,9 @@ export default function PipelineDesigner() {
 
     // For new pipelines, first check name conflicts
     try {
-      const checkResult = await checkPipelineNameMutation.mutateAsync(pipelineName);
-      
+      const checkResult =
+        await checkPipelineNameMutation.mutateAsync(pipelineName);
+
       if (checkResult.exists) {
         // Show conflict modal
         setConflictData(checkResult);
@@ -523,7 +597,9 @@ export default function PipelineDesigner() {
 
   const handleCredentialValidation = async () => {
     const provider = getCloudProvider(nodes);
-    const providerCredentials = credentials.filter(cred => cred.provider === provider);
+    const providerCredentials = credentials.filter(
+      (cred) => cred.provider === provider,
+    );
 
     if (providerCredentials.length > 0) {
       // Show credential selection modal
@@ -547,7 +623,7 @@ export default function PipelineDesigner() {
   const savePipelineWithCredential = async (credential: Credential) => {
     // Capture canvas snapshot
     const snapshot = await captureCanvasSnapshot();
-    
+
     const pipelineData = {
       name: pipelineName,
       description: pipelineDescription,
@@ -568,7 +644,7 @@ export default function PipelineDesigner() {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: edge.type || 'default',
+        type: edge.type || "default",
       })),
     };
     savePipelineMutation.mutate(pipelineData);
@@ -576,7 +652,7 @@ export default function PipelineDesigner() {
 
   // Update the credential handlers to use the correct save function
   const [isVersionConflictFlow, setIsVersionConflictFlow] = useState(false);
-  
+
   const handleCredentialValidationWrapper = async () => {
     await handleCredentialValidation();
   };
@@ -603,6 +679,7 @@ export default function PipelineDesigner() {
 
   const handleEditPipeline = (name: string, description: string) => {
     setPipelineName(name);
+    console.log("Line No 609:", name);
     setPipelineDescription(description);
   };
 
@@ -612,21 +689,21 @@ export default function PipelineDesigner() {
 
   const handleSaveNewVersion = async () => {
     if (!conflictData) return;
-    
+
     // Close version conflict modal first
     setShowVersionConflictModal(false);
     setIsVersionConflictFlow(true);
-    
+
     // Now proceed with credential validation
     await handleCredentialValidation();
   };
 
   const saveNewVersionWithCredential = async (credential: Credential) => {
     if (!conflictData) return;
-    
+
     // Capture canvas snapshot
     const snapshot = await captureCanvasSnapshot();
-    
+
     const pipelineData = {
       name: pipelineName,
       description: pipelineDescription,
@@ -647,10 +724,10 @@ export default function PipelineDesigner() {
         id: edge.id,
         source: edge.source,
         target: edge.target,
-        type: edge.type || 'default',
+        type: edge.type || "default",
       })),
     };
-    
+
     savePipelineMutation.mutate(pipelineData);
   };
 
@@ -673,17 +750,15 @@ export default function PipelineDesigner() {
   const updateNodeConfig = (nodeId: string, config: any) => {
     setNodes((nds) =>
       nds.map((node) =>
-        node.id === nodeId
-          ? { ...node, data: { ...node.data, config } }
-          : node
-      )
+        node.id === nodeId ? { ...node, data: { ...node.data, config } } : node,
+      ),
     );
   };
 
   return (
     <div className="flex h-screen overflow-hidden">
       {!isSidebarCollapsed && <Sidebar />}
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
@@ -699,19 +774,20 @@ export default function PipelineDesigner() {
                 </Button>
               )}
               <div>
-                <h2 className="text-2xl font-bold text-gray-900">Pipeline Designer</h2>
-                <p className="text-sm text-gray-600 mt-1">Design and deploy your multi-cloud infrastructure</p>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Pipeline Designer
+                </h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Design and deploy your multi-cloud infrastructure
+                </p>
               </div>
             </div>
-
           </div>
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {showComponentLibrary && (
-            <ComponentLibrary />
-          )}
-          
+          {showComponentLibrary && <ComponentLibrary />}
+
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
             {/* Canvas Toolbar */}
@@ -720,11 +796,14 @@ export default function PipelineDesigner() {
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{pipelineName}</span>
+                      <span className="font-medium text-gray-900">
+                        {pipelineName}
+                      </span>
                       {pipelineDescription && (
-                        <span className="text-sm text-gray-600">{pipelineDescription}</span>
+                        <span className="text-sm text-gray-600">
+                          {pipelineDescription}
+                        </span>
                       )}
-
                     </div>
                     <Button
                       variant="ghost"
@@ -734,51 +813,71 @@ export default function PipelineDesigner() {
                       <Edit3 className="w-4 h-4" />
                     </Button>
                   </div>
-                  
+
                   {/* Action Buttons */}
                   <div className="flex items-center space-x-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => toast({ title: "Publish", description: "Publishing functionality coming soon" })}
+                      onClick={() =>
+                        toast({
+                          title: "Publish",
+                          description: "Publishing functionality coming soon",
+                        })
+                      }
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Publish
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => toast({ title: "Export", description: "Export functionality coming soon" })}
+                      onClick={() =>
+                        toast({
+                          title: "Export",
+                          description: "Export functionality coming soon",
+                        })
+                      }
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => toast({ title: "Import", description: "Import functionality coming soon" })}
+                      onClick={() =>
+                        toast({
+                          title: "Import",
+                          description: "Import functionality coming soon",
+                        })
+                      }
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Import
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={validateAllComponents}
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Validate
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
-                      onClick={() => toast({ title: "Preview", description: "Preview functionality coming soon" })}
+                      onClick={() =>
+                        toast({
+                          title: "Preview",
+                          description: "Preview functionality coming soon",
+                        })
+                      }
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Preview
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={handleSavePipeline}
                       disabled={savePipelineMutation.isPending}
@@ -788,21 +887,32 @@ export default function PipelineDesigner() {
                       ) : (
                         <Plus className="w-4 h-4 mr-1" />
                       )}
-                      {savePipelineMutation.isPending ? "Creating..." : "Create"}
+                      {savePipelineMutation.isPending
+                        ? "Creating..."
+                        : "Create"}
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       size="sm"
                       onClick={() => setShowDeployModal(true)}
-                      disabled={!pipelineId || createDeploymentMutation.isPending}
+                      disabled={
+                        !pipelineId || createDeploymentMutation.isPending
+                      }
                     >
                       <Rocket className="w-4 h-4 mr-1" />
-                      {createDeploymentMutation.isPending ? "Deploying..." : "Deploy"}
+                      {createDeploymentMutation.isPending
+                        ? "Deploying..."
+                        : "Deploy"}
                     </Button>
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       size="sm"
-                      onClick={() => toast({ title: "Destroy", description: "Destroy functionality coming soon" })}
+                      onClick={() =>
+                        toast({
+                          title: "Destroy",
+                          description: "Destroy functionality coming soon",
+                        })
+                      }
                     >
                       <Zap className="w-4 h-4 mr-1" />
                       Destroy
@@ -847,8 +957,14 @@ export default function PipelineDesigner() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowComponentLibrary(!showComponentLibrary)}
-                    title={showComponentLibrary ? "Hide components" : "Show components"}
+                    onClick={() =>
+                      setShowComponentLibrary(!showComponentLibrary)
+                    }
+                    title={
+                      showComponentLibrary
+                        ? "Hide components"
+                        : "Show components"
+                    }
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
@@ -882,7 +998,8 @@ export default function PipelineDesigner() {
                 fitView
                 className="bg-gray-50"
                 style={{
-                  backgroundImage: "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
+                  backgroundImage:
+                    "radial-gradient(circle, #e5e7eb 1px, transparent 1px)",
                   backgroundSize: "20px 20px",
                 }}
               >
@@ -905,8 +1022,6 @@ export default function PipelineDesigner() {
           )}
         </div>
       </div>
-
-
 
       <DeployPipelineModal
         isOpen={showDeployModal}
@@ -937,7 +1052,9 @@ export default function PipelineDesigner() {
         open={showCredentialSelectionModal}
         onClose={() => setShowCredentialSelectionModal(false)}
         onSelect={handleCredentialSelectedWrapper}
-        credentials={credentials.filter(cred => cred.provider === getCloudProvider(nodes))}
+        credentials={credentials.filter(
+          (cred) => cred.provider === getCloudProvider(nodes),
+        )}
         provider={getCloudProvider(nodes)}
       />
 

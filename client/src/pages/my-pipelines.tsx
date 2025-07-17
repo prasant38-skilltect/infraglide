@@ -1,12 +1,29 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Download, Upload, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  Download,
+  Upload,
+  Trash2,
+  Edit3,
+  Eye,
+  ChevronUp,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+} from "lucide-react";
 import { useLocation } from "wouter";
 
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -17,20 +34,26 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import type { Pipeline } from "@shared/schema";
 
-type SortField = 'name' | 'provider' | 'description' | 'createdAt';
-type SortDirection = 'asc' | 'desc';
+type SortField = "name" | "provider" | "description" | "createdAt";
+type SortDirection = "asc" | "desc";
 
 export default function MyPipelines() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortField, setSortField] = useState<SortField>("createdAt");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
@@ -62,13 +85,14 @@ export default function MyPipelines() {
 
   const handleExport = (pipeline: Pipeline) => {
     const dataStr = JSON.stringify(pipeline, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    
-    const exportFileDefaultName = `${pipeline.name.replace(/\s+/g, '_')}_v${pipeline.id}.json`;
-    
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
+    const dataUri =
+      "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `${pipeline.name.replace(/\s+/g, "_")}_v${pipeline.id}.json`;
+
+    const linkElement = document.createElement("a");
+    linkElement.setAttribute("href", dataUri);
+    linkElement.setAttribute("download", exportFileDefaultName);
     linkElement.click();
 
     toast({
@@ -80,21 +104,24 @@ export default function MyPipelines() {
   const handleImportToPipelineDesigner = (pipeline: Pipeline) => {
     // Store the pipeline data in sessionStorage to be picked up by the pipeline designer
     const pipelineData = {
-      name: `${pipeline.name}_imported_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')}`,
-      description: pipeline.description || 'Imported pipeline',
+      name: `${pipeline.name}`,
+      description: pipeline.description || "Imported pipeline",
       region: pipeline.region,
       components: pipeline.components || [],
       connections: pipeline.connections || [],
       version: 1,
-      importedFromId: pipeline.id // Track source pipeline
+      importedFromId: pipeline.id, // Track source pipeline
     };
-    
+
     // Store in sessionStorage for the pipeline designer to pick up
-    sessionStorage.setItem('importedPipelineData', JSON.stringify(pipelineData));
-    
+    sessionStorage.setItem(
+      "importedPipelineData",
+      JSON.stringify(pipelineData),
+    );
+
     // Navigate to pipeline designer
-    setLocation('/pipeline');
-    
+    setLocation("/pipeline");
+
     toast({
       title: "Pipeline imported to designer",
       description: `${pipeline.name} has been imported to the pipeline designer.`,
@@ -103,9 +130,9 @@ export default function MyPipelines() {
 
   // Keep the old import functionality for file imports (if needed)
   const handleImportFromFile = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
     input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
@@ -113,16 +140,16 @@ export default function MyPipelines() {
         reader.onload = (e) => {
           try {
             const importedPipeline = JSON.parse(e.target?.result as string);
-            
+
             // Create a new pipeline with imported data
             const newPipelineData = {
-              name: `${importedPipeline.name || 'Imported Pipeline'}_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')}`,
-              description: importedPipeline.description || 'Imported pipeline',
+              name: `${importedPipeline.name || "Imported Pipeline"}_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, "").replace("T", "-")}`,
+              description: importedPipeline.description || "Imported pipeline",
               components: importedPipeline.components || [],
               connections: importedPipeline.connections || [],
-              region: importedPipeline.region || 'us-east-1',
-              status: 'draft',
-              version: 1
+              region: importedPipeline.region || "us-east-1",
+              status: "draft",
+              version: 1,
             };
 
             createPipelineMutation.mutate(newPipelineData, {
@@ -138,7 +165,7 @@ export default function MyPipelines() {
                   description: "Failed to create pipeline from imported data.",
                   variant: "destructive",
                 });
-              }
+              },
             });
           } catch (error) {
             toast({
@@ -173,34 +200,37 @@ export default function MyPipelines() {
   };
 
   const getCloudProvider = (pipeline: Pipeline) => {
-    if (!Array.isArray(pipeline.components) || pipeline.components.length === 0) {
-      return 'Unknown';
+    if (
+      !Array.isArray(pipeline.components) ||
+      pipeline.components.length === 0
+    ) {
+      return "Unknown";
     }
-    
+
     const firstComponent = pipeline.components[0];
     const componentType = firstComponent.type;
-    
-    if (componentType.startsWith('gcp-')) return 'GCP';
-    if (componentType.startsWith('azure-')) return 'Azure';
-    return 'AWS';
+
+    if (componentType.startsWith("gcp-")) return "GCP";
+    if (componentType.startsWith("azure-")) return "Azure";
+    return "AWS";
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
     setCurrentPage(1); // Reset to first page when sorting
   };
@@ -209,23 +239,28 @@ export default function MyPipelines() {
     if (sortField !== field) {
       return <ChevronUp className="w-4 h-4 text-gray-400" />;
     }
-    return sortDirection === 'asc' ? 
-      <ChevronUp className="w-4 h-4 text-gray-700" /> : 
-      <ChevronDown className="w-4 h-4 text-gray-700" />;
+    return sortDirection === "asc" ? (
+      <ChevronUp className="w-4 h-4 text-gray-700" />
+    ) : (
+      <ChevronDown className="w-4 h-4 text-gray-700" />
+    );
   };
 
   const groupedPipelines = useMemo(() => {
     // Group pipelines by name
-    const grouped = pipelines.reduce((acc, pipeline) => {
-      if (!acc[pipeline.name]) {
-        acc[pipeline.name] = [];
-      }
-      acc[pipeline.name].push(pipeline);
-      return acc;
-    }, {} as Record<string, Pipeline[]>);
+    const grouped = pipelines.reduce(
+      (acc, pipeline) => {
+        if (!acc[pipeline.name]) {
+          acc[pipeline.name] = [];
+        }
+        acc[pipeline.name].push(pipeline);
+        return acc;
+      },
+      {} as Record<string, Pipeline[]>,
+    );
 
     // Sort versions within each group (highest version first)
-    Object.keys(grouped).forEach(name => {
+    Object.keys(grouped).forEach((name) => {
       grouped[name].sort((a, b) => b.version - a.version);
     });
 
@@ -234,37 +269,46 @@ export default function MyPipelines() {
 
   const sortedAndPaginatedPipelines = useMemo(() => {
     // Get the main pipeline (latest version) for each group for sorting
-    const mainPipelines = Object.entries(groupedPipelines).map(([name, versions]) => ({
-      name,
-      pipeline: versions[0], // Latest version
-      versions,
-      totalVersions: versions.length
-    }));
+    const mainPipelines = Object.entries(groupedPipelines).map(
+      ([name, versions]) => ({
+        name,
+        pipeline: versions[0], // Latest version
+        versions,
+        totalVersions: versions.length,
+      }),
+    );
 
     // Filter by search query
-    const searchFiltered = searchQuery 
-      ? mainPipelines.filter(group => {
+    const searchFiltered = searchQuery
+      ? mainPipelines.filter((group) => {
           const pipeline = group.pipeline;
           const searchLower = searchQuery.toLowerCase();
-          
+
           // Search in name
           if (group.name.toLowerCase().includes(searchLower)) return true;
-          
+
           // Search in description
-          if (pipeline.description && pipeline.description.toLowerCase().includes(searchLower)) return true;
-          
+          if (
+            pipeline.description &&
+            pipeline.description.toLowerCase().includes(searchLower)
+          )
+            return true;
+
           // Search in creation date (formatted)
           const createdDate = new Date(pipeline.createdAt).toLocaleDateString();
           if (createdDate.includes(searchLower)) return true;
-          
+
           return false;
         })
       : mainPipelines;
 
     // Filter by provider
-    const filtered = selectedProvider === "All" 
-      ? searchFiltered 
-      : searchFiltered.filter(group => getCloudProvider(group.pipeline) === selectedProvider);
+    const filtered =
+      selectedProvider === "All"
+        ? searchFiltered
+        : searchFiltered.filter(
+            (group) => getCloudProvider(group.pipeline) === selectedProvider,
+          );
 
     // Sort main pipelines
     const sorted = filtered.sort((a, b) => {
@@ -272,19 +316,19 @@ export default function MyPipelines() {
       let bValue: string | number;
 
       switch (sortField) {
-        case 'name':
+        case "name":
           aValue = a.name.toLowerCase();
           bValue = b.name.toLowerCase();
           break;
-        case 'provider':
+        case "provider":
           aValue = getCloudProvider(a.pipeline);
           bValue = getCloudProvider(b.pipeline);
           break;
-        case 'description':
-          aValue = (a.pipeline.description || '').toLowerCase();
-          bValue = (b.pipeline.description || '').toLowerCase();
+        case "description":
+          aValue = (a.pipeline.description || "").toLowerCase();
+          bValue = (b.pipeline.description || "").toLowerCase();
           break;
-        case 'createdAt':
+        case "createdAt":
           aValue = new Date(a.pipeline.createdAt).getTime();
           bValue = new Date(b.pipeline.createdAt).getTime();
           break;
@@ -293,7 +337,7 @@ export default function MyPipelines() {
           bValue = b.name.toLowerCase();
       }
 
-      if (sortDirection === 'asc') {
+      if (sortDirection === "asc") {
         return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
       } else {
         return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
@@ -303,13 +347,22 @@ export default function MyPipelines() {
     // Paginate
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    
+
     return {
       paginatedGroups: sorted.slice(startIndex, endIndex),
       totalPages: Math.ceil(sorted.length / itemsPerPage),
-      totalItems: sorted.length
+      totalItems: sorted.length,
     };
-  }, [groupedPipelines, sortField, sortDirection, currentPage, itemsPerPage, getCloudProvider, selectedProvider, searchQuery]);
+  }, [
+    groupedPipelines,
+    sortField,
+    sortDirection,
+    currentPage,
+    itemsPerPage,
+    getCloudProvider,
+    selectedProvider,
+    searchQuery,
+  ]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -317,14 +370,14 @@ export default function MyPipelines() {
 
   const getProviderBadgeColor = (provider: string) => {
     switch (provider) {
-      case 'AWS':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Azure':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'GCP':
-        return 'bg-green-100 text-green-800 border-green-200';
+      case "AWS":
+        return "bg-orange-100 text-orange-800 border-orange-200";
+      case "Azure":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "GCP":
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
@@ -368,13 +421,19 @@ export default function MyPipelines() {
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <Label htmlFor="provider-filter" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="provider-filter"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Filter:
                 </Label>
-                <Select value={selectedProvider} onValueChange={(value) => {
-                  setSelectedProvider(value);
-                  setCurrentPage(1); // Reset to first page when filtering
-                }}>
+                <Select
+                  value={selectedProvider}
+                  onValueChange={(value) => {
+                    setSelectedProvider(value);
+                    setCurrentPage(1); // Reset to first page when filtering
+                  }}
+                >
                   <SelectTrigger id="provider-filter" className="w-32">
                     <SelectValue placeholder="All" />
                   </SelectTrigger>
@@ -395,11 +454,9 @@ export default function MyPipelines() {
             <CardHeader>
               <CardTitle>Pipeline Overview</CardTitle>
               <CardDescription>
-                {searchQuery ? (
-                  `${sortedAndPaginatedPipelines.totalItems} pipeline${sortedAndPaginatedPipelines.totalItems !== 1 ? 's' : ''} found for "${searchQuery}"`
-                ) : (
-                  `${sortedAndPaginatedPipelines.totalItems} total pipelines`
-                )}
+                {searchQuery
+                  ? `${sortedAndPaginatedPipelines.totalItems} pipeline${sortedAndPaginatedPipelines.totalItems !== 1 ? "s" : ""} found for "${searchQuery}"`
+                  : `${sortedAndPaginatedPipelines.totalItems} total pipelines`}
                 {selectedProvider !== "All" && ` (${selectedProvider} only)`}
               </CardDescription>
             </CardHeader>
@@ -411,182 +468,195 @@ export default function MyPipelines() {
                       <TableHead className="w-[300px]">
                         <Button
                           variant="ghost"
-                          onClick={() => handleSort('name')}
+                          onClick={() => handleSort("name")}
                           className="h-auto p-0 font-semibold justify-start"
                         >
                           Pipeline Name
-                          {getSortIcon('name')}
+                          {getSortIcon("name")}
                         </Button>
                       </TableHead>
                       <TableHead className="w-[120px]">
                         <Button
                           variant="ghost"
-                          onClick={() => handleSort('provider')}
+                          onClick={() => handleSort("provider")}
                           className="h-auto p-0 font-semibold justify-start"
                         >
                           Provider
-                          {getSortIcon('provider')}
+                          {getSortIcon("provider")}
                         </Button>
                       </TableHead>
                       <TableHead>
                         <Button
                           variant="ghost"
-                          onClick={() => handleSort('description')}
+                          onClick={() => handleSort("description")}
                           className="h-auto p-0 font-semibold justify-start"
                         >
                           Description
-                          {getSortIcon('description')}
+                          {getSortIcon("description")}
                         </Button>
                       </TableHead>
                       <TableHead className="w-[180px]">
                         <Button
                           variant="ghost"
-                          onClick={() => handleSort('createdAt')}
+                          onClick={() => handleSort("createdAt")}
                           className="h-auto p-0 font-semibold justify-start"
                         >
                           Created At
-                          {getSortIcon('createdAt')}
+                          {getSortIcon("createdAt")}
                         </Button>
                       </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sortedAndPaginatedPipelines.paginatedGroups.flatMap((group) => {
-                      const { name, pipeline, versions, totalVersions } = group;
-                      const provider = getCloudProvider(pipeline);
-                      const isExpanded = expandedRows.has(name);
-                      
-                      const rows = [
-                        // Main row
-                        <TableRow 
-                          key={name}
-                          className="cursor-pointer hover:bg-gray-50"
-                          onClick={() => toggleRowExpansion(name)}
-                        >
-                          <TableCell className="font-medium">
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="p-1 h-6 w-6"
-                              >
-                                {isExpanded ? (
-                                  <ChevronDown className="w-4 h-4" />
-                                ) : (
-                                  <ChevronRight className="w-4 h-4" />
-                                )}
-                              </Button>
-                              <div className="flex flex-col">
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-semibold text-gray-900">
-                                    {name}
-                                  </span>
-                                  <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                                    {totalVersions} version{totalVersions > 1 ? 's' : ''}
+                    {sortedAndPaginatedPipelines.paginatedGroups.flatMap(
+                      (group) => {
+                        const { name, pipeline, versions, totalVersions } =
+                          group;
+                        const provider = getCloudProvider(pipeline);
+                        const isExpanded = expandedRows.has(name);
+
+                        const rows = [
+                          // Main row
+                          <TableRow
+                            key={name}
+                            className="cursor-pointer hover:bg-gray-50"
+                            onClick={() => toggleRowExpansion(name)}
+                          >
+                            <TableCell className="font-medium">
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="p-1 h-6 w-6"
+                                >
+                                  {isExpanded ? (
+                                    <ChevronDown className="w-4 h-4" />
+                                  ) : (
+                                    <ChevronRight className="w-4 h-4" />
+                                  )}
+                                </Button>
+                                <div className="flex flex-col">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-semibold text-gray-900">
+                                      {name}
+                                    </span>
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                      {totalVersions} version
+                                      {totalVersions > 1 ? "s" : ""}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-gray-500">
+                                    Latest: v{pipeline.version} (ID:{" "}
+                                    {pipeline.id})
                                   </span>
                                 </div>
-                                <span className="text-xs text-gray-500">
-                                  Latest: v{pipeline.version} (ID: {pipeline.id})
-                                </span>
                               </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={getProviderBadgeColor(provider)}
-                            >
-                              {provider}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-gray-700">
-                              {pipeline.description || "No description"}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-gray-600">
-                              {formatDate(pipeline.createdAt)}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ];
-                      
-                      // Add expanded version rows if expanded
-                      if (isExpanded) {
-                        versions.forEach((version) => {
-                          rows.push(
-                            <TableRow key={`${name}-${version.id}`} className="bg-gray-50">
-                              <TableCell className="pl-12">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex flex-col">
-                                    <span className="font-medium text-gray-800">
-                                      Version {version.version}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      ID: {version.id} • Created: {formatDate(version.createdAt)}
-                                    </span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={getProviderBadgeColor(provider)}
+                              >
+                                {provider}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-700">
+                                {pipeline.description || "No description"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-gray-600">
+                                {formatDate(pipeline.createdAt)}
+                              </span>
+                            </TableCell>
+                          </TableRow>,
+                        ];
+
+                        // Add expanded version rows if expanded
+                        if (isExpanded) {
+                          versions.forEach((version) => {
+                            rows.push(
+                              <TableRow
+                                key={`${name}-${version.id}`}
+                                className="bg-gray-50"
+                              >
+                                <TableCell className="pl-12">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-gray-800">
+                                        Version {version.version}
+                                      </span>
+                                      <span className="text-xs text-gray-500">
+                                        ID: {version.id} • Created:{" "}
+                                        {formatDate(version.createdAt)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleExport(version);
+                                        }}
+                                        className="h-8 px-2"
+                                      >
+                                        <Download className="w-3 h-3 mr-1" />
+                                        Export
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleImportToPipelineDesigner(
+                                            version,
+                                          );
+                                        }}
+                                        className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                      >
+                                        <Upload className="w-3 h-3 mr-1" />
+                                        Import
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDelete(version.id);
+                                        }}
+                                        className="h-8 px-2 text-red-600 hover:text-red-800"
+                                      >
+                                        <Trash2 className="w-3 h-3 mr-1" />
+                                        Delete
+                                      </Button>
+                                    </div>
                                   </div>
-                                  <div className="flex items-center space-x-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleExport(version);
-                                      }}
-                                      className="h-8 px-2"
-                                    >
-                                      <Download className="w-3 h-3 mr-1" />
-                                      Export
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleImportToPipelineDesigner(version);
-                                      }}
-                                      className="h-8 px-2 text-blue-600 hover:text-blue-800"
-                                    >
-                                      <Upload className="w-3 h-3 mr-1" />
-                                      Import
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDelete(version.id);
-                                      }}
-                                      className="h-8 px-2 text-red-600 hover:text-red-800"
-                                    >
-                                      <Trash2 className="w-3 h-3 mr-1" />
-                                      Delete
-                                    </Button>
-                                  </div>
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-xs text-gray-500">v{version.version}</span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-gray-600 text-sm">
-                                  {version.description || "No description"}
-                                </span>
-                              </TableCell>
-                              <TableCell>
-                                <span className="text-gray-500 text-sm">
-                                  {formatDate(version.createdAt)}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        });
-                      }
-                      
-                      return rows;
-                    })}
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-xs text-gray-500">
+                                    v{version.version}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-gray-600 text-sm">
+                                    {version.description || "No description"}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <span className="text-gray-500 text-sm">
+                                    {formatDate(version.createdAt)}
+                                  </span>
+                                </TableCell>
+                              </TableRow>,
+                            );
+                          });
+                        }
+
+                        return rows;
+                      },
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -595,9 +665,12 @@ export default function MyPipelines() {
               <div className="flex items-center justify-between mt-4">
                 <div className="flex items-center space-x-2 text-sm text-gray-600">
                   <span>
-                    Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
-                    {Math.min(currentPage * itemsPerPage, sortedAndPaginatedPipelines.totalItems)} of{' '}
-                    {sortedAndPaginatedPipelines.totalItems} pipelines
+                    Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                    {Math.min(
+                      currentPage * itemsPerPage,
+                      sortedAndPaginatedPipelines.totalItems,
+                    )}{" "}
+                    of {sortedAndPaginatedPipelines.totalItems} pipelines
                   </span>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -610,23 +683,30 @@ export default function MyPipelines() {
                     <ChevronLeft className="w-4 h-4" />
                     Previous
                   </Button>
-                  
+
                   {/* Page numbers */}
-                  {Array.from({ length: sortedAndPaginatedPipelines.totalPages }, (_, i) => i + 1)
-                    .filter(page => 
-                      page === 1 || 
-                      page === sortedAndPaginatedPipelines.totalPages || 
-                      Math.abs(page - currentPage) <= 1
+                  {Array.from(
+                    { length: sortedAndPaginatedPipelines.totalPages },
+                    (_, i) => i + 1,
+                  )
+                    .filter(
+                      (page) =>
+                        page === 1 ||
+                        page === sortedAndPaginatedPipelines.totalPages ||
+                        Math.abs(page - currentPage) <= 1,
                     )
                     .map((page, index, array) => {
-                      const showEllipsis = index > 0 && page - array[index - 1] > 1;
+                      const showEllipsis =
+                        index > 0 && page - array[index - 1] > 1;
                       return (
                         <div key={page} className="flex items-center">
                           {showEllipsis && (
                             <span className="px-2 text-gray-400">...</span>
                           )}
                           <Button
-                            variant={currentPage === page ? "default" : "outline"}
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
                             size="sm"
                             onClick={() => handlePageChange(page)}
                           >
@@ -635,12 +715,14 @@ export default function MyPipelines() {
                         </div>
                       );
                     })}
-                  
+
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === sortedAndPaginatedPipelines.totalPages}
+                    disabled={
+                      currentPage === sortedAndPaginatedPipelines.totalPages
+                    }
                   >
                     Next
                     <ChevronRight className="w-4 h-4" />
