@@ -25,6 +25,7 @@ import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
 import VersionConflictModal from "@/components/modals/version-conflict-modal";
 import CredentialSelectionModal from "@/components/modals/credential-selection-modal";
 import AddCredentialModal from "@/components/modals/add-credential-modal";
+import ImportPipelineModal from "@/components/modals/import-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -83,6 +84,7 @@ export default function PipelineDesigner() {
   const [showCredentialSelectionModal, setShowCredentialSelectionModal] =
     useState(false);
   const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -825,6 +827,65 @@ export default function PipelineDesigner() {
     }
   };
 
+  const handleImportPipeline = (pipelineData: any) => {
+    try {
+      // Set pipeline metadata
+      setPipelineName(pipelineData.name || "Imported Pipeline");
+      setPipelineDescription(pipelineData.description || "");
+      setPipelineRegion(pipelineData.region || "us-east-1");
+      
+      // Mark that we've imported data
+      hasImportedData.current = true;
+
+      // Load components to canvas
+      if (Array.isArray(pipelineData.components) && pipelineData.components.length > 0) {
+        const loadedNodes = pipelineData.components.map((component: any) => ({
+          id: component.id,
+          type: "cloudComponent",
+          position: component.position,
+          data: {
+            type: component.type,
+            name: component.name,
+            config: component.config,
+            validationError: false,
+          },
+        }));
+        setNodes(loadedNodes);
+      }
+
+      // Load connections
+      if (Array.isArray(pipelineData.connections) && pipelineData.connections.length > 0) {
+        const loadedEdges = pipelineData.connections.map((connection: any) => ({
+          id: connection.id,
+          source: connection.source,
+          target: connection.target,
+          type: "smoothstep",
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            width: 20,
+            height: 20,
+            color: "#6b7280",
+          },
+          style: {
+            strokeWidth: 2,
+            stroke: "#6b7280",
+          },
+        }));
+        setEdges(loadedEdges);
+      }
+
+      // Clear validation errors
+      setValidationErrors(new Set());
+    } catch (error) {
+      console.error("Failed to import pipeline:", error);
+      toast({
+        title: "Import failed",
+        description: "Failed to load pipeline data. Please check the file format.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="flex h-screen overflow-hidden">
       {!isSidebarCollapsed && <Sidebar />}
@@ -910,12 +971,7 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Import",
-                          description: "Import functionality coming soon",
-                        })
-                      }
+                      onClick={() => setShowImportModal(true)}
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Import
@@ -1128,6 +1184,12 @@ export default function PipelineDesigner() {
         onClose={() => setShowAddCredentialModal(false)}
         onAdd={handleCredentialAddedWrapper}
         provider={getCloudProvider(nodes)}
+      />
+
+      <ImportPipelineModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportPipeline}
       />
     </div>
   );

@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 17, 2025
+- **Implemented Complete Import/Export Functionality for Pipeline Designer**
+  - Added Export functionality that creates JSON files matching My Pipelines format with all database fields
+  - Created ImportPipelineModal component with drag-and-drop file upload interface
+  - Added file validation for JSON format and size limits (10MB maximum)
+  - Import functionality updates canvas, pipeline name, description, and region from JSON files
+  - Export includes canvas snapshot, component configurations, connections, and metadata
+  - Both features use the same data format ensuring compatibility between Pipeline Designer and My Pipelines
+  - Enhanced user workflow with clear file requirements and error handling
+
+### January 17, 2025
 - **Enhanced Import Functionality for Direct Canvas Loading**
   - Modified import buttons in My Pipelines to load specific pipeline versions directly into Pipeline Designer canvas
   - Implemented handleImportToPipelineDesigner function to store pipeline data in sessionStorage and navigate to designer
