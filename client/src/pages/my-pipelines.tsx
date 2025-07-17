@@ -2,6 +2,7 @@ import * as React from "react";
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Download, Upload, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useLocation } from "wouter";
 
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
@@ -27,6 +28,7 @@ type SortDirection = 'asc' | 'desc';
 export default function MyPipelines() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [location, setLocation] = useLocation();
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,7 +77,32 @@ export default function MyPipelines() {
     });
   };
 
-  const handleImport = () => {
+  const handleImportToPipelineDesigner = (pipeline: Pipeline) => {
+    // Store the pipeline data in sessionStorage to be picked up by the pipeline designer
+    const pipelineData = {
+      name: `${pipeline.name}_imported_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')}`,
+      description: pipeline.description || 'Imported pipeline',
+      region: pipeline.region,
+      components: pipeline.components || [],
+      connections: pipeline.connections || [],
+      version: 1,
+      importedFromId: pipeline.id // Track source pipeline
+    };
+    
+    // Store in sessionStorage for the pipeline designer to pick up
+    sessionStorage.setItem('importedPipelineData', JSON.stringify(pipelineData));
+    
+    // Navigate to pipeline designer
+    setLocation('/pipeline-designer');
+    
+    toast({
+      title: "Pipeline imported to designer",
+      description: `${pipeline.name} has been imported to the pipeline designer.`,
+    });
+  };
+
+  // Keep the old import functionality for file imports (if needed)
+  const handleImportFromFile = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -518,7 +545,7 @@ export default function MyPipelines() {
                                       size="sm"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        handleImport();
+                                        handleImportToPipelineDesigner(version);
                                       }}
                                       className="h-8 px-2 text-blue-600 hover:text-blue-800"
                                     >

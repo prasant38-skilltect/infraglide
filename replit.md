@@ -126,6 +126,15 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 17, 2025
+- **Enhanced Import Functionality for Direct Canvas Loading**
+  - Modified import buttons in My Pipelines to load specific pipeline versions directly into Pipeline Designer canvas
+  - Implemented handleImportToPipelineDesigner function to store pipeline data in sessionStorage and navigate to designer
+  - Added sessionStorage-based pipeline import detection in Pipeline Designer with automatic canvas population
+  - Import functionality now loads components, connections, metadata, and configurations directly to the canvas
+  - Enhanced user workflow: Import button → Navigate to Pipeline Designer → Canvas automatically populated
+  - Maintained backward compatibility with existing file-based import functionality
+
+### January 17, 2025
 - **Added Provider Filtering to My Pipelines Page**
   - Implemented provider filter dropdown (AWS/Azure/GCP/All) in My Pipelines header
   - Added selectedProvider state with automatic pagination reset on filter change

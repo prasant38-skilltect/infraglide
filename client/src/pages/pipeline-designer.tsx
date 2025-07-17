@@ -107,6 +107,77 @@ export default function PipelineDesigner() {
     setIsSidebarCollapsed(true);
   }, []);
 
+  // Check for imported pipeline data from sessionStorage
+  useEffect(() => {
+    const importedData = sessionStorage.getItem('importedPipelineData');
+    if (importedData && !pipelineId) { // Only load if not editing an existing pipeline
+      try {
+        const pipelineData = JSON.parse(importedData);
+        
+        // Set pipeline metadata
+        setPipelineName(pipelineData.name);
+        setPipelineDescription(pipelineData.description || "");
+        setPipelineRegion(pipelineData.region || 'us-east-1');
+        
+        // Load components to canvas
+        if (Array.isArray(pipelineData.components) && pipelineData.components.length > 0) {
+          const loadedNodes = pipelineData.components.map((component: ComponentConfig) => ({
+            id: component.id,
+            type: "cloudComponent",
+            position: component.position,
+            data: {
+              type: component.type,
+              name: component.name,
+              config: component.config,
+              validationError: false,
+            },
+          }));
+          setNodes(loadedNodes);
+        }
+
+        // Load connections
+        if (Array.isArray(pipelineData.connections) && pipelineData.connections.length > 0) {
+          const loadedEdges = pipelineData.connections.map((connection: any) => ({
+            id: connection.id,
+            source: connection.source,
+            target: connection.target,
+            type: "smoothstep",
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#6b7280',
+            },
+            style: {
+              strokeWidth: 2,
+              stroke: '#6b7280',
+            },
+          }));
+          setEdges(loadedEdges);
+        }
+
+        // Clear validation errors
+        setValidationErrors(new Set());
+        
+        // Clear sessionStorage to prevent reloading on refresh
+        sessionStorage.removeItem('importedPipelineData');
+        
+        toast({
+          title: "Pipeline imported successfully",
+          description: `${pipelineData.name} has been loaded in the designer.`,
+        });
+      } catch (error) {
+        console.error('Failed to load imported pipeline:', error);
+        sessionStorage.removeItem('importedPipelineData');
+        toast({
+          title: "Import failed",
+          description: "Failed to load imported pipeline data.",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [pipelineId, toast]);
+
 
 
   // Load existing pipeline if editing
