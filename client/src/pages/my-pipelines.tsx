@@ -516,7 +516,7 @@ export default function MyPipelines() {
                     .map((page, index, array) => {
                       const showEllipsis = index > 0 && page - array[index - 1] > 1;
                       return (
-                        <React.Fragment key={page}>
+                        <div key={page} className="flex items-center">
                           {showEllipsis && (
                             <span className="px-2 text-gray-400">...</span>
                           )}
@@ -527,7 +527,7 @@ export default function MyPipelines() {
                           >
                             {page}
                           </Button>
-                        </React.Fragment>
+                        </div>
                       );
                     })}
                   

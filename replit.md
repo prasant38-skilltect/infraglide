@@ -126,6 +126,24 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 17, 2025
+- **Added Provider Filtering to My Pipelines Page**
+  - Implemented provider filter dropdown (AWS/Azure/GCP/All) in My Pipelines header
+  - Added selectedProvider state with automatic pagination reset on filter change
+  - Updated sortedAndPaginatedPipelines logic to include provider filtering alongside existing sorting
+  - Filter integrates seamlessly with existing table sorting and pagination features
+
+- **Fixed Cross-Platform Compatibility Issues**
+  - Installed cross-env package for Windows environment variable compatibility
+  - Resolved NODE_ENV recognition issues on Windows Command Prompt
+  - Fixed React Fragment warnings in pagination component by replacing Fragment with div wrapper
+
+- **Enhanced Single Table Format for Credentials Page**
+  - Redesigned credentials page from provider-grouped sections to unified table format
+  - Implemented 10 items per page pagination with navigation controls
+  - Added comprehensive pagination UI with first/previous/next/last buttons and page counter
+  - Simplified layout with single table showing Name, Provider/Type, Username, Created, Actions columns
+
+### January 17, 2025
 - **Rebranded Project Name from CloudFlow to InfraGlide**
   - Updated project title in HTML head tag and sidebar branding
   - Updated documentation files (replit.md, SETUP.md) with new project name
