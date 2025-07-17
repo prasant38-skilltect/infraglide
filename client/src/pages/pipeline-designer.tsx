@@ -110,14 +110,23 @@ export default function PipelineDesigner() {
   // Check for imported pipeline data from sessionStorage
   useEffect(() => {
     const importedData = sessionStorage.getItem('importedPipelineData');
+    console.log('Checking for imported data:', importedData);
+    console.log('pipelineId:', pipelineId);
+    
     if (importedData && !pipelineId) { // Only load if not editing an existing pipeline
       try {
         const pipelineData = JSON.parse(importedData);
+        console.log('Parsed pipeline data:', pipelineData);
         
         // Set pipeline metadata
+        console.log('Setting pipeline name to:', pipelineData.name);
+        console.log('Setting pipeline description to:', pipelineData.description);
         setPipelineName(pipelineData.name);
         setPipelineDescription(pipelineData.description || "");
         setPipelineRegion(pipelineData.region || 'us-east-1');
+        
+        // Log the state after setting (for debugging)
+        console.log('State should be updated now');
         
         // Load components to canvas
         if (Array.isArray(pipelineData.components) && pipelineData.components.length > 0) {
