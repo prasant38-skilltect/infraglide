@@ -76,6 +76,32 @@ export default function PipelineDesigner() {
     return `newPipeline_${dateTime}`;
   };
 
+  // Capture the canvas as an image
+  const captureCanvasSnapshot = useCallback(async (): Promise<string | null> => {
+    if (!reactFlowInstance) return null;
+    
+    try {
+      // Get the viewport element
+      const viewportElement = document.querySelector('.react-flow__viewport');
+      if (!viewportElement) return null;
+
+      // Use html2canvas to capture the canvas
+      const { default: html2canvas } = await import('html2canvas');
+      const canvas = await html2canvas(viewportElement as HTMLElement, {
+        backgroundColor: '#ffffff',
+        scale: 0.5, // Reduce size for storage efficiency
+        useCORS: true,
+        allowTaint: true,
+      });
+
+      // Convert to base64
+      return canvas.toDataURL('image/png');
+    } catch (error) {
+      console.error('Failed to capture canvas:', error);
+      return null;
+    }
+  }, [reactFlowInstance]);
+
   // Always hide the sidebar when entering pipeline designer
   useEffect(() => {
     setIsSidebarCollapsed(true);
@@ -376,10 +402,14 @@ export default function PipelineDesigner() {
   const handleSavePipeline = async () => {
     // If editing existing pipeline, save directly
     if (pipelineId) {
+      // Capture canvas snapshot
+      const snapshot = await captureCanvasSnapshot();
+      
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
         region: pipelineRegion,
+        snapshot: snapshot,
         components: nodes.map((node) => ({
           id: node.id,
           type: node.data.type,
@@ -442,12 +472,16 @@ export default function PipelineDesigner() {
     savePipelineWithCredential(credential);
   };
 
-  const savePipelineWithCredential = (credential: Credential) => {
+  const savePipelineWithCredential = async (credential: Credential) => {
+    // Capture canvas snapshot
+    const snapshot = await captureCanvasSnapshot();
+    
     const pipelineData = {
       name: pipelineName,
       description: pipelineDescription,
       region: pipelineRegion,
       version: 1,
+      snapshot: snapshot,
       credentialName: credential.name,
       credentialUsername: credential.username,
       credentialPassword: credential.password,
@@ -515,14 +549,18 @@ export default function PipelineDesigner() {
     await handleCredentialValidation();
   };
 
-  const saveNewVersionWithCredential = (credential: Credential) => {
+  const saveNewVersionWithCredential = async (credential: Credential) => {
     if (!conflictData) return;
+    
+    // Capture canvas snapshot
+    const snapshot = await captureCanvasSnapshot();
     
     const pipelineData = {
       name: pipelineName,
       description: pipelineDescription,
       region: pipelineRegion,
       version: conflictData.nextVersion,
+      snapshot: snapshot,
       credentialName: credential.name,
       credentialUsername: credential.username,
       credentialPassword: credential.password,

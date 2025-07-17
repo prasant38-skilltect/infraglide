@@ -18,6 +18,7 @@ export const pipelines = pgTable("pipelines", {
   region: text("region").notNull().default("us-east-1"),
   components: jsonb("components").notNull().default([]),
   connections: jsonb("connections").notNull().default([]),
+  snapshot: text("snapshot"), // Base64 encoded image of the pipeline canvas
   credentialName: text("credential_name"),
   credentialUsername: text("credential_username"),
   credentialPassword: text("credential_password"),
