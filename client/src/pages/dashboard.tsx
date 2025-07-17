@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Sidebar from "@/components/layout/sidebar";
-import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector } from "lucide-react";
-import type { Pipeline, Deployment } from "@shared/schema";
+import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector, Users, Server, Globe, Layers, Activity, TrendingUp, Database, Cloud, Shield, Zap } from "lucide-react";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
+import type { Pipeline, Deployment, Credential } from "@shared/schema";
 
 export default function Dashboard() {
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery<Pipeline[]>({
@@ -14,6 +15,101 @@ export default function Dashboard() {
 
   const { data: deployments = [], isLoading: deploymentsLoading } = useQuery<Deployment[]>({
     queryKey: ["/api/deployments"],
+  });
+
+  const { data: credentials = [], isLoading: credentialsLoading } = useQuery<Credential[]>({
+    queryKey: ["/api/credentials"],
+  });
+
+  // Calculate metrics
+  const totalPipelines = pipelines.length;
+  const activePipelines = pipelines.filter(p => p.status === "deployed" || p.status === "running").length;
+  const totalUsers = credentials.length; // Using credentials as user proxy
+  
+  // Calculate services and components
+  const allComponents = pipelines.flatMap(p => 
+    Array.isArray(p.components) ? p.components : []
+  );
+  const totalServices = allComponents.length;
+  
+  // Get cloud providers from pipelines
+  const getCloudProvider = (pipeline: Pipeline) => {
+    if (!Array.isArray(pipeline.components) || pipeline.components.length === 0) return 'Unknown';
+    const component = pipeline.components[0];
+    if (typeof component === 'object' && component !== null && 'type' in component) {
+      const type = component.type as string;
+      if (['ec2', 's3', 'rds', 'lambda', 'vpc', 'alb'].includes(type)) return 'AWS';
+      if (['vm', 'storage', 'database', 'function', 'network'].includes(type)) return 'Azure';
+      if (['compute', 'bucket', 'sql', 'cloud-function', 'vpc-network'].includes(type)) return 'GCP';
+    }
+    return 'Unknown';
+  };
+
+  // Provider distribution
+  const providerData = pipelines.reduce((acc, pipeline) => {
+    const provider = getCloudProvider(pipeline);
+    acc[provider] = (acc[provider] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const providerChartData = Object.entries(providerData).map(([provider, count]) => ({
+    name: provider,
+    value: count,
+    color: provider === 'AWS' ? '#FF9900' : provider === 'Azure' ? '#0078D4' : provider === 'GCP' ? '#4285F4' : '#6B7280'
+  }));
+
+  // Service type distribution
+  const serviceTypes = allComponents.reduce((acc, component) => {
+    if (typeof component === 'object' && component !== null && 'type' in component) {
+      const type = component.type as string;
+      let category = 'Other';
+      if (['ec2', 'vm', 'compute'].includes(type)) category = 'Compute';
+      else if (['s3', 'storage', 'bucket'].includes(type)) category = 'Storage';
+      else if (['rds', 'database', 'sql'].includes(type)) category = 'Database';
+      else if (['lambda', 'function', 'cloud-function'].includes(type)) category = 'Functions';
+      else if (['vpc', 'network', 'vpc-network'].includes(type)) category = 'Networking';
+      else if (['alb'].includes(type)) category = 'Load Balancing';
+      
+      acc[category] = (acc[category] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  const serviceTypeChartData = Object.entries(serviceTypes).map(([type, count]) => ({
+    name: type,
+    value: count
+  }));
+
+  // Region distribution
+  const regionData = pipelines.reduce((acc, pipeline) => {
+    const region = pipeline.region || 'Unknown';
+    acc[region] = (acc[region] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const regionChartData = Object.entries(regionData).map(([region, count]) => ({
+    name: region,
+    value: count
+  }));
+
+  // Deployment trends (last 7 days)
+  const last7Days = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return date;
+  });
+
+  const deploymentTrends = last7Days.map(date => {
+    const dayDeployments = deployments.filter(d => {
+      const deployDate = new Date(d.createdAt);
+      return deployDate.toDateString() === date.toDateString();
+    });
+
+    return {
+      date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      deployments: dayDeployments.length,
+      successful: dayDeployments.filter(d => d.status === 'success').length
+    };
   });
 
   const getStatusColor = (status: string) => {
@@ -58,36 +154,63 @@ export default function Dashboard() {
 
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
           <div className="max-w-7xl mx-auto space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Enhanced Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Pipelines</CardTitle>
                   <Projector className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{pipelines.length}</div>
+                  <div className="text-2xl font-bold">{totalPipelines}</div>
                   <p className="text-xs text-muted-foreground">
-                    {pipelines.filter(p => p.status === "deployed").length} deployed
+                    {activePipelines} active
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Deployments</CardTitle>
-                  <Rocket className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium">Active Pipelines</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {deployments.filter(d => d.status === "running").length}
-                  </div>
+                  <div className="text-2xl font-bold">{activePipelines}</div>
                   <p className="text-xs text-muted-foreground">
-                    {deployments.filter(d => d.status === "success").length} completed today
+                    {Math.round((activePipelines / Math.max(totalPipelines, 1)) * 100)}% of total
                   </p>
                 </CardContent>
               </Card>
 
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalUsers}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Credential accounts
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Total Services</CardTitle>
+                  <Server className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{totalServices}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Cloud components
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Additional Metrics Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
@@ -99,7 +222,188 @@ export default function Dashboard() {
                       ? Math.round((deployments.filter(d => d.status === "success").length / deployments.length) * 100)
                       : 0}%
                   </div>
-                  <p className="text-xs text-muted-foreground">Last 30 deployments</p>
+                  <p className="text-xs text-muted-foreground">All deployments</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Running Deployments</CardTitle>
+                  <Rocket className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {deployments.filter(d => d.status === "running").length}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {deployments.filter(d => d.status === "pending").length} pending
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Unique Regions</CardTitle>
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{Object.keys(regionData).length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Deployment regions
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Service Types</CardTitle>
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{Object.keys(serviceTypes).length}</div>
+                  <p className="text-xs text-muted-foreground">
+                    Different categories
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Charts and Analytics */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Cloud Provider Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Cloud className="w-5 h-5" />
+                    <span>Cloud Provider Distribution</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {providerChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Pie
+                          data={providerChartData}
+                          cx="50%"
+                          cy="50%"
+                          labelLine={false}
+                          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                          outerRadius={80}
+                          fill="#8884d8"
+                          dataKey="value"
+                        >
+                          {providerChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <Cloud className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                        <p>No provider data available</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Service Types Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Layers className="w-5 h-5" />
+                    <span>Service Types</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {serviceTypeChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={serviceTypeChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#3B82F6" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <Layers className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                        <p>No service data available</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Regional Distribution and Deployment Trends */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Regional Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Globe className="w-5 h-5" />
+                    <span>Regional Distribution</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {regionChartData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={regionChartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis />
+                        <Tooltip />
+                        <Bar dataKey="value" fill="#10B981" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-64 text-gray-500">
+                      <div className="text-center">
+                        <Globe className="mx-auto h-12 w-12 text-gray-400 mb-2" />
+                        <p>No regional data available</p>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Deployment Trends */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5" />
+                    <span>Deployment Trends (Last 7 Days)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={deploymentTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="deployments" 
+                        stroke="#3B82F6" 
+                        strokeWidth={2}
+                        name="Total Deployments"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="successful" 
+                        stroke="#10B981" 
+                        strokeWidth={2}
+                        name="Successful"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
             </div>
