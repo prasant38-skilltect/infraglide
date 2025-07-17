@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Download, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Download, Upload, Trash2, Edit3, Eye, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import Sidebar from "@/components/layout/sidebar";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ type SortDirection = 'asc' | 'desc';
 
 export default function MyPipelines() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [sortField, setSortField] = useState<SortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,6 +35,25 @@ export default function MyPipelines() {
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
+  });
+
+  const createPipelineMutation = useMutation({
+    mutationFn: async (pipelineData: any) => {
+      const response = await fetch("/api/pipelines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(pipelineData),
+      });
+      if (!response.ok) {
+        throw new Error("Failed to create pipeline");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+    },
   });
 
   const handleExport = (pipeline: Pipeline) => {
@@ -51,6 +71,58 @@ export default function MyPipelines() {
       title: "Pipeline exported",
       description: `${pipeline.name} has been exported successfully.`,
     });
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const importedPipeline = JSON.parse(e.target?.result as string);
+            
+            // Create a new pipeline with imported data
+            const newPipelineData = {
+              name: `${importedPipeline.name || 'Imported Pipeline'}_${new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')}`,
+              description: importedPipeline.description || 'Imported pipeline',
+              components: importedPipeline.components || [],
+              connections: importedPipeline.connections || [],
+              region: importedPipeline.region || 'us-east-1',
+              status: 'draft',
+              version: 1
+            };
+
+            createPipelineMutation.mutate(newPipelineData, {
+              onSuccess: () => {
+                toast({
+                  title: "Pipeline imported successfully",
+                  description: `${newPipelineData.name} has been imported and created.`,
+                });
+              },
+              onError: () => {
+                toast({
+                  title: "Import failed",
+                  description: "Failed to create pipeline from imported data.",
+                  variant: "destructive",
+                });
+              }
+            });
+          } catch (error) {
+            toast({
+              title: "Import failed",
+              description: "Invalid pipeline file format.",
+              variant: "destructive",
+            });
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
   };
 
   const handleDelete = (pipelineId: number) => {
@@ -401,6 +473,18 @@ export default function MyPipelines() {
                                     >
                                       <Download className="w-3 h-3 mr-1" />
                                       Export
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleImport();
+                                      }}
+                                      className="h-8 px-2 text-blue-600 hover:text-blue-800"
+                                    >
+                                      <Upload className="w-3 h-3 mr-1" />
+                                      Import
                                     </Button>
                                     <Button
                                       variant="ghost"
