@@ -93,7 +93,7 @@ export default function MyPipelines() {
     sessionStorage.setItem('importedPipelineData', JSON.stringify(pipelineData));
     
     // Navigate to pipeline designer
-    setLocation('/pipeline-designer');
+    setLocation('/pipeline');
     
     toast({
       title: "Pipeline imported to designer",
