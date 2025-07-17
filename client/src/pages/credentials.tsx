@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Sidebar from "@/components/layout/sidebar";
-import { Plus, Edit, Trash2, Key, Cloud, Database, Eye, EyeOff } from "lucide-react";
+import { Plus, Edit, Trash2, Key, Cloud, Database, Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { Credential } from "@shared/schema";
@@ -32,9 +31,10 @@ export default function Credentials() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string>("All");
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [formData, setFormData] = useState({
     name: "",
     username: "",
@@ -180,19 +180,26 @@ export default function Credentials() {
     }
   };
 
-  // Filter credentials based on selected provider
-  const filteredCredentials = selectedProvider === "All" 
-    ? credentials 
-    : credentials.filter(credential => credential.provider.toLowerCase() === selectedProvider.toLowerCase());
+  // Pagination logic
+  const totalItems = credentials.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentCredentials = credentials.slice(startIndex, endIndex);
 
-  const groupedCredentials = filteredCredentials.reduce((acc, credential) => {
-    const provider = credential.provider;
-    if (!acc[provider]) {
-      acc[provider] = [];
-    }
-    acc[provider].push(credential);
-    return acc;
-  }, {} as Record<string, Credential[]>);
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -205,103 +212,36 @@ export default function Credentials() {
               <h2 className="text-2xl font-bold text-gray-900">Credentials</h2>
               <p className="text-sm text-gray-600 mt-1">Manage your cloud provider credentials</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center space-x-2">
-                <Label htmlFor="provider-filter" className="text-sm font-medium text-gray-700">
-                  Filter:
-                </Label>
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger id="provider-filter" className="w-32">
-                    <SelectValue placeholder="All" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">All</SelectItem>
-                    <SelectItem value="AWS">AWS</SelectItem>
-                    <SelectItem value="Azure">Azure</SelectItem>
-                    <SelectItem value="GCP">GCP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button 
-                onClick={() => setShowCreateModal(true)}
-                className="bg-primary hover:bg-blue-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Credential
-              </Button>
-            </div>
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Credential
+            </Button>
           </div>
         </header>
 
         <main className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
-                    {selectedProvider === "All" ? "Total Credentials" : `${selectedProvider} Credentials`}
-                  </CardTitle>
-                  <Key className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{filteredCredentials.length}</div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">AWS Credentials</CardTitle>
-                  <Cloud className="h-4 w-4 text-orange-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {credentials.filter(c => c.provider.toLowerCase() === "aws").length}
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Other Providers</CardTitle>
-                  <Database className="h-4 w-4 text-blue-500" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">
-                    {credentials.filter(c => c.provider.toLowerCase() !== "aws").length}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Credentials Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle>
-                  {selectedProvider === "All" ? "All Credentials" : `${selectedProvider} Credentials`}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+          <div className="max-w-7xl mx-auto">
+            {/* Single Credentials Table */}
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-6">
                 {isLoading ? (
                   <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(5)].map((_, i) => (
                       <div key={i} className="animate-pulse">
                         <div className="h-4 bg-gray-200 rounded w-1/4 mb-2"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                       </div>
                     ))}
                   </div>
-                ) : filteredCredentials.length === 0 ? (
-                  <div className="text-center py-8">
+                ) : credentials.length === 0 ? (
+                  <div className="text-center py-12">
                     <Key className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">
-                      {selectedProvider === "All" ? "No credentials" : `No ${selectedProvider} credentials`}
-                    </h3>
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No credentials</h3>
                     <p className="mt-1 text-sm text-gray-500">
-                      {selectedProvider === "All" 
-                        ? "Get started by adding your first credential." 
-                        : `No credentials found for ${selectedProvider}. Try changing the filter or add a new credential.`
-                      }
+                      Get started by adding your first credential.
                     </p>
                     <div className="mt-6">
                       <Button onClick={() => setShowCreateModal(true)}>
@@ -311,63 +251,101 @@ export default function Credentials() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    {Object.entries(groupedCredentials).map(([provider, providerCredentials]) => (
-                      <div key={provider}>
-                        <div className="flex items-center mb-3">
-                          {getProviderIcon(provider)}
-                          <h3 className="ml-2 text-lg font-semibold text-gray-900 capitalize">{provider}</h3>
-                          <Badge className={`ml-2 ${getProviderColor(provider)}`}>
-                            {providerCredentials.length}
-                          </Badge>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Provider/Type</TableHead>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Created</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {currentCredentials.map((credential) => (
+                          <TableRow key={credential.id}>
+                            <TableCell className="font-medium">{credential.name}</TableCell>
+                            <TableCell>
+                              <Badge className={getProviderColor(credential.provider)}>
+                                {credential.provider}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>{credential.username}</TableCell>
+                            <TableCell>{formatDate(credential.createdAt)}</TableCell>
+                            <TableCell>
+                              <div className="flex space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleEdit(credential)}
+                                >
+                                  <Edit className="w-4 h-4" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(credential.id)}
+                                  className="text-red-600 hover:text-red-700"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-6">
+                        <div className="text-sm text-gray-700">
+                          Showing {startIndex + 1} to {Math.min(endIndex, totalItems)} of {totalItems} credentials
                         </div>
-                        
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead>Name</TableHead>
-                              <TableHead>Username</TableHead>
-                              <TableHead>Created</TableHead>
-                              <TableHead>Actions</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {providerCredentials.map((credential) => (
-                              <TableRow key={credential.id}>
-                                <TableCell className="font-medium">{credential.name}</TableCell>
-                                <TableCell>{credential.username}</TableCell>
-                                <TableCell>
-                                  {new Date(credential.createdAt).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell>
-                                  <div className="flex space-x-2">
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleEdit(credential)}
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handleDelete(credential.id)}
-                                      className="text-red-600 hover:text-red-700"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(1)}
+                            disabled={currentPage === 1}
+                          >
+                            <ChevronsLeft className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </Button>
+                          <span className="text-sm text-gray-700">
+                            Page {currentPage} of {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(totalPages)}
+                            disabled={currentPage === totalPages}
+                          >
+                            <ChevronsRight className="w-4 h-4" />
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </main>
       </div>
