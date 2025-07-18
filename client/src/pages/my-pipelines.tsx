@@ -162,29 +162,12 @@ export default function MyPipelines() {
   };
 
   const handleImportToPipelineDesigner = (pipeline: Pipeline) => {
-    // Store the pipeline data in sessionStorage to be picked up by the pipeline designer
-    const pipelineData = {
-      name: `${pipeline.name}`,
-      description: pipeline.description || "Imported pipeline",
-      region: pipeline.region,
-      components: pipeline.components || [],
-      connections: pipeline.connections || [],
-      version: 1,
-      importedFromId: pipeline.id, // Track source pipeline
-    };
-
-    // Store in sessionStorage for the pipeline designer to pick up
-    sessionStorage.setItem(
-      "importedPipelineData",
-      JSON.stringify(pipelineData),
-    );
-
-    // Navigate to pipeline designer
-    setLocation("/pipeline");
+    // Navigate to pipeline designer with the specific pipeline ID for editing
+    setLocation(`/pipeline/${pipeline.id}`);
 
     toast({
-      title: "Pipeline imported to designer",
-      description: `${pipeline.name} has been imported to the pipeline designer.`,
+      title: "Pipeline opened in canvas",
+      description: `${pipeline.name} is now open for editing in the canvas.`,
     });
   };
 

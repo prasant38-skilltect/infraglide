@@ -129,8 +129,9 @@ Preferred communication style: Simple, everyday language.
 - **Updated My Pipelines Interface**
   - Replaced "Import" button with "Open in Canvas" button in My Pipelines table
   - Changed button icon from Upload to ExternalLink for better clarity
-  - Maintained same functionality - opens pipeline directly in designer canvas
-  - Improved user experience with clearer button labeling
+  - Modified functionality to open existing pipeline in edit mode rather than importing as new pipeline
+  - Now navigates to `/pipeline/{id}` to edit the same pipeline with same name
+  - Improved user experience with direct editing capability
 
 - **Removed Deployments Tab from Main Navigation**
   - Removed Deployments tab from sidebar navigation to simplify interface
