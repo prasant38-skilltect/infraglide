@@ -729,8 +729,324 @@ What specific cloud service would you like to configure?`
     };
   }
 
+  // Terraform generation route
+  app.post("/api/generate-terraform", async (req, res) => {
+    try {
+      const { pipelineName, components, provider } = req.body;
+      
+      if (!pipelineName || !components || !provider) {
+        return res.status(400).json({ error: "Missing required fields: pipelineName, components, provider" });
+      }
+
+      const terraformJson = generateTerraformJson(components, provider);
+      
+      // Create pipeline directory if it doesn't exist
+      const sanitizedName = pipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+      const pipelineDir = path.join('pipelines', sanitizedName);
+      
+      try {
+        await fs.mkdir(pipelineDir, { recursive: true });
+        
+        // Write main.tf.json file
+        const terraformPath = path.join(pipelineDir, 'main.tf.json');
+        await fs.writeFile(terraformPath, JSON.stringify(terraformJson, null, 2));
+        
+        res.json({ 
+          success: true, 
+          message: `Terraform configuration generated for ${pipelineName}`,
+          path: terraformPath
+        });
+      } catch (fileError) {
+        console.error('File system error:', fileError);
+        res.status(500).json({ error: "Failed to write Terraform files" });
+      }
+    } catch (error) {
+      console.error('Terraform generation error:', error);
+      res.status(500).json({ error: "Failed to generate Terraform configuration" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
+}
+
+// Helper function to generate Terraform JSON configuration
+function generateTerraformJson(components: any[], provider: string) {
+  const terraformConfig: any = {
+    terraform: {
+      required_providers: {}
+    },
+    provider: {},
+    resource: {}
+  };
+
+  // Configure provider-specific settings
+  switch (provider) {
+    case 'aws':
+      terraformConfig.terraform.required_providers.aws = {
+        source: "hashicorp/aws",
+        version: "~> 5.0"
+      };
+      terraformConfig.provider.aws = {
+        region: "us-east-1"
+      };
+      break;
+    case 'azure':
+      terraformConfig.terraform.required_providers.azurerm = {
+        source: "hashicorp/azurerm",
+        version: "~> 3.0"
+      };
+      terraformConfig.provider.azurerm = {
+        features: {}
+      };
+      break;
+    case 'gcp':
+      terraformConfig.terraform.required_providers.google = {
+        source: "hashicorp/google",
+        version: "~> 4.0"
+      };
+      terraformConfig.provider.google = {
+        project: "my-project-id",
+        region: "us-central1"
+      };
+      break;
+  }
+
+  // Generate resources for each component
+  components.forEach((component, index) => {
+    const resourceConfig = generateResourceConfig(component, provider, index);
+    if (resourceConfig) {
+      Object.assign(terraformConfig.resource, resourceConfig);
+    }
+  });
+
+  return terraformConfig;
+}
+
+// Helper function to generate resource configuration for each component type
+function generateResourceConfig(component: any, provider: string, index: number) {
+  const config = component.data?.config || {};
+  
+  switch (provider) {
+    case 'aws':
+      return generateAWSResource(component, config, index);
+    case 'azure':
+      return generateAzureResource(component, config, index);
+    case 'gcp':
+      return generateGCPResource(component, config, index);
+    default:
+      return null;
+  }
+}
+
+function generateAWSResource(component: any, config: any, index: number) {
+  const type = component.data?.type;
+  const resourceName = `${type}_${index + 1}`;
+
+  switch (type) {
+    case 'ec2':
+      return {
+        aws_instance: {
+          [resourceName]: {
+            ami: config.amiId || "ami-0c02fb55956c7d316",
+            instance_type: config.machineType || "t2.micro",
+            key_name: config.keyPair || null,
+            security_groups: config.securityGroup ? [config.securityGroup] : null,
+            subnet_id: config.subnetwork || null,
+            availability_zone: config.zone || null,
+            tags: {
+              Name: config.instanceName || `EC2-Instance-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 's3':
+      return {
+        aws_s3_bucket: {
+          [resourceName]: {
+            bucket: config.bucketName || `my-bucket-${Date.now()}`,
+            tags: {
+              Name: config.bucketName || `S3-Bucket-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'rds':
+      return {
+        aws_db_instance: {
+          [resourceName]: {
+            identifier: config.dbIdentifier || `mydb-${index + 1}`,
+            engine: config.engine || "mysql",
+            engine_version: config.engineVersion || "8.0",
+            instance_class: config.instanceClass || "db.t3.micro",
+            allocated_storage: parseInt(config.allocatedStorage) || 20,
+            storage_type: config.storageType || "gp2",
+            db_name: config.dbName || "mydb",
+            username: config.username || "admin",
+            password: config.password || "changeme123!",
+            skip_final_snapshot: config.skipFinalSnapshot !== false,
+            tags: {
+              Name: config.dbIdentifier || `RDS-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'lambda':
+      return {
+        aws_lambda_function: {
+          [resourceName]: {
+            function_name: config.functionName || `lambda-function-${index + 1}`,
+            runtime: config.runtime || "python3.9",
+            handler: config.handler || "lambda_function.lambda_handler",
+            filename: "lambda_function.zip",
+            source_code_hash: "${filebase64sha256(\"lambda_function.zip\")}",
+            role: "${aws_iam_role.lambda_role.arn}",
+            tags: {
+              Name: config.functionName || `Lambda-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'vpc':
+      return {
+        aws_vpc: {
+          [resourceName]: {
+            cidr_block: config.vpcCidrBlock || "10.0.0.0/16",
+            enable_dns_hostnames: true,
+            enable_dns_support: true,
+            tags: {
+              Name: config.vpcName || `VPC-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    default:
+      return null;
+  }
+}
+
+function generateAzureResource(component: any, config: any, index: number) {
+  const type = component.data?.type;
+  const resourceName = `${type.replace('azure-', '')}_${index + 1}`;
+
+  switch (type) {
+    case 'azure-vm':
+      return {
+        azurerm_virtual_machine: {
+          [resourceName]: {
+            name: config.vmName || `vm-${index + 1}`,
+            location: config.location || "East US",
+            resource_group_name: "${azurerm_resource_group.main.name}",
+            vm_size: config.vmSize || "Standard_B1s",
+            tags: {
+              Name: config.vmName || `Azure-VM-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'azure-storage':
+      return {
+        azurerm_storage_account: {
+          [resourceName]: {
+            name: config.storageAccountName || `storage${index + 1}${Date.now()}`,
+            resource_group_name: "${azurerm_resource_group.main.name}",
+            location: config.location || "East US",
+            account_tier: config.accountTier || "Standard",
+            account_replication_type: config.replicationType || "LRS",
+            tags: {
+              Name: config.storageAccountName || `Storage-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'azure-sql':
+      return {
+        azurerm_sql_database: {
+          [resourceName]: {
+            name: config.databaseName || `sqldb-${index + 1}`,
+            resource_group_name: "${azurerm_resource_group.main.name}",
+            location: config.location || "East US",
+            server_name: "${azurerm_sql_server.main.name}",
+            tags: {
+              Name: config.databaseName || `Azure-SQL-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    default:
+      return null;
+  }
+}
+
+function generateGCPResource(component: any, config: any, index: number) {
+  const type = component.data?.type;
+  const resourceName = `${type.replace('gcp-', '')}_${index + 1}`;
+
+  switch (type) {
+    case 'gcp-compute':
+      return {
+        google_compute_instance: {
+          [resourceName]: {
+            name: config.instanceName || `compute-instance-${index + 1}`,
+            machine_type: config.machineType || "e2-micro",
+            zone: config.zone || "us-central1-a",
+            boot_disk: {
+              initialize_params: {
+                image: config.image || "debian-cloud/debian-11"
+              }
+            },
+            network_interface: {
+              network: "default",
+              access_config: {}
+            },
+            labels: {
+              name: config.instanceName || `gcp-compute-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'gcp-storage':
+      return {
+        google_storage_bucket: {
+          [resourceName]: {
+            name: config.bucketName || `gcp-bucket-${index + 1}-${Date.now()}`,
+            location: config.location || "US",
+            storage_class: config.storageClass || "STANDARD",
+            labels: {
+              name: config.bucketName || `gcp-storage-${index + 1}`
+            }
+          }
+        }
+      };
+    
+    case 'gcp-sql':
+      return {
+        google_sql_database_instance: {
+          [resourceName]: {
+            name: config.instanceName || `sql-instance-${index + 1}`,
+            database_version: config.databaseVersion || "MYSQL_8_0",
+            region: config.region || "us-central1",
+            settings: {
+              tier: config.tier || "db-f1-micro",
+              disk_size: parseInt(config.diskSize) || 20,
+              disk_type: config.diskType || "PD_SSD"
+            }
+          }
+        }
+      };
+    
+    default:
+      return null;
+  }
 }
 
 

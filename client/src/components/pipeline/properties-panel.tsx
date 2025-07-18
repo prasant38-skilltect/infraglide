@@ -1,6 +1,7 @@
 import * as React from "react";
 import { useState, useEffect } from "react";
 import { X, CheckCircle, Plus, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,24 +22,70 @@ interface PropertiesPanelProps {
   node: Node;
   onUpdateConfig: (nodeId: string, config: any) => void;
   onClose: () => void;
+  pipelineName?: string;
+  allNodes?: Node[];
+}
+
+// Helper function to generate Terraform for pipeline
+async function generateTerraformForPipeline(pipelineName: string, nodes: Node[]) {
+  try {
+    // Determine provider from nodes
+    const provider = getProviderFromNodes(nodes);
+    
+    const response = await fetch('/api/generate-terraform', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        pipelineName,
+        components: nodes,
+        provider
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to generate Terraform configuration');
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Terraform generation error:', error);
+    throw error;
+  }
+}
+
+function getProviderFromNodes(nodes: Node[]): string {
+  // Check the first node's type to determine provider
+  if (nodes.length === 0) return 'aws'; // default
+  
+  const firstNodeType = nodes[0].data?.type || '';
+  
+  if (firstNodeType.startsWith('azure-')) return 'azure';
+  if (firstNodeType.startsWith('gcp-')) return 'gcp';
+  return 'aws'; // default for ec2, s3, etc.
 }
 
 export default function PropertiesPanel({
   node,
   onUpdateConfig,
   onClose,
+  pipelineName = "untitled-pipeline",
+  allNodes = [],
 }: PropertiesPanelProps) {
   console.log("PropertiesPanel opened with node:", node);
   console.log("Initial node.data.config:", node.data.config);
 
   const [config, setConfig] = useState(node.data.config || {});
+  const { toast } = useToast();
 
   useEffect(() => {
     console.log("useEffect triggered, node.data.config:", node.data.config);
     setConfig(node.data.config || {});
   }, [node]);
 
-  const updateConfig = (key: string, value: any) => {
+  const updateConfig = async (key: string, value: any) => {
     console.log(`updateConfig called: ${key} = ${value}`);
     console.log("Current config before update:", config);
     const newConfig = { ...config, [key]: value };
@@ -46,6 +93,24 @@ export default function PropertiesPanel({
     setConfig(newConfig);
     onUpdateConfig(node.id, newConfig);
     console.log("Config state should be updated, current config:", config);
+    
+    // Generate Terraform when config is updated
+    if (allNodes.length > 0) {
+      try {
+        const result = await generateTerraformForPipeline(pipelineName, allNodes);
+        toast({
+          title: "Terraform Generated",
+          description: result.message,
+        });
+      } catch (error) {
+        console.error('Failed to generate Terraform:', error);
+        toast({
+          title: "Terraform Generation Failed",
+          description: "Could not update Terraform configuration",
+          variant: "destructive",
+        });
+      }
+    }
   };
 
   // AWS Region and Storage Type dropdown options

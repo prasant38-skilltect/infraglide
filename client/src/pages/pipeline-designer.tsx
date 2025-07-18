@@ -1149,8 +1149,10 @@ export default function PipelineDesigner() {
               <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
                 <PropertiesPanel
                   node={selectedNode}
-                  onUpdateConfig={onUpdateNodeConfig}
+                  onUpdateConfig={updateNodeConfig}
                   onClose={onClosePropertiesPanel}
+                  pipelineName={pipelineName}
+                  allNodes={nodes}
                 />
               </div>
             </div>

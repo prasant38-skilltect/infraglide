@@ -147,6 +147,26 @@ Preferred communication style: Simple, everyday language.
   - Pipeline Designer integration through sessionStorage for importing Jane's recommendations
 
 ### January 18, 2025
+- **Implemented Automatic Terraform JSON Generation for Pipeline Components**
+  - Added comprehensive Terraform generation system that creates main.tf.json files in pipeline directories
+  - Terraform configuration automatically generated when users configure pipeline components
+  - Support for AWS, Azure, and Google Cloud provider-specific resource configurations
+  - Real-time Terraform updates when component configurations are modified in the properties panel
+  - Provider detection based on component types (AWS: ec2, s3, rds; Azure: azure-vm, azure-sql; GCP: gcp-compute, gcp-storage)
+  - Generated Terraform includes proper provider configuration, resource definitions, and default values
+  - Toast notifications for successful/failed Terraform generation
+  - Backend API endpoint `/api/generate-terraform` with comprehensive resource mapping
+  - Support for EC2 instances, S3 buckets, RDS databases, Lambda functions, VPC networks for AWS
+  - Support for Virtual Machines, Storage Accounts, SQL Databases for Azure
+  - Support for Compute Engine, Cloud Storage, Cloud SQL for Google Cloud
+  - Terraform files stored in `/pipelines/{pipeline-name}/main.tf.json` with sanitized naming
+
+- **Enhanced Component Library with Favicon-Sized Icons**
+  - Updated component library to display service names with small 16x16 pixel icons
+  - Clean text-based layout with relevant icons for each service type (Server for compute, Database for databases, etc.)
+  - Maintained provider organization (AWS, Azure, GCP) with proper service categorization
+  - Improved visual identification while keeping interface clean and simple
+
 - **Implemented Pipeline Directory Creation**
   - Added automatic directory creation in file system when pipelines are created
   - Pipeline directories are created in `/pipelines/{pipeline-name}/` with sanitized names
