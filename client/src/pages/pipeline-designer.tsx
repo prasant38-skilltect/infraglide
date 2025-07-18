@@ -952,7 +952,62 @@ export default function PipelineDesigner() {
     }
   };
 
+  const handlePreviewPipeline = async () => {
+    if (!pipelineName) {
+      toast({
+        title: "Error",
+        description: "No pipeline selected for preview.",
+        variant: "destructive",
+      });
+      return;
+    }
 
+    try {
+      toast({
+        title: "Preview Started",
+        description: "Running terraform init && terraform plan...",
+      });
+
+      // Execute terraform init
+      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "init"
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Terraform init failed");
+      }
+
+      const initResult = await initResponse.json();
+      console.log("Terraform init output:", initResult.output);
+
+      // Execute terraform plan
+      const planResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "plan"
+      });
+
+      if (!planResponse.ok) {
+        throw new Error("Terraform plan failed");
+      }
+
+      const planResult = await planResponse.json();
+      console.log("Terraform plan output:", planResult.output);
+
+      toast({
+        title: "Preview Complete",
+        description: "Infrastructure plan generated successfully! Check console for details.",
+      });
+
+    } catch (error) {
+      console.error("Preview failed:", error);
+      toast({
+        title: "Preview Failed",
+        description: error instanceof Error ? error.message : "Failed to generate infrastructure plan",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleExportPipeline = async () => {
     try {
@@ -1169,12 +1224,8 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Preview",
-                          description: "Preview functionality coming soon",
-                        })
-                      }
+                      onClick={handlePreviewPipeline}
+                      disabled={!pipelineName}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Preview

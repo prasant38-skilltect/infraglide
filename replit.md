@@ -150,6 +150,15 @@ Preferred communication style: Simple, everyday language.
   - Integration with existing Terraform wrapper for compatibility
   - Console logging added for debugging destruction command outputs
 
+- **Implemented Terraform Preview Functionality**
+  - Preview button now executes "terraform init && terraform plan" commands
+  - Shows infrastructure changes without applying them for safe review
+  - Proper error handling and user feedback with toast notifications
+  - Preview function validates pipeline name before execution
+  - Integration with existing Terraform wrapper for compatibility
+  - Console logging displays detailed plan output for user inspection
+  - Allows users to preview changes before committing to deployment
+
 ### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script
