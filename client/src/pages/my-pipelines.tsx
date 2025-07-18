@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
@@ -12,6 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  FileText,
+  X,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -43,7 +45,27 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 import type { Pipeline } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 type SortField = "name" | "provider" | "description" | "createdAt";
 type SortDirection = "asc" | "desc";
@@ -59,9 +81,69 @@ export default function MyPipelines() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedProvider, setSelectedProvider] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  
+  // Modal states
+  const [showDeleteDialog, setShowDeleteDialog] = useState<number | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = useState<Pipeline | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [newPipelineName, setNewPipelineName] = useState("");
+  const [newPipelineDescription, setNewPipelineDescription] = useState("");
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
+  });
+
+  // Delete pipeline mutation
+  const deletePipelineMutation = useMutation({
+    mutationFn: async (pipelineId: number) => {
+      const response = await apiRequest("DELETE", `/api/pipelines/${pipelineId}`);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      toast({
+        title: "Pipeline deleted",
+        description: "Pipeline has been successfully deleted.",
+      });
+      setShowDeleteDialog(null);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete pipeline. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Rename pipeline mutation
+  const renamePipelineMutation = useMutation({
+    mutationFn: async ({ pipelineId, name, description }: { pipelineId: number; name: string; description: string }) => {
+      const response = await apiRequest("PUT", `/api/pipelines/${pipelineId}`, {
+        name,
+        description,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      toast({
+        title: "Pipeline updated",
+        description: "Pipeline name and description have been updated.",
+      });
+      setShowRenameDialog(null);
+      setNewPipelineName("");
+      setNewPipelineDescription("");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update pipeline. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   const createPipelineMutation = useMutation({
@@ -181,12 +263,83 @@ export default function MyPipelines() {
     input.click();
   };
 
+  const handleImport = () => {
+    setShowImportDialog(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImportFile(file);
+    }
+  };
+
+  const handleImportConfirm = async () => {
+    if (!importFile) return;
+
+    try {
+      const fileContent = await importFile.text();
+      const pipelineData = JSON.parse(fileContent);
+      
+      // Validate the JSON structure
+      if (!pipelineData.name || !Array.isArray(pipelineData.components)) {
+        throw new Error("Invalid pipeline format");
+      }
+
+      // Create a new pipeline from imported data
+      const newPipeline = {
+        name: `${pipelineData.name}_imported_${Date.now()}`,
+        description: pipelineData.description || "Imported pipeline",
+        region: pipelineData.region || "us-east-1",
+        components: pipelineData.components || [],
+        connections: pipelineData.connections || [],
+      };
+
+      await createPipelineMutation.mutateAsync(newPipeline);
+      
+      toast({
+        title: "Import successful",
+        description: `Pipeline "${newPipeline.name}" has been imported successfully.`,
+      });
+      
+      setShowImportDialog(false);
+      setImportFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } catch (error) {
+      toast({
+        title: "Import failed",
+        description: "Invalid JSON file format or missing required fields.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleDelete = (pipelineId: number) => {
-    // TODO: Implement delete with confirmation
-    toast({
-      title: "Delete functionality",
-      description: "Delete functionality will be implemented soon.",
-    });
+    setShowDeleteDialog(pipelineId);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (showDeleteDialog) {
+      deletePipelineMutation.mutate(showDeleteDialog);
+    }
+  };
+
+  const handleRename = (pipeline: Pipeline) => {
+    setShowRenameDialog(pipeline);
+    setNewPipelineName(pipeline.name);
+    setNewPipelineDescription(pipeline.description || "");
+  };
+
+  const handleRenameConfirm = () => {
+    if (showRenameDialog && newPipelineName.trim()) {
+      renamePipelineMutation.mutate({
+        pipelineId: showRenameDialog.id,
+        name: newPipelineName.trim(),
+        description: newPipelineDescription.trim(),
+      });
+    }
   };
 
   const toggleRowExpansion = (pipelineName: string) => {
@@ -624,6 +777,18 @@ export default function MyPipelines() {
                                         size="sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          handleRename(version);
+                                        }}
+                                        className="h-8 px-2 text-amber-600 hover:text-amber-800"
+                                      >
+                                        <Edit3 className="w-3 h-3 mr-1" />
+                                        Rename
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           handleDelete(version.id);
                                         }}
                                         className="h-8 px-2 text-red-600 hover:text-red-800"
@@ -733,6 +898,152 @@ export default function MyPipelines() {
           </Card>
         </div>
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Pipeline</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this pipeline? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-red-600 hover:bg-red-700"
+              disabled={deletePipelineMutation.isPending}
+            >
+              {deletePipelineMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Rename Pipeline Dialog */}
+      <Dialog open={showRenameDialog !== null} onOpenChange={() => setShowRenameDialog(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Rename Pipeline</DialogTitle>
+            <DialogDescription>
+              Update the name and description for this pipeline.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="pipeline-name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="pipeline-name"
+                value={newPipelineName}
+                onChange={(e) => setNewPipelineName(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter pipeline name"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="pipeline-description" className="text-right">
+                Description
+              </Label>
+              <Textarea
+                id="pipeline-description"
+                value={newPipelineDescription}
+                onChange={(e) => setNewPipelineDescription(e.target.value)}
+                className="col-span-3"
+                placeholder="Enter pipeline description"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setShowRenameDialog(null)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleRenameConfirm}
+              disabled={!newPipelineName.trim() || renamePipelineMutation.isPending}
+            >
+              {renamePipelineMutation.isPending ? "Updating..." : "Update Pipeline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Import Pipeline Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Import Pipeline</DialogTitle>
+            <DialogDescription>
+              Select a JSON file to import as a new pipeline.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid w-full max-w-sm items-center gap-1.5">
+              <Label htmlFor="pipeline-file">Pipeline File</Label>
+              <Input
+                ref={fileInputRef}
+                id="pipeline-file"
+                type="file"
+                accept=".json"
+                onChange={handleFileSelect}
+                className="cursor-pointer"
+              />
+              {importFile && (
+                <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded text-sm">
+                  <FileText className="w-4 h-4" />
+                  <span className="truncate">{importFile.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setImportFile(null);
+                      if (fileInputRef.current) {
+                        fileInputRef.current.value = "";
+                      }
+                    }}
+                    className="p-1 h-6 w-6"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              )}
+              <p className="text-xs text-gray-500">
+                Only JSON files exported from this application are supported.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => {
+                setShowImportDialog(false);
+                setImportFile(null);
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = "";
+                }
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleImportConfirm}
+              disabled={!importFile || createPipelineMutation.isPending}
+            >
+              {createPipelineMutation.isPending ? "Importing..." : "Import Pipeline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
