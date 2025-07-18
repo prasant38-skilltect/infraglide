@@ -205,21 +205,26 @@ export default function AskJaneChat() {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50">
+      <div className="fixed bottom-4 right-4 z-[99999]" style={{zIndex: 99999}}>
         <Button
           onClick={() => setIsOpen(true)}
           size="lg"
-          className="rounded-full w-14 h-14 bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+          className="rounded-full w-20 h-20 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-2xl hover:shadow-3xl transition-all duration-300 border-4 border-white animate-bounce hover:animate-none"
         >
-          <MessageCircle className="w-6 h-6" />
+          <MessageCircle className="w-8 h-8 text-white" />
         </Button>
+        {/* Tooltip */}
+        <div className="absolute bottom-24 right-0 bg-gray-900 text-white text-sm px-3 py-2 rounded-lg shadow-lg opacity-90 whitespace-nowrap pointer-events-none">
+          💬 Ask Jane - Your AI Assistant
+          <div className="absolute top-full right-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-      <Card className={`w-96 shadow-2xl transition-all duration-200 ${isMinimized ? 'h-16' : 'h-[600px]'}`}>
+    <div className="fixed bottom-4 right-4 z-[99999]" style={{zIndex: 99999}}>
+      <Card className={`w-96 shadow-2xl transition-all duration-200 border-2 border-blue-200 ${isMinimized ? 'h-16' : 'h-[600px]'}`}>
         <CardHeader className="pb-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
