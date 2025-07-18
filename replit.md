@@ -126,6 +126,14 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Enhanced Pipeline Designer Interface**
+  - Removed Create button from Pipeline Designer toolbar
+  - Added red Destroy button with proper destructive styling
+  - Reordered top menu buttons to: Import, Export, Validate, Preview, Deploy, Destroy, Publish
+  - Renamed "Publish to Hub" to simply "Publish" for cleaner interface
+  - Maintained all existing functionality while improving user workflow
+
+### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script
   - Installed enhanced Terraform v1.9.5 simulator at `/home/runner/.local/bin/terraform`

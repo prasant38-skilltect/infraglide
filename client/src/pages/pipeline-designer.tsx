@@ -1054,10 +1054,10 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open('/hub', '_blank')}
+                      onClick={() => setShowImportModal(true)}
                     >
                       <Upload className="w-4 h-4 mr-1" />
-                      Publish to Hub
+                      Import
                     </Button>
                     <Button
                       variant="outline"
@@ -1066,14 +1066,6 @@ export default function PipelineDesigner() {
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowImportModal(true)}
-                    >
-                      <Upload className="w-4 h-4 mr-1" />
-                      Import
                     </Button>
                     <Button
                       variant="outline"
@@ -1095,21 +1087,6 @@ export default function PipelineDesigner() {
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Preview
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSavePipeline}
-                      disabled={savePipelineMutation.isPending}
-                    >
-                      {savePipelineMutation.isPending ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4 mr-1" />
-                      )}
-                      {savePipelineMutation.isPending
-                        ? "Creating..."
-                        : "Create"}
                     </Button>
                     <Button
                       variant="outline"
@@ -1136,6 +1113,14 @@ export default function PipelineDesigner() {
                     >
                       <Zap className="w-4 h-4 mr-1" />
                       Destroy
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('/hub', '_blank')}
+                    >
+                      <Upload className="w-4 h-4 mr-1" />
+                      Publish
                     </Button>
                   </div>
                 </div>
