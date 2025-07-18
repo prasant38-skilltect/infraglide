@@ -1,0 +1,23 @@
+{
+  "id": 102,
+  "name": "my-demo-s3-pipeline",
+  "description": "",
+  "region": "us-east-1",
+  "updatedAt": "2025-07-18T16:03:53.423Z",
+  "components": [
+    {
+      "id": "s3-1752854463312",
+      "name": "S3-o0tejl",
+      "type": "s3",
+      "config": {
+        "awsRegion": "us-east-1",
+        "bucketName": "my-unique-bucket-demo-console"
+      },
+      "position": {
+        "x": 263.03125,
+        "y": 47.5
+      }
+    }
+  ],
+  "connections": []
+}
