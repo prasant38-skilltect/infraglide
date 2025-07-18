@@ -133,6 +133,14 @@ Preferred communication style: Simple, everyday language.
   - Renamed "Publish to Hub" to simply "Publish" for cleaner interface
   - Maintained all existing functionality while improving user workflow
 
+- **Implemented Terraform Deploy Functionality**
+  - Deploy button now executes "terraform init && terraform apply -auto-approve" commands
+  - Integrated with existing Terraform wrapper for seamless deployment
+  - Added proper error handling and user feedback with toast notifications
+  - Deploy function validates pipeline name before execution
+  - Removed deploy modal dependency, now executes directly on button click
+  - Console logging added for debugging Terraform command outputs
+
 ### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script

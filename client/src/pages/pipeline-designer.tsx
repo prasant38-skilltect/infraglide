@@ -428,30 +428,7 @@ export default function PipelineDesigner() {
     }
   }, [pipelineName, triggerAutoSave]);
 
-  const createDeploymentMutation = useMutation({
-    mutationFn: async (deploymentData: any) => {
-      const response = await apiRequest(
-        "POST",
-        "/api/deployments",
-        deploymentData,
-      );
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Deployment started",
-        description: "Your pipeline deployment has been initiated.",
-      });
-      setShowDeployModal(false);
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to start deployment. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -829,8 +806,8 @@ export default function PipelineDesigner() {
     savePipelineMutation.mutate(pipelineData);
   };
 
-  const handleDeployPipeline = (deploymentData: any) => {
-    if (!pipelineId) {
+  const handleDeployPipeline = async () => {
+    if (!pipelineName) {
       toast({
         title: "Error",
         description: "Please save the pipeline before deploying.",
@@ -839,10 +816,51 @@ export default function PipelineDesigner() {
       return;
     }
 
-    createDeploymentMutation.mutate({
-      pipelineId,
-      ...deploymentData,
-    });
+    try {
+      toast({
+        title: "Deployment Started",
+        description: "Running terraform init && terraform apply -auto-approve...",
+      });
+
+      // Execute terraform init
+      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "init"
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Terraform init failed");
+      }
+
+      const initResult = await initResponse.json();
+      console.log("Terraform init output:", initResult.output);
+
+      // Execute terraform apply with auto-approve
+      const applyResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "apply -auto-approve"
+      });
+
+      if (!applyResponse.ok) {
+        throw new Error("Terraform apply failed");
+      }
+
+      const applyResult = await applyResponse.json();
+      console.log("Terraform apply output:", applyResult.output);
+
+      toast({
+        title: "Deployment Successful",
+        description: "Infrastructure has been deployed successfully!",
+      });
+
+    } catch (error) {
+      console.error("Deployment failed:", error);
+      toast({
+        title: "Deployment Failed",
+        description: error instanceof Error ? error.message : "Failed to deploy infrastructure",
+        variant: "destructive",
+      });
+    }
   };
 
   const updateNodeConfig = (nodeId: string, config: any) => {
@@ -1091,15 +1109,11 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setShowDeployModal(true)}
-                      disabled={
-                        !pipelineId || createDeploymentMutation.isPending
-                      }
+                      onClick={handleDeployPipeline}
+                      disabled={!pipelineName}
                     >
                       <Rocket className="w-4 h-4 mr-1" />
-                      {createDeploymentMutation.isPending
-                        ? "Deploying..."
-                        : "Deploy"}
+                      Deploy
                     </Button>
                     <Button
                       variant="destructive"
