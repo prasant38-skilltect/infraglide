@@ -126,6 +126,11 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Removed Projects Tab from Main Navigation**
+  - Removed Projects tab from sidebar navigation to simplify interface
+  - Updated navigation to focus on core pipeline management features
+  - Removed FolderOpen icon import as it's no longer needed
+
 - **Created Hub Tab with GitHub Integration**
   - Added Hub page to main navigation for community pipeline sharing
   - Implemented pipeline publishing system with GitHub backend integration
