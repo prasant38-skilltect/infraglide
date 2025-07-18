@@ -95,6 +95,8 @@ export default function PipelineDesigner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
     new Set(),
@@ -102,6 +104,7 @@ export default function PipelineDesigner() {
   
   // Track if we've imported data to prevent auto-generation from overriding it
   const hasImportedData = useRef(false);
+  const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -318,14 +321,18 @@ export default function PipelineDesigner() {
 
   const savePipelineMutation = useMutation({
     mutationFn: async (pipelineData: any) => {
-      const url = pipelineId
-        ? `/api/pipelines/${pipelineId}`
+      const url = currentPipelineId
+        ? `/api/pipelines/${currentPipelineId}`
         : "/api/pipelines";
-      const method = pipelineId ? "PUT" : "POST";
+      const method = currentPipelineId ? "PUT" : "POST";
       const response = await apiRequest(method, url, pipelineData);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      if (!currentPipelineId && data.id) {
+        setCurrentPipelineId(data.id);
+      }
+      
       toast({
         title: "Pipeline saved",
         description: "Your pipeline has been saved successfully.",
@@ -342,6 +349,84 @@ export default function PipelineDesigner() {
       });
     },
   });
+
+  // Auto-save mutation (silent, no toast notifications)
+  const autoSaveMutation = useMutation({
+    mutationFn: async (pipelineData: any) => {
+      const url = currentPipelineId
+        ? `/api/pipelines/${currentPipelineId}`
+        : "/api/pipelines";
+      const method = currentPipelineId ? "PUT" : "POST";
+      const response = await apiRequest(method, url, pipelineData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (!currentPipelineId && data.id) {
+        setCurrentPipelineId(data.id);
+      }
+      setHasUnsavedChanges(false);
+    },
+    onError: (error) => {
+      console.error("Auto-save failed:", error);
+    },
+  });
+
+  // Auto-save function
+  const triggerAutoSave = useCallback(async () => {
+    if (!autoSaveEnabled || hasImportedData.current || autoSaveMutation.isPending) {
+      return;
+    }
+
+    // Clear existing timeout
+    if (autoSaveTimeout.current) {
+      clearTimeout(autoSaveTimeout.current);
+    }
+
+    // Set new timeout for 2 seconds after changes
+    autoSaveTimeout.current = setTimeout(async () => {
+      try {
+        const snapshot = await captureCanvasSnapshot();
+        
+        const pipelineData = {
+          name: pipelineName,
+          description: pipelineDescription,
+          region: pipelineRegion,
+          snapshot: snapshot,
+          components: nodes.map((node) => ({
+            id: node.id,
+            type: node.data.type,
+            name: node.data.name,
+            position: node.position,
+            config: node.data.config || {},
+          })),
+          connections: edges.map((edge) => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target,
+            type: edge.type || "default",
+          })),
+        };
+        
+        autoSaveMutation.mutate(pipelineData);
+      } catch (error) {
+        console.error("Auto-save preparation failed:", error);
+      }
+    }, 2000);
+  }, [autoSaveEnabled, pipelineName, pipelineDescription, pipelineRegion, nodes, edges, captureCanvasSnapshot, autoSaveMutation, hasImportedData]);
+
+  // Trigger auto-save when pipeline state changes
+  useEffect(() => {
+    if (nodes.length > 0 || edges.length > 0) {
+      triggerAutoSave();
+    }
+  }, [nodes, edges, triggerAutoSave]);
+
+  // Trigger auto-save when pipeline name changes (and rename directory)
+  useEffect(() => {
+    if (pipelineName !== "New Pipeline" && !hasImportedData.current) {
+      triggerAutoSave();
+    }
+  }, [pipelineName, triggerAutoSave]);
 
   const createDeploymentMutation = useMutation({
     mutationFn: async (deploymentData: any) => {

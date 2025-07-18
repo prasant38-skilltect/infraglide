@@ -27,7 +27,7 @@ interface PropertiesPanelProps {
 }
 
 // Helper function to generate Terraform for pipeline
-async function generateTerraformForPipeline(pipelineName: string, nodes: Node[]) {
+async function generateTerraformForPipeline(pipelineName: string, nodes: Node[], oldPipelineName?: string) {
   try {
     // Determine provider from nodes
     const provider = getProviderFromNodes(nodes);
@@ -40,7 +40,8 @@ async function generateTerraformForPipeline(pipelineName: string, nodes: Node[])
       body: JSON.stringify({
         pipelineName,
         components: nodes,
-        provider
+        provider,
+        oldPipelineName
       }),
     });
 

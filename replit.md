@@ -147,6 +147,15 @@ Preferred communication style: Simple, everyday language.
   - Pipeline Designer integration through sessionStorage for importing Jane's recommendations
 
 ### January 18, 2025
+- **Implemented Auto-Save Functionality and Directory Renaming**
+  - Added automatic pipeline saving when components are added or modified
+  - Auto-save triggers 2 seconds after any changes to prevent excessive API calls
+  - Pipeline directories automatically renamed when pipeline name changes
+  - Silent auto-save with no toast notifications to avoid UI spam
+  - Backend handles directory renaming gracefully with fallback to creating new directories
+  - Auto-save disabled during import operations to prevent conflicts
+  - Enhanced Terraform generation to support directory renaming with oldPipelineName parameter
+
 - **Implemented Automatic Terraform JSON Generation for Pipeline Components**
   - Added comprehensive Terraform generation system that creates main.tf.json files in pipeline directories
   - Terraform configuration automatically generated when users configure pipeline components

@@ -732,7 +732,7 @@ What specific cloud service would you like to configure?`
   // Terraform generation route
   app.post("/api/generate-terraform", async (req, res) => {
     try {
-      const { pipelineName, components, provider } = req.body;
+      const { pipelineName, components, provider, oldPipelineName } = req.body;
       
       if (!pipelineName || !components || !provider) {
         return res.status(400).json({ error: "Missing required fields: pipelineName, components, provider" });
@@ -740,9 +740,25 @@ What specific cloud service would you like to configure?`
 
       const terraformJson = generateTerraformJson(components, provider);
       
-      // Create pipeline directory if it doesn't exist
+      // Create pipeline directory with sanitized name
       const sanitizedName = pipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
       const pipelineDir = path.join('pipelines', sanitizedName);
+
+      // Handle directory renaming if pipeline name changed
+      if (oldPipelineName && oldPipelineName !== pipelineName) {
+        const oldSanitizedName = oldPipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+        const oldPipelineDir = path.join('pipelines', oldSanitizedName);
+        
+        try {
+          await fs.access(oldPipelineDir);
+          // Directory exists, try to rename it
+          await fs.rename(oldPipelineDir, pipelineDir);
+          console.log(`Renamed pipeline directory from ${oldSanitizedName} to ${sanitizedName}`);
+        } catch (error) {
+          // Old directory doesn't exist or rename failed, just create new one
+          console.log(`Directory rename not needed or failed, creating new directory: ${sanitizedName}`);
+        }
+      }
       
       try {
         await fs.mkdir(pipelineDir, { recursive: true });
