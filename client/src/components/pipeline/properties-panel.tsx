@@ -24,10 +24,11 @@ interface PropertiesPanelProps {
   onClose: () => void;
   pipelineName?: string;
   allNodes?: Node[];
+  credentialId?: number;
 }
 
 // Helper function to generate Terraform for pipeline
-async function generateTerraformForPipeline(pipelineName: string, nodes: Node[], oldPipelineName?: string) {
+async function generateTerraformForPipeline(pipelineName: string, nodes: Node[], oldPipelineName?: string, credentialId?: number) {
   try {
     // Determine provider from nodes
     const provider = getProviderFromNodes(nodes);
@@ -41,7 +42,8 @@ async function generateTerraformForPipeline(pipelineName: string, nodes: Node[],
         pipelineName,
         components: nodes,
         provider,
-        oldPipelineName
+        oldPipelineName,
+        credentialId
       }),
     });
 
@@ -73,6 +75,7 @@ export default function PropertiesPanel({
   onUpdateConfig,
   onClose,
   pipelineName = "untitled-pipeline",
+  credentialId,
   allNodes = [],
 }: PropertiesPanelProps) {
   console.log("PropertiesPanel opened with node:", node);
@@ -98,7 +101,7 @@ export default function PropertiesPanel({
     // Generate Terraform when config is updated
     if (allNodes.length > 0) {
       try {
-        const result = await generateTerraformForPipeline(pipelineName, allNodes);
+        const result = await generateTerraformForPipeline(pipelineName, allNodes, undefined, credentialId);
         toast({
           title: "Terraform Generated",
           description: result.message,

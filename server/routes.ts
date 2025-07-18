@@ -777,13 +777,22 @@ What specific cloud service would you like to configure?`
   // Terraform generation route
   app.post("/api/generate-terraform", async (req, res) => {
     try {
-      const { pipelineName, components, provider, oldPipelineName } = req.body;
+      const { pipelineName, components, provider, oldPipelineName, credentialId } = req.body;
       
       if (!pipelineName || !components || !provider) {
         return res.status(400).json({ error: "Missing required fields: pipelineName, components, provider" });
       }
 
-      const terraformJson = generateTerraformJson(components, provider);
+      // Get credential information if credentialId is provided
+      let credential = null;
+      if (credentialId) {
+        credential = await storage.getCredential(credentialId);
+        if (!credential) {
+          return res.status(404).json({ error: "Credential not found" });
+        }
+      }
+
+      const terraformJson = generateTerraformJson(components, provider, credential);
       
       // Create pipeline directory with sanitized name
       const sanitizedName = pipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
@@ -832,7 +841,7 @@ What specific cloud service would you like to configure?`
 }
 
 // Helper function to generate Terraform JSON configuration
-function generateTerraformJson(components: any[], provider: string) {
+function generateTerraformJson(components: any[], provider: string, credential?: any) {
   const terraformConfig: any = {
     terraform: {
       required_providers: {}
@@ -841,7 +850,7 @@ function generateTerraformJson(components: any[], provider: string) {
     resource: {}
   };
 
-  // Configure provider-specific settings
+  // Configure provider-specific settings with credentials
   switch (provider) {
     case 'aws':
       terraformConfig.terraform.required_providers.aws = {
@@ -851,6 +860,11 @@ function generateTerraformJson(components: any[], provider: string) {
       terraformConfig.provider.aws = {
         region: "us-east-1"
       };
+      // Add AWS credentials if available
+      if (credential && credential.provider === 'AWS') {
+        terraformConfig.provider.aws.access_key = credential.username; // AWS Access Key ID
+        terraformConfig.provider.aws.secret_key = credential.password; // AWS Secret Access Key
+      }
       break;
     case 'azure':
       terraformConfig.terraform.required_providers.azurerm = {
@@ -860,6 +874,13 @@ function generateTerraformJson(components: any[], provider: string) {
       terraformConfig.provider.azurerm = {
         features: {}
       };
+      // Add Azure credentials if available
+      if (credential && credential.provider === 'Azure') {
+        terraformConfig.provider.azurerm.client_id = credential.username; // Azure Client ID
+        terraformConfig.provider.azurerm.client_secret = credential.password; // Azure Client Secret
+        terraformConfig.provider.azurerm.tenant_id = credential.tenantId || "your-tenant-id"; // Azure Tenant ID
+        terraformConfig.provider.azurerm.subscription_id = credential.subscriptionId || "your-subscription-id"; // Azure Subscription ID
+      }
       break;
     case 'gcp':
       terraformConfig.terraform.required_providers.google = {
@@ -867,9 +888,13 @@ function generateTerraformJson(components: any[], provider: string) {
         version: "~> 4.0"
       };
       terraformConfig.provider.google = {
-        project: "my-project-id",
+        project: credential?.username || "my-project-id", // GCP Project ID
         region: "us-central1"
       };
+      // Add GCP credentials if available
+      if (credential && credential.provider === 'GCP') {
+        terraformConfig.provider.google.credentials = credential.password; // GCP Service Account JSON
+      }
       break;
   }
 

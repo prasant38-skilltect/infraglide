@@ -96,6 +96,7 @@ export default function PipelineDesigner() {
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(null);
+  const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
@@ -269,6 +270,11 @@ export default function PipelineDesigner() {
       console.log("Line No 200:", pipeline.name);
       setPipelineDescription(pipeline.description || "");
       setPipelineRegion(pipeline.region);
+      
+      // Set the current credential ID for existing pipelines
+      if (pipeline.credentialId) {
+        setCurrentCredentialId(pipeline.credentialId);
+      }
 
       if (Array.isArray(pipeline.components)) {
         const loadedNodes = pipeline.components.map(
@@ -398,6 +404,7 @@ export default function PipelineDesigner() {
           description: pipelineDescription,
           region: pipelineRegion,
           snapshot: snapshot,
+          credentialId: currentCredentialId,
           components: nodes.map((node) => ({
             id: node.id,
             type: node.data.type,
@@ -711,6 +718,7 @@ export default function PipelineDesigner() {
       region: pipelineRegion,
       version: 1,
       snapshot: snapshot,
+      credentialId: credential.id,
       credentialName: credential.name,
       credentialUsername: credential.username,
       credentialPassword: credential.password,
@@ -728,6 +736,10 @@ export default function PipelineDesigner() {
         type: edge.type || "default",
       })),
     };
+    
+    // Set the current credential ID for use in properties panel
+    setCurrentCredentialId(credential.id);
+    
     savePipelineMutation.mutate(pipelineData);
   };
 
@@ -791,6 +803,7 @@ export default function PipelineDesigner() {
       region: pipelineRegion,
       version: conflictData.nextVersion,
       snapshot: snapshot,
+      credentialId: credential.id,
       credentialName: credential.name,
       credentialUsername: credential.username,
       credentialPassword: credential.password,
@@ -1392,6 +1405,7 @@ export default function PipelineDesigner() {
                   onClose={onClosePropertiesPanel}
                   pipelineName={pipelineName}
                   allNodes={nodes}
+                  credentialId={currentCredentialId}
                 />
               </div>
             </div>
