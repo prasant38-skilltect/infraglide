@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Added Architecture Tab with Screenshot Functionality**
+  - Created standalone Architecture page for capturing and storing pipeline diagrams
+  - Added Architecture link to main sidebar navigation alongside HLD and LLD
+  - Implemented screenshot capture functionality using html2canvas to capture pipeline canvas
+  - Screenshots are automatically saved with pipeline name as filename (e.g., "pipeline_name_architecture.png")
+  - Added pipeline selection dropdown with architecture overview and statistics
+  - Includes component breakdown, connection flow visualization, and technical specifications
+  - "Capture Architecture" button opens pipeline designer, captures canvas, and downloads image
+  - Enhanced with pipeline complexity assessment and component categorization
+
 - **Moved HLD and LLD to Main Navigation Bar**
   - Created standalone HLD page for managers with business-focused documentation including project overview, cost estimation, timeline, and risk assessment
   - Created standalone LLD page for technical experts with detailed component specifications, configurations, and connections
