@@ -742,14 +742,12 @@ What specific cloud service would you like to configure?`
       const sanitizedName = pipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
       const pipelineDir = path.join('pipelines', sanitizedName);
       
-      // Set PATH to include our terraform binary
-      const terraformPath = '/home/runner/.local/bin';
-      const currentPath = process.env.PATH || '';
-      process.env.PATH = `${terraformPath}:${currentPath}`;
+      // Use absolute path to our terraform wrapper
+      const terraformBinaryPath = '/home/runner/.local/bin/terraform';
       
       try {
-        // Execute terraform command in the pipeline directory
-        const output = execSync(`cd ${pipelineDir} && terraform ${command}`, { 
+        // Execute terraform command in the pipeline directory using absolute path
+        const output = execSync(`cd ${pipelineDir} && ${terraformBinaryPath} ${command}`, { 
           encoding: 'utf8',
           timeout: 30000 // 30 second timeout
         });

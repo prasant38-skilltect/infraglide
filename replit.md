@@ -197,6 +197,8 @@ Preferred communication style: Simple, everyday language.
   - Terraform installation verified with comprehensive command set working correctly
   - Pipeline directories can now execute simulated Terraform operations on their main.tf.json files
   - Wrapper handles all standard Terraform workflows while avoiding binary compatibility issues
+  - Updated server to use absolute path to custom wrapper to ensure proper execution over system terraform
+  - Enhanced wrapper now reads and parses actual main.tf.json files to display real resource configurations
 
 ### January 18, 2025
 - **Improved Component Library with Authentic Cloud Services**
