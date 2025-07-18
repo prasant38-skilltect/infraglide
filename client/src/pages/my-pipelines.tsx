@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
@@ -12,8 +12,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
-  FileText,
-  X,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -85,11 +83,8 @@ export default function MyPipelines() {
   // Modal states
   const [showDeleteDialog, setShowDeleteDialog] = useState<number | null>(null);
   const [showRenameDialog, setShowRenameDialog] = useState<Pipeline | null>(null);
-  const [showImportDialog, setShowImportDialog] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState("");
   const [newPipelineDescription, setNewPipelineDescription] = useState("");
-  const [importFile, setImportFile] = useState<File | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -146,24 +141,7 @@ export default function MyPipelines() {
     },
   });
 
-  const createPipelineMutation = useMutation({
-    mutationFn: async (pipelineData: any) => {
-      const response = await fetch("/api/pipelines", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(pipelineData),
-      });
-      if (!response.ok) {
-        throw new Error("Failed to create pipeline");
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
-    },
-  });
+
 
   const handleExport = (pipeline: Pipeline) => {
     const dataStr = JSON.stringify(pipeline, null, 2);
@@ -263,58 +241,7 @@ export default function MyPipelines() {
     input.click();
   };
 
-  const handleImport = () => {
-    setShowImportDialog(true);
-  };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImportFile(file);
-    }
-  };
-
-  const handleImportConfirm = async () => {
-    if (!importFile) return;
-
-    try {
-      const fileContent = await importFile.text();
-      const pipelineData = JSON.parse(fileContent);
-      
-      // Validate the JSON structure
-      if (!pipelineData.name || !Array.isArray(pipelineData.components)) {
-        throw new Error("Invalid pipeline format");
-      }
-
-      // Create a new pipeline from imported data
-      const newPipeline = {
-        name: `${pipelineData.name}_imported_${Date.now()}`,
-        description: pipelineData.description || "Imported pipeline",
-        region: pipelineData.region || "us-east-1",
-        components: pipelineData.components || [],
-        connections: pipelineData.connections || [],
-      };
-
-      await createPipelineMutation.mutateAsync(newPipeline);
-      
-      toast({
-        title: "Import successful",
-        description: `Pipeline "${newPipeline.name}" has been imported successfully.`,
-      });
-      
-      setShowImportDialog(false);
-      setImportFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } catch (error) {
-      toast({
-        title: "Import failed",
-        description: "Invalid JSON file format or missing required fields.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const handleDelete = (pipelineId: number) => {
     setShowDeleteDialog(pipelineId);
@@ -976,74 +903,7 @@ export default function MyPipelines() {
         </DialogContent>
       </Dialog>
 
-      {/* Import Pipeline Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Import Pipeline</DialogTitle>
-            <DialogDescription>
-              Select a JSON file to import as a new pipeline.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid w-full max-w-sm items-center gap-1.5">
-              <Label htmlFor="pipeline-file">Pipeline File</Label>
-              <Input
-                ref={fileInputRef}
-                id="pipeline-file"
-                type="file"
-                accept=".json"
-                onChange={handleFileSelect}
-                className="cursor-pointer"
-              />
-              {importFile && (
-                <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded text-sm">
-                  <FileText className="w-4 h-4" />
-                  <span className="truncate">{importFile.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setImportFile(null);
-                      if (fileInputRef.current) {
-                        fileInputRef.current.value = "";
-                      }
-                    }}
-                    className="p-1 h-6 w-6"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              )}
-              <p className="text-xs text-gray-500">
-                Only JSON files exported from this application are supported.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => {
-                setShowImportDialog(false);
-                setImportFile(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = "";
-                }
-              }}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="button" 
-              onClick={handleImportConfirm}
-              disabled={!importFile || createPipelineMutation.isPending}
-            >
-              {createPipelineMutation.isPending ? "Importing..." : "Import Pipeline"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
     </div>
   );
 }
