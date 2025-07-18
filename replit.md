@@ -165,6 +165,14 @@ Preferred communication style: Simple, everyday language.
   - Streamlined navigation focuses on core workflow features
   - Main menu now includes: Dashboard, My Pipelines, Deployments, Credentials, Hub, Architecture, HLD, LLD, Deployed Resources, Settings
 
+- **Implemented Console Log Display for Terraform Operations**
+  - Added console log component that displays Terraform command outputs in 50% resolution popup
+  - Console appears for Preview, Deploy, and Destroy operations with real-time logging
+  - Users can minimize, copy, download, and close console logs
+  - Console shows command progress with categorized log entries (INFO, INIT, APPLY, PLAN, DESTROY, ERROR, SUCCESS)
+  - Auto-scrolls to latest logs and provides loading indicators during command execution
+  - Enhanced user experience with detailed feedback on infrastructure operations
+
 ### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script

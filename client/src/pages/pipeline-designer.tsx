@@ -19,7 +19,7 @@ import "reactflow/dist/style.css";
 import Sidebar from "@/components/layout/sidebar";
 import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
-
+import ConsoleLog from "@/components/ui/console-log";
 
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
 import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
@@ -101,6 +101,12 @@ export default function PipelineDesigner() {
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
     new Set(),
   );
+  
+  // Console log states
+  const [showConsole, setShowConsole] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [consoleTitle, setConsoleTitle] = useState("");
+  const [consoleLoading, setConsoleLoading] = useState(false);
   
   // Track if we've imported data to prevent auto-generation from overriding it
   const hasImportedData = useRef(false);
@@ -816,11 +822,15 @@ export default function PipelineDesigner() {
       return;
     }
 
+    // Initialize console
+    setConsoleTitle("Terraform Deploy");
+    setConsoleLogs([]);
+    setShowConsole(true);
+    setConsoleLoading(true);
+
     try {
-      toast({
-        title: "Deployment Started",
-        description: "Running terraform init && terraform apply -auto-approve...",
-      });
+      setConsoleLogs(prev => [...prev, "[INFO] Starting deployment process..."]);
+      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
       const initResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -833,7 +843,9 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      console.log("Terraform init output:", initResult.output);
+      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+
+      setConsoleLogs(prev => [...prev, "[INFO] Running terraform apply -auto-approve..."]);
 
       // Execute terraform apply with auto-approve
       const applyResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -846,7 +858,8 @@ export default function PipelineDesigner() {
       }
 
       const applyResult = await applyResponse.json();
-      console.log("Terraform apply output:", applyResult.output);
+      setConsoleLogs(prev => [...prev, "[APPLY] " + applyResult.output]);
+      setConsoleLogs(prev => [...prev, "[SUCCESS] Deployment completed successfully!"]);
 
       toast({
         title: "Deployment Successful",
@@ -855,11 +868,14 @@ export default function PipelineDesigner() {
 
     } catch (error) {
       console.error("Deployment failed:", error);
+      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to deploy infrastructure")]);
       toast({
         title: "Deployment Failed",
         description: error instanceof Error ? error.message : "Failed to deploy infrastructure",
         variant: "destructive",
       });
+    } finally {
+      setConsoleLoading(false);
     }
   };
 
@@ -903,12 +919,15 @@ export default function PipelineDesigner() {
       return;
     }
 
+    // Initialize console
+    setConsoleTitle("Terraform Destroy");
+    setConsoleLogs([]);
+    setShowConsole(true);
+    setConsoleLoading(true);
+
     try {
-      toast({
-        title: "Destruction Started",
-        description: "Running terraform init && terraform destroy -auto-approve...",
-        variant: "destructive",
-      });
+      setConsoleLogs(prev => [...prev, "[WARNING] Starting destruction process..."]);
+      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
       const initResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -921,7 +940,9 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      console.log("Terraform init output:", initResult.output);
+      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+
+      setConsoleLogs(prev => [...prev, "[WARNING] Running terraform destroy -auto-approve..."]);
 
       // Execute terraform destroy -auto-approve
       const destroyResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -934,7 +955,8 @@ export default function PipelineDesigner() {
       }
 
       const destroyResult = await destroyResponse.json();
-      console.log("Terraform destroy output:", destroyResult.output);
+      setConsoleLogs(prev => [...prev, "[DESTROY] " + destroyResult.output]);
+      setConsoleLogs(prev => [...prev, "[SUCCESS] Destruction completed successfully!"]);
 
       toast({
         title: "Destruction Complete",
@@ -944,11 +966,14 @@ export default function PipelineDesigner() {
 
     } catch (error) {
       console.error("Destruction failed:", error);
+      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to destroy infrastructure")]);
       toast({
         title: "Destruction Failed",
         description: error instanceof Error ? error.message : "Failed to destroy infrastructure",
         variant: "destructive",
       });
+    } finally {
+      setConsoleLoading(false);
     }
   };
 
@@ -962,11 +987,15 @@ export default function PipelineDesigner() {
       return;
     }
 
+    // Initialize console
+    setConsoleTitle("Terraform Preview");
+    setConsoleLogs([]);
+    setShowConsole(true);
+    setConsoleLoading(true);
+
     try {
-      toast({
-        title: "Preview Started",
-        description: "Running terraform init && terraform plan...",
-      });
+      setConsoleLogs(prev => [...prev, "[INFO] Starting preview process..."]);
+      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
       const initResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -979,7 +1008,9 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      console.log("Terraform init output:", initResult.output);
+      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+
+      setConsoleLogs(prev => [...prev, "[INFO] Running terraform plan..."]);
 
       // Execute terraform plan
       const planResponse = await apiRequest("POST", "/api/terraform/execute", {
@@ -992,20 +1023,24 @@ export default function PipelineDesigner() {
       }
 
       const planResult = await planResponse.json();
-      console.log("Terraform plan output:", planResult.output);
+      setConsoleLogs(prev => [...prev, "[PLAN] " + planResult.output]);
+      setConsoleLogs(prev => [...prev, "[SUCCESS] Preview completed successfully!"]);
 
       toast({
         title: "Preview Complete",
-        description: "Infrastructure plan generated successfully! Check console for details.",
+        description: "Infrastructure plan generated successfully!",
       });
 
     } catch (error) {
       console.error("Preview failed:", error);
+      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to generate infrastructure plan")]);
       toast({
         title: "Preview Failed",
         description: error instanceof Error ? error.message : "Failed to generate infrastructure plan",
         variant: "destructive",
       });
+    } finally {
+      setConsoleLoading(false);
     }
   };
 
@@ -1410,6 +1445,14 @@ export default function PipelineDesigner() {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onImport={handleImportPipeline}
+      />
+
+      <ConsoleLog
+        isOpen={showConsole}
+        onClose={() => setShowConsole(false)}
+        title={consoleTitle}
+        logs={consoleLogs}
+        isLoading={consoleLoading}
       />
     </div>
   );
