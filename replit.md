@@ -159,6 +159,12 @@ Preferred communication style: Simple, everyday language.
   - Console logging displays detailed plan output for user inspection
   - Allows users to preview changes before committing to deployment
 
+- **Simplified Main Navigation Menu**
+  - Removed "Pipelines" tab from main sidebar navigation
+  - Users now access pipeline creation through Pipeline Designer directly
+  - Streamlined navigation focuses on core workflow features
+  - Main menu now includes: Dashboard, My Pipelines, Deployments, Credentials, Hub, Architecture, HLD, LLD, Deployed Resources, Settings
+
 ### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script

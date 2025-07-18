@@ -11,7 +11,6 @@ export default function Sidebar() {
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
-    { name: "Pipelines", href: "/pipeline", icon: GitBranch },
     { name: "My Pipelines", href: "/my-pipelines", icon: Layers },
     { name: "Deployments", href: "/deployments", icon: History },
     { name: "Credentials", href: "/credentials", icon: Key },
