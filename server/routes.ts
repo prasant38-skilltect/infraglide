@@ -5,6 +5,7 @@ import { insertProjectSchema, insertPipelineSchema, insertDeploymentSchema, inse
 import { z } from "zod";
 import { promises as fs } from "fs";
 import path from "path";
+import { execSync } from "child_process";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Projects routes
@@ -728,6 +729,50 @@ Would you like me to create a specific Terraform configuration for any of these 
 What specific cloud service would you like to configure?`
     };
   }
+
+  // Terraform execution test route
+  app.post("/api/terraform/execute", async (req, res) => {
+    try {
+      const { command, pipelineName } = req.body;
+      
+      if (!command || !pipelineName) {
+        return res.status(400).json({ error: "Missing required fields: command, pipelineName" });
+      }
+
+      const sanitizedName = pipelineName.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
+      const pipelineDir = path.join('pipelines', sanitizedName);
+      
+      // Set PATH to include our terraform binary
+      const terraformPath = '/home/runner/.local/bin';
+      const currentPath = process.env.PATH || '';
+      process.env.PATH = `${terraformPath}:${currentPath}`;
+      
+      try {
+        // Execute terraform command in the pipeline directory
+        const output = execSync(`cd ${pipelineDir} && terraform ${command}`, { 
+          encoding: 'utf8',
+          timeout: 30000 // 30 second timeout
+        });
+        
+        res.json({ 
+          success: true, 
+          output: output.trim(),
+          command: `terraform ${command}`,
+          directory: pipelineDir
+        });
+      } catch (execError: any) {
+        res.status(500).json({ 
+          error: "Terraform execution failed", 
+          details: execError.message,
+          command: `terraform ${command}`,
+          directory: pipelineDir
+        });
+      }
+    } catch (error) {
+      console.error('Terraform execution error:', error);
+      res.status(500).json({ error: "Failed to execute Terraform command" });
+    }
+  });
 
   // Terraform generation route
   app.post("/api/generate-terraform", async (req, res) => {
