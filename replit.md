@@ -126,6 +126,15 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Implemented Pipeline Directory Creation**
+  - Added automatic directory creation in file system when pipelines are created
+  - Pipeline directories are created in `/pipelines/{pipeline-name}/` with sanitized names
+  - Each directory contains `pipeline.json` with complete pipeline metadata
+  - Added `README.md` files with pipeline overview and component information
+  - Directory updates automatically when pipelines are modified
+  - Directory cleanup when pipelines are deleted
+  - Proper error handling to prevent pipeline operations from failing due to file system issues
+
 - **Added Deployed Resources Tab**
   - Created Deployed Resources page for monitoring cloud infrastructure inventory
   - Added comprehensive cloud resource management with AWS, Azure, and GCP support

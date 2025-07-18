@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertProjectSchema, insertPipelineSchema, insertDeploymentSchema, insertCredentialSchema } from "@shared/schema";
 import { z } from "zod";
+import { promises as fs } from "fs";
+import path from "path";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Projects routes
@@ -116,6 +118,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertPipelineSchema.parse(req.body);
       const pipeline = await storage.createPipeline(validatedData);
+      
+      // Create directory with pipeline name
+      try {
+        const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+        await fs.mkdir(pipelineDir, { recursive: true });
+        
+        // Create pipeline metadata file
+        const pipelineMetadata = {
+          id: pipeline.id,
+          name: pipeline.name,
+          description: pipeline.description,
+          provider: pipeline.provider,
+          region: pipeline.region,
+          createdAt: new Date().toISOString(),
+          components: pipeline.components,
+          connections: pipeline.connections
+        };
+        
+        await fs.writeFile(
+          path.join(pipelineDir, "pipeline.json"),
+          JSON.stringify(pipelineMetadata, null, 2)
+        );
+        
+        // Create README file
+        const readme = `# ${pipeline.name}
+
+## Description
+${pipeline.description || 'No description provided'}
+
+## Provider
+${pipeline.provider}
+
+## Region
+${pipeline.region}
+
+## Components
+${pipeline.components.length} components configured
+
+## Created
+${new Date().toLocaleDateString()}
+
+This directory was automatically created when the pipeline was saved in InfraGlide.
+`;
+        
+        await fs.writeFile(path.join(pipelineDir, "README.md"), readme);
+        
+        console.log(`Created directory and files for pipeline: ${pipeline.name}`);
+      } catch (dirError) {
+        console.error("Failed to create pipeline directory:", dirError);
+        // Don't fail the pipeline creation if directory creation fails
+      }
+      
       res.status(201).json(pipeline);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -133,6 +187,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!pipeline) {
         return res.status(404).json({ error: "Pipeline not found" });
       }
+      
+      // Update pipeline directory and files
+      try {
+        const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+        await fs.mkdir(pipelineDir, { recursive: true });
+        
+        // Update pipeline metadata file
+        const pipelineMetadata = {
+          id: pipeline.id,
+          name: pipeline.name,
+          description: pipeline.description,
+          provider: pipeline.provider,
+          region: pipeline.region,
+          updatedAt: new Date().toISOString(),
+          components: pipeline.components,
+          connections: pipeline.connections
+        };
+        
+        await fs.writeFile(
+          path.join(pipelineDir, "pipeline.json"),
+          JSON.stringify(pipelineMetadata, null, 2)
+        );
+        
+        console.log(`Updated directory and files for pipeline: ${pipeline.name}`);
+      } catch (dirError) {
+        console.error("Failed to update pipeline directory:", dirError);
+        // Don't fail the pipeline update if directory update fails
+      }
+      
       res.json(pipeline);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -145,10 +228,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.delete("/api/pipelines/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      // Get pipeline info before deletion for directory cleanup
+      const pipeline = await storage.getPipeline(id);
+      
       const deleted = await storage.deletePipeline(id);
       if (!deleted) {
         return res.status(404).json({ error: "Pipeline not found" });
       }
+      
+      // Clean up pipeline directory
+      if (pipeline) {
+        try {
+          const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+          await fs.rm(pipelineDir, { recursive: true, force: true });
+          console.log(`Deleted directory for pipeline: ${pipeline.name}`);
+        } catch (dirError) {
+          console.error("Failed to delete pipeline directory:", dirError);
+          // Don't fail the pipeline deletion if directory cleanup fails
+        }
+      }
+      
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete pipeline" });
