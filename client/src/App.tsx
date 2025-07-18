@@ -8,6 +8,8 @@ import Dashboard from "@/pages/dashboard";
 import PipelineDesigner from "@/pages/pipeline-designer";
 import Credentials from "@/pages/credentials";
 import MyPipelines from "@/pages/my-pipelines";
+import HLD from "@/pages/hld";
+import LLD from "@/pages/lld";
 
 function Router() {
   return (
@@ -17,6 +19,8 @@ function Router() {
       <Route path="/pipeline/:id?" component={PipelineDesigner} />
       <Route path="/my-pipelines" component={MyPipelines} />
       <Route path="/credentials" component={Credentials} />
+      <Route path="/hld" component={HLD} />
+      <Route path="/lld" component={LLD} />
       <Route component={NotFound} />
     </Switch>
   );

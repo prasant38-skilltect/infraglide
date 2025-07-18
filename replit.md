@@ -126,13 +126,14 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
-- **Added High Level Document (HLD) and Low Level Document (LLD) Tabs**
-  - Created HLDPanel component for managers with business-focused documentation including project overview, cost estimation, timeline, and risk assessment
-  - Created LLDPanel component for technical experts with detailed component specifications, configurations, and connections
-  - Added tabbed navigation in left panel with Components, HLD, and LLD tabs
+- **Moved HLD and LLD to Main Navigation Bar**
+  - Created standalone HLD page for managers with business-focused documentation including project overview, cost estimation, timeline, and risk assessment
+  - Created standalone LLD page for technical experts with detailed component specifications, configurations, and connections
+  - Added HLD and LLD links to main sidebar navigation alongside My Pipelines, Projects, and Credentials
+  - Both pages include pipeline selection dropdown to choose which pipeline to analyze
   - HLD generates executive summary with business value, resource counts, estimated costs, and implementation timeline
   - LLD provides technical specifications with component configurations, connection details, and categorized resource breakdown
-  - Both panels read pipeline JSON data dynamically and update based on canvas changes
+  - Both pages read pipeline JSON data from database and provide comprehensive documentation views
 
 ### January 17, 2025
 - **Implemented Provider Switching Confirmation System**

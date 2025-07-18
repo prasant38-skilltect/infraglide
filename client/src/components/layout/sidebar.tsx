@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Cloud, Home, GitBranch, FolderOpen, History, Settings, User, Key, Layers } from "lucide-react";
+import { Cloud, Home, GitBranch, FolderOpen, History, Settings, User, Key, Layers, Users, Code } from "lucide-react";
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -11,6 +11,8 @@ export default function Sidebar() {
     { name: "Projects", href: "/projects", icon: FolderOpen },
     { name: "Deployments", href: "/deployments", icon: History },
     { name: "Credentials", href: "/credentials", icon: Key },
+    { name: "HLD", href: "/hld", icon: Users },
+    { name: "LLD", href: "/lld", icon: Code },
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
