@@ -12,6 +12,7 @@ import HLD from "@/pages/hld";
 import LLD from "@/pages/lld";
 import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
+import DeployedResources from "@/pages/deployed-resources";
 
 function Router() {
   return (
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/architecture" component={Architecture} />
       <Route path="/hld" component={HLD} />
       <Route path="/lld" component={LLD} />
+      <Route path="/deployed-resources" component={DeployedResources} />
       <Route component={NotFound} />
     </Switch>
   );

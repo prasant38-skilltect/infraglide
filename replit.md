@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Added Deployed Resources Tab**
+  - Created Deployed Resources page for monitoring cloud infrastructure inventory
+  - Added comprehensive cloud resource management with AWS, Azure, and GCP support
+  - Implemented account-based filtering using existing credential system
+  - Added resource search, filtering by provider and status, with tabbed view
+  - Resource cards display status, region, cost estimates, tags, and creation dates
+  - Mock cloud API integration ready for real provider authentication
+  - Summary statistics showing total resources, running/stopped counts, and monthly costs
+  - Integration with credentials system for account selection and provider authentication
+
 - **Removed Projects Tab from Main Navigation**
   - Removed Projects tab from sidebar navigation to simplify interface
   - Updated navigation to focus on core pipeline management features

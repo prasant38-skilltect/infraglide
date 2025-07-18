@@ -332,63 +332,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/hub/publish", async (req, res) => {
+  // Deployed Resources endpoints
+  app.get("/api/deployed-resources", async (req, res) => {
     try {
-      const { pipelineId, description, tags } = req.body;
+      const credentialId = req.query.credentialId as string;
       
-      if (!pipelineId || !description) {
-        return res.status(400).json({ error: "Pipeline ID and description are required" });
+      if (!credentialId) {
+        return res.json([]);
       }
 
-      // Fetch the pipeline to publish
-      const pipeline = await storage.getPipeline(parseInt(pipelineId));
-      if (!pipeline) {
-        return res.status(404).json({ error: "Pipeline not found" });
+      // Fetch credential to determine provider
+      const credential = await storage.getCredential(parseInt(credentialId));
+      if (!credential) {
+        return res.status(404).json({ error: "Credential not found" });
       }
 
       // In a real implementation, this would:
-      // 1. Create a GitHub repository or push to existing hub repo
-      // 2. Upload pipeline JSON and documentation
-      // 3. Create a release with proper versioning
-      // 4. Update hub database with pipeline metadata
+      // 1. Use the credential to authenticate with cloud provider APIs
+      // 2. Call AWS EC2, RDS, S3 APIs for AWS resources
+      // 3. Call Azure Resource Manager APIs for Azure resources  
+      // 4. Call Google Cloud Resource Manager APIs for GCP resources
+      // 5. Aggregate and normalize the resource data
+
+      // Mock deployed resources based on provider
+      const mockResources = generateMockResources(credential.provider, credential.name);
       
-      const hubEntry = {
-        id: `hub-${Date.now()}`,
-        name: pipeline.name,
-        description,
-        author: "Current User", // Would be from auth
-        provider: pipeline.provider,
-        region: pipeline.region,
-        components: pipeline.components,
-        connections: pipeline.connections,
-        stars: 0,
-        downloads: 0,
-        publishedAt: new Date().toISOString(),
-        version: `${pipeline.version}.0`,
-        tags: Array.isArray(tags) ? tags : [],
-        status: "published",
-        githubUrl: `https://github.com/infraglide-hub/${pipeline.name.toLowerCase().replace(/\s+/g, '-')}`
-      };
-
-      // Simulate GitHub API calls
-      console.log("Publishing to GitHub:", {
-        repository: hubEntry.githubUrl,
-        pipeline: pipeline.name,
-        description,
-        tags
-      });
-
-      res.json({
-        success: true,
-        hubEntry,
-        githubUrl: hubEntry.githubUrl,
-        message: "Pipeline published successfully to GitHub Hub"
-      });
+      res.json(mockResources);
     } catch (error) {
-      console.error("Failed to publish pipeline:", error);
-      res.status(500).json({ error: "Failed to publish pipeline" });
+      console.error("Failed to fetch deployed resources:", error);
+      res.status(500).json({ error: "Failed to fetch deployed resources" });
     }
   });
+
+  function generateMockResources(provider: string, accountName: string) {
+    const baseResources = [];
+    const regions = {
+      'AWS': ['us-east-1', 'us-west-2', 'eu-west-1'],
+      'Azure': ['eastus', 'westus2', 'westeurope'], 
+      'GCP': ['us-central1', 'us-west1', 'europe-west1']
+    };
+
+    const resourceTypes = {
+      'AWS': [
+        { type: 'aws-ec2-instance', name: 'Web Server', cost: 45.60 },
+        { type: 'aws-rds-mysql', name: 'Production DB', cost: 89.30 },
+        { type: 'aws-s3-bucket', name: 'Assets Storage', cost: 12.50 },
+        { type: 'aws-vpc', name: 'Main VPC', cost: 0 },
+        { type: 'aws-alb', name: 'Load Balancer', cost: 22.40 }
+      ],
+      'Azure': [
+        { type: 'azure-vm', name: 'App Server', cost: 52.80 },
+        { type: 'azure-sql-database', name: 'User Database', cost: 95.20 },
+        { type: 'azure-storage-account', name: 'Blob Storage', cost: 15.30 },
+        { type: 'azure-vnet', name: 'Virtual Network', cost: 0 },
+        { type: 'azure-load-balancer', name: 'Traffic Manager', cost: 18.90 }
+      ],
+      'GCP': [
+        { type: 'gcp-compute-instance', name: 'Compute Engine', cost: 41.70 },
+        { type: 'gcp-cloud-sql', name: 'Cloud SQL DB', cost: 78.40 },
+        { type: 'gcp-cloud-storage', name: 'Cloud Storage', cost: 10.20 },
+        { type: 'gcp-vpc', name: 'VPC Network', cost: 0 },
+        { type: 'gcp-load-balancer', name: 'Cloud Load Balancer', cost: 20.60 }
+      ]
+    };
+
+    const statuses = ['running', 'running', 'running', 'stopped', 'pending'];
+    const providerRegions = regions[provider as keyof typeof regions] || ['us-east-1'];
+    const providerTypes = resourceTypes[provider as keyof typeof resourceTypes] || [];
+
+    providerTypes.forEach((resourceType, index) => {
+      baseResources.push({
+        id: `${provider.toLowerCase()}-${index + 1}-${Date.now()}`,
+        name: resourceType.name,
+        type: resourceType.type,
+        status: statuses[index % statuses.length],
+        region: providerRegions[index % providerRegions.length],
+        cost: resourceType.cost,
+        tags: {
+          Environment: index < 2 ? 'Production' : 'Development',
+          Project: 'InfraGlide',
+          Owner: accountName
+        },
+        createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+        lastModified: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        provider: provider as 'AWS' | 'Azure' | 'GCP',
+        account: accountName,
+        resourceGroup: provider === 'Azure' ? `${accountName}-rg` : undefined,
+        project: provider === 'GCP' ? `${accountName}-project` : undefined
+      });
+    });
+
+    return baseResources;
+  }
 
   const httpServer = createServer(app);
   return httpServer;
