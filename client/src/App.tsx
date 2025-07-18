@@ -13,6 +13,7 @@ import LLD from "@/pages/lld";
 import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
 import DeployedResources from "@/pages/deployed-resources";
+import AskJane from "@/pages/ask-jane";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/my-pipelines" component={MyPipelines} />
       <Route path="/credentials" component={Credentials} />
       <Route path="/hub" component={Hub} />
+      <Route path="/ask-jane" component={AskJane} />
       <Route path="/architecture" component={Architecture} />
       <Route path="/hld" component={HLD} />
       <Route path="/lld" component={LLD} />

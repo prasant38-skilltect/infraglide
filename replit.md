@@ -126,6 +126,19 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Implemented "Ask Jane" Virtual Assistant**
+  - Created conversational AI assistant tab using built-in knowledge base instead of external APIs
+  - Added comprehensive Terraform JSON generation for AWS, Azure, and GCP services
+  - Implemented "Open in Pipeline Designer" functionality for seamless canvas integration
+  - Added copy-to-clipboard for generated Terraform configurations
+  - Built-in responses for S3 buckets, EC2 instances, Google Compute Engine, Azure SQL databases
+  - Includes cloud architecture best practices and infrastructure guidance
+  - Chat interface with message history, typing indicators, and error handling
+  - Quick action badges for common queries (AWS S3, GCP Compute, Azure SQL, Architecture Tips)
+  - Backend API endpoint `/api/ask-jane` with pattern matching for infrastructure questions
+  - Pipeline Designer integration through sessionStorage for importing Jane's recommendations
+
+### January 18, 2025
 - **Implemented Pipeline Directory Creation**
   - Added automatic directory creation in file system when pipelines are created
   - Pipeline directories are created in `/pipelines/{pipeline-name}/` with sanitized names

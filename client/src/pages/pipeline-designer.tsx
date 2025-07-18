@@ -147,14 +147,15 @@ export default function PipelineDesigner() {
     setIsSidebarCollapsed(true);
   }, []);
 
-  // Check for imported pipeline data from sessionStorage
+  // Check for imported pipeline data from sessionStorage (My Pipelines or Ask Jane)
   useEffect(() => {
     const importedData = sessionStorage.getItem("importedPipelineData");
+    const importedPipeline = sessionStorage.getItem('importedPipeline');
 
-    if (importedData && !pipelineId) {
+    if ((importedData || importedPipeline) && !pipelineId) {
       // Only load if not editing an existing pipeline
       try {
-        const pipelineData = JSON.parse(importedData);
+        const pipelineData = JSON.parse(importedData || importedPipeline);
 
         // Set pipeline metadata
         setPipelineName(pipelineData.name);
@@ -163,6 +164,14 @@ export default function PipelineDesigner() {
         
         // Mark that we've imported data
         hasImportedData.current = true;
+        
+        // Show success message for Jane imports
+        if (pipelineData.fromJane) {
+          toast({
+            title: "Pipeline Imported",
+            description: "Terraform configuration loaded from Jane's recommendation",
+          });
+        }
 
         // Load components to canvas
         if (

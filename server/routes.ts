@@ -525,6 +525,212 @@ This directory was automatically created when the pipeline was saved in InfraGli
     return baseResources;
   }
 
+  // Ask Jane AI Assistant endpoints
+  app.post("/api/ask-jane", async (req, res) => {
+    try {
+      const { message } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      // Built-in AI responses for infrastructure questions
+      const response = await generateJaneResponse(message.toLowerCase());
+      
+      res.json(response);
+    } catch (error) {
+      console.error("Failed to process Jane request:", error);
+      res.status(500).json({ error: "Failed to process request" });
+    }
+  });
+
+  async function generateJaneResponse(message: string): Promise<{ response: string; terraformJson?: any; hasError?: boolean }> {
+    // AWS Services
+    if (message.includes('aws s3') || message.includes('s3 bucket')) {
+      return {
+        response: "Here's a Terraform configuration for an AWS S3 bucket with versioning and encryption:",
+        terraformJson: {
+          terraform: {
+            required_providers: {
+              aws: {
+                source: "hashicorp/aws",
+                version: "~> 5.0"
+              }
+            }
+          },
+          provider: {
+            aws: {
+              region: "us-east-1"
+            }
+          },
+          resource: {
+            aws_s3_bucket: {
+              example_bucket: {
+                bucket: "my-infrastructure-bucket-${random_id.bucket_suffix.hex}",
+                tags: {
+                  Name: "InfraGlide Bucket",
+                  Environment: "Production"
+                }
+              }
+            },
+            aws_s3_bucket_versioning: {
+              example_bucket_versioning: {
+                bucket: "${aws_s3_bucket.example_bucket.id}",
+                versioning_configuration: {
+                  status: "Enabled"
+                }
+              }
+            },
+            random_id: {
+              bucket_suffix: {
+                byte_length: 4
+              }
+            }
+          }
+        }
+      };
+    }
+
+    // Google Cloud Services
+    if (message.includes('google compute') || message.includes('gcp compute') || message.includes('compute engine')) {
+      return {
+        response: "Here's a Terraform configuration for a Google Compute Engine instance:",
+        terraformJson: {
+          terraform: {
+            required_providers: {
+              google: {
+                source: "hashicorp/google",
+                version: "~> 4.0"
+              }
+            }
+          },
+          provider: {
+            google: {
+              project: "my-project-id",
+              region: "us-central1",
+              zone: "us-central1-a"
+            }
+          },
+          resource: {
+            google_compute_instance: {
+              vm_instance: {
+                name: "web-server",
+                machine_type: "e2-micro",
+                zone: "us-central1-a",
+                boot_disk: {
+                  initialize_params: {
+                    image: "debian-cloud/debian-11"
+                  }
+                },
+                network_interface: {
+                  network: "default",
+                  access_config: {}
+                },
+                tags: ["web-server", "http-server"]
+              }
+            }
+          }
+        }
+      };
+    }
+
+    // Azure Services
+    if (message.includes('azure sql') || message.includes('sql database')) {
+      return {
+        response: "Here's a Terraform configuration for Azure SQL Database:",
+        terraformJson: {
+          terraform: {
+            required_providers: {
+              azurerm: {
+                source: "hashicorp/azurerm",
+                version: "~> 3.0"
+              }
+            }
+          },
+          provider: {
+            azurerm: {
+              features: {}
+            }
+          },
+          resource: {
+            azurerm_resource_group: {
+              main: {
+                name: "rg-database",
+                location: "East US"
+              }
+            },
+            azurerm_mssql_server: {
+              main: {
+                name: "sql-server-${random_id.server_suffix.hex}",
+                resource_group_name: "${azurerm_resource_group.main.name}",
+                location: "${azurerm_resource_group.main.location}",
+                version: "12.0",
+                administrator_login: "sqladmin",
+                administrator_login_password: "ComplexPassword123!"
+              }
+            },
+            azurerm_mssql_database: {
+              main: {
+                name: "production-db",
+                server_id: "${azurerm_mssql_server.main.id}",
+                collation: "SQL_Latin1_General_CP1_CI_AS",
+                sku_name: "Basic"
+              }
+            }
+          }
+        }
+      };
+    }
+
+    // General infrastructure advice
+    if (message.includes('best practices') || message.includes('architecture')) {
+      return {
+        response: `Here are some cloud architecture best practices:
+
+**Security:**
+• Use IAM roles and policies for least privilege access
+• Enable encryption at rest and in transit
+• Implement network security groups and firewalls
+
+**Scalability:**
+• Design for horizontal scaling with load balancers
+• Use auto-scaling groups for dynamic capacity
+• Consider microservices architecture
+
+**Reliability:**
+• Multi-AZ/region deployments for high availability
+• Implement health checks and monitoring
+• Use managed services when possible
+
+Would you like me to create a specific Terraform configuration for any of these patterns?`
+      };
+    }
+
+    // Default response for unrecognized queries
+    return {
+      response: `I can help you with Terraform configurations for cloud services! Try asking about:
+
+**AWS Services:**
+• "Create an AWS S3 bucket"
+• "Show me AWS EC2 instance configuration"
+
+**Google Cloud:**
+• "Google Compute Engine instance"
+• "GCP Cloud Storage bucket"
+
+**Azure:**
+• "Azure Virtual Machine"
+• "Azure SQL Database"
+
+**General Help:**
+• "Best practices for cloud architecture"
+
+What specific cloud service would you like to configure?`
+    };
+  }
+
   const httpServer = createServer(app);
   return httpServer;
 }
+
+
