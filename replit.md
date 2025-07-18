@@ -126,6 +126,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Removed Deployments Tab from Main Navigation**
+  - Removed Deployments tab from sidebar navigation to simplify interface
+  - Updated navigation to focus on core pipeline management features
+  - Cleaned up unused icon imports for better code organization
+
+### January 18, 2025
 - **Enhanced Pipeline Designer Interface**
   - Removed Create button from Pipeline Designer toolbar
   - Added red Destroy button with proper destructive styling

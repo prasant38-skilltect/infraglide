@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Cloud, Home, GitBranch, History, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X } from "lucide-react";
+import { Cloud, Home, GitBranch, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -12,7 +12,6 @@ export default function Sidebar() {
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
     { name: "My Pipelines", href: "/my-pipelines", icon: Layers },
-    { name: "Deployments", href: "/deployments", icon: History },
     { name: "Credentials", href: "/credentials", icon: Key },
     { name: "Hub", href: "/hub", icon: Globe },
     { name: "Architecture", href: "/architecture", icon: Network },
