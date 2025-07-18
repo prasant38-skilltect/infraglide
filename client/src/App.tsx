@@ -13,7 +13,7 @@ import LLD from "@/pages/lld";
 import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
 import DeployedResources from "@/pages/deployed-resources";
-import AskJaneChat from "@/components/ask-jane-chat";
+
 
 function Router() {
   return (
@@ -29,9 +29,6 @@ function Router() {
       <Route path="/lld" component={LLD} />
       <Route path="/deployed-resources" component={DeployedResources} />
       <Route component={NotFound} />
-      
-      {/* Floating Ask Jane Chat */}
-      <AskJaneChat />
     </Switch>
   );
 }
