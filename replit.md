@@ -126,6 +126,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Updated My Pipelines Interface**
+  - Replaced "Import" button with "Open in Canvas" button in My Pipelines table
+  - Changed button icon from Upload to ExternalLink for better clarity
+  - Maintained same functionality - opens pipeline directly in designer canvas
+  - Improved user experience with clearer button labeling
+
 - **Removed Deployments Tab from Main Navigation**
   - Removed Deployments tab from sidebar navigation to simplify interface
   - Updated navigation to focus on core pipeline management features

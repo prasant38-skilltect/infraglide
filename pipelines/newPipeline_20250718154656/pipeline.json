@@ -1,0 +1,23 @@
+{
+  "id": 97,
+  "name": "newPipeline_20250718154656",
+  "description": "",
+  "region": "us-east-1",
+  "updatedAt": "2025-07-18T15:48:16.117Z",
+  "components": [
+    {
+      "id": "s3-1752853621554",
+      "name": "S3-9uo4eo",
+      "type": "s3",
+      "config": {
+        "awsRegion": "us-east-1",
+        "bucketName": "my-uniques-bucket-123987"
+      },
+      "position": {
+        "x": 122.03125,
+        "y": 50.5
+      }
+    }
+  ],
+  "connections": []
+}

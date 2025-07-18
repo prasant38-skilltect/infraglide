@@ -3,7 +3,6 @@ import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
-  Upload,
   Trash2,
   Edit3,
   Eye,
@@ -12,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  ExternalLink,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -696,8 +696,8 @@ export default function MyPipelines() {
                                         }}
                                         className="h-8 px-2 text-blue-600 hover:text-blue-800"
                                       >
-                                        <Upload className="w-3 h-3 mr-1" />
-                                        Import
+                                        <ExternalLink className="w-3 h-3 mr-1" />
+                                        Open in Canvas
                                       </Button>
                                       <Button
                                         variant="ghost"
