@@ -11,7 +11,6 @@ export default function Sidebar() {
     { name: "Deployments", href: "/deployments", icon: History },
     { name: "Credentials", href: "/credentials", icon: Key },
     { name: "Hub", href: "/hub", icon: Globe },
-    { name: "Ask Jane", href: "/ask-jane", icon: Bot },
     { name: "Architecture", href: "/architecture", icon: Network },
     { name: "HLD", href: "/hld", icon: Users },
     { name: "LLD", href: "/lld", icon: Code },

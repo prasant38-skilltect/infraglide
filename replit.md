@@ -126,8 +126,9 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
-- **Implemented "Ask Jane" Virtual Assistant**
-  - Created conversational AI assistant tab using built-in knowledge base instead of external APIs
+- **Implemented "Ask Jane" Virtual Assistant as Floating Chat**
+  - Created floating chat widget accessible from all pages with minimize/maximize functionality
+  - Converted from navigation tab to right-side floating icon for better accessibility
   - Added comprehensive Terraform JSON generation for AWS, Azure, and GCP services
   - Implemented "Open in Pipeline Designer" functionality for seamless canvas integration
   - Added copy-to-clipboard for generated Terraform configurations
