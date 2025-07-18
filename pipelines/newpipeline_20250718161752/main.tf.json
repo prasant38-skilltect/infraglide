@@ -15,9 +15,9 @@
   "resource": {
     "aws_s3_bucket": {
       "s3_1": {
-        "bucket": "my-unique-bucket-demo-consol",
+        "bucket": "unique-bucket-name-manis",
         "tags": {
-          "Name": "my-unique-bucket-demo-consol"
+          "Name": "unique-bucket-name-manis"
         }
       }
     }

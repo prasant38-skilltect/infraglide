@@ -1,0 +1,23 @@
+{
+  "id": 105,
+  "name": "newPipeline_20250718161752",
+  "description": "",
+  "region": "us-east-1",
+  "updatedAt": "2025-07-18T16:18:21.672Z",
+  "components": [
+    {
+      "id": "s3-1752855475630",
+      "name": "S3-283yuc",
+      "type": "s3",
+      "config": {
+        "awsRegion": "us-east-1",
+        "bucketName": "unique-bucket-name-manish"
+      },
+      "position": {
+        "x": 290.53125,
+        "y": 127
+      }
+    }
+  ],
+  "connections": []
+}

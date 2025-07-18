@@ -61,73 +61,8 @@ export default function Hub() {
     queryKey: ["/api/pipelines"],
   });
 
-  // Mock data for Hub pipelines (in real implementation, this would fetch from GitHub)
-  const hubPipelines: HubPipeline[] = [
-    {
-      id: "hub-1",
-      name: "AWS Full Stack Web App",
-      description: "Complete infrastructure for a scalable web application with EC2, RDS, S3, and ALB",
-      author: "CloudArchitect",
-      provider: "AWS",
-      region: "us-east-1",
-      components: [
-        { type: "aws-ec2", name: "Web Server" },
-        { type: "aws-rds", name: "Database" },
-        { type: "aws-s3", name: "Storage" },
-        { type: "aws-alb", name: "Load Balancer" }
-      ],
-      connections: [],
-      stars: 42,
-      downloads: 128,
-      publishedAt: "2025-01-15T10:30:00Z",
-      version: "1.2.0",
-      tags: ["web-app", "full-stack", "scalable"],
-      status: "published",
-      githubUrl: "https://github.com/cloudarchitect/aws-fullstack"
-    },
-    {
-      id: "hub-2",
-      name: "Azure Microservices Platform",
-      description: "Microservices architecture with Azure Container Instances, Azure SQL, and Service Bus",
-      author: "AzureExpert",
-      provider: "Azure",
-      region: "eastus",
-      components: [
-        { type: "azure-aci", name: "API Gateway" },
-        { type: "azure-sql", name: "User Database" },
-        { type: "azure-servicebus", name: "Message Queue" }
-      ],
-      connections: [],
-      stars: 38,
-      downloads: 94,
-      publishedAt: "2025-01-12T14:20:00Z",
-      version: "2.1.0",
-      tags: ["microservices", "containers", "messaging"],
-      status: "published",
-      githubUrl: "https://github.com/azureexpert/microservices-platform"
-    },
-    {
-      id: "hub-3",
-      name: "GCP Data Pipeline",
-      description: "Big data processing pipeline with Cloud Storage, BigQuery, and Dataflow",
-      author: "DataEngineer",
-      provider: "GCP",
-      region: "us-central1",
-      components: [
-        { type: "gcp-storage", name: "Raw Data Storage" },
-        { type: "gcp-bigquery", name: "Data Warehouse" },
-        { type: "gcp-dataflow", name: "Processing Pipeline" }
-      ],
-      connections: [],
-      stars: 31,
-      downloads: 67,
-      publishedAt: "2025-01-10T09:15:00Z",
-      version: "1.0.0",
-      tags: ["big-data", "analytics", "etl"],
-      status: "published",
-      githubUrl: "https://github.com/dataengineer/gcp-data-pipeline"
-    }
-  ];
+  // Hub pipelines (empty - all demo resources removed)
+  const hubPipelines: HubPipeline[] = [];
 
   const publishMutation = useMutation({
     mutationFn: async (data: { pipelineId: string; description: string; tags: string[] }) => {
