@@ -141,6 +141,15 @@ Preferred communication style: Simple, everyday language.
   - Removed deploy modal dependency, now executes directly on button click
   - Console logging added for debugging Terraform command outputs
 
+- **Implemented Terraform Destroy Functionality**
+  - Destroy button now executes "terraform init && terraform destroy -auto-approve" commands
+  - Added critical warning dialog before execution to prevent accidental destruction
+  - Warning dialog lists all resources that will be permanently deleted
+  - Proper error handling and user feedback with destructive-styled toast notifications
+  - Destroy function validates pipeline name before execution
+  - Integration with existing Terraform wrapper for compatibility
+  - Console logging added for debugging destruction command outputs
+
 ### January 18, 2025
 - **Successfully Installed Enhanced Terraform Wrapper on Server**
   - Resolved segmentation fault issues by creating comprehensive Terraform wrapper script

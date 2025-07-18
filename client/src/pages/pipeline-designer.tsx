@@ -879,6 +879,79 @@ export default function PipelineDesigner() {
     setShowPropertiesPanel(false);
   };
 
+  const handleDestroyPipeline = async () => {
+    if (!pipelineName) {
+      toast({
+        title: "Error",
+        description: "No pipeline selected for destruction.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      "⚠️ WARNING: This operation will DESTROY all resources created by this pipeline.\n\n" +
+      "This action cannot be undone and will permanently delete:\n" +
+      "• All cloud infrastructure resources\n" +
+      "• Associated data and configurations\n" +
+      "• Network components and security groups\n\n" +
+      "Are you sure you want to proceed with destruction?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      toast({
+        title: "Destruction Started",
+        description: "Running terraform init && terraform destroy -auto-approve...",
+        variant: "destructive",
+      });
+
+      // Execute terraform init
+      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "init"
+      });
+
+      if (!initResponse.ok) {
+        throw new Error("Terraform init failed");
+      }
+
+      const initResult = await initResponse.json();
+      console.log("Terraform init output:", initResult.output);
+
+      // Execute terraform destroy -auto-approve
+      const destroyResponse = await apiRequest("POST", "/api/terraform/execute", {
+        pipelineName: pipelineName,
+        command: "destroy -auto-approve"
+      });
+
+      if (!destroyResponse.ok) {
+        throw new Error("Terraform destroy failed");
+      }
+
+      const destroyResult = await destroyResponse.json();
+      console.log("Terraform destroy output:", destroyResult.output);
+
+      toast({
+        title: "Destruction Complete",
+        description: "Infrastructure destroyed successfully!",
+        variant: "destructive",
+      });
+
+    } catch (error) {
+      console.error("Destruction failed:", error);
+      toast({
+        title: "Destruction Failed",
+        description: error instanceof Error ? error.message : "Failed to destroy infrastructure",
+        variant: "destructive",
+      });
+    }
+  };
+
 
 
   const handleExportPipeline = async () => {
@@ -1118,12 +1191,8 @@ export default function PipelineDesigner() {
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Destroy",
-                          description: "Destroy functionality coming soon",
-                        })
-                      }
+                      onClick={handleDestroyPipeline}
+                      disabled={!pipelineName}
                     >
                       <Zap className="w-4 h-4 mr-1" />
                       Destroy
