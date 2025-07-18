@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 18, 2025
+- **Created Hub Tab with GitHub Integration**
+  - Added Hub page to main navigation for community pipeline sharing
+  - Implemented pipeline publishing system with GitHub backend integration
+  - Hub displays community pipelines with search, filtering, and statistics
+  - Publishing modal allows users to select pipelines, add descriptions, and specify tags
+  - Published pipelines automatically pushed to GitHub repositories with proper metadata
+  - Import functionality allows users to download and use community pipelines
+  - Integration with Pipeline Designer through "Publish to Hub" button
+  - Mock GitHub API endpoints for demonstration (ready for real GitHub integration)
+
 - **Added Architecture Tab with Screenshot Functionality**
   - Created standalone Architecture page for capturing and storing pipeline diagrams
   - Added Architecture link to main sidebar navigation alongside HLD and LLD

@@ -960,15 +960,10 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        toast({
-                          title: "Publish",
-                          description: "Publishing functionality coming soon",
-                        })
-                      }
+                      onClick={() => window.open('/hub', '_blank')}
                     >
                       <Upload className="w-4 h-4 mr-1" />
-                      Publish
+                      Publish to Hub
                     </Button>
                     <Button
                       variant="outline"
