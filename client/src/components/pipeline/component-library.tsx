@@ -365,7 +365,7 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
 
   return (
     <>
-      <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
+      <div className="w-80 bg-white flex flex-col">
         <div className="p-4 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">
             Cloud Components

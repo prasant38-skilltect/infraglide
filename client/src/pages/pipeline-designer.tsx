@@ -19,6 +19,8 @@ import "reactflow/dist/style.css";
 import Sidebar from "@/components/layout/sidebar";
 import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
+import HLDPanel from "@/components/documentation/hld-panel";
+import LLDPanel from "@/components/documentation/lld-panel";
 
 import DeployPipelineModal from "@/components/modals/deploy-pipeline-modal";
 import EditPipelineModal from "@/components/modals/edit-pipeline-modal";
@@ -94,6 +96,7 @@ export default function PipelineDesigner() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [leftPanelTab, setLeftPanelTab] = useState<'components' | 'hld' | 'lld'>('components');
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
     new Set(),
   );
@@ -925,7 +928,68 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {showComponentLibrary && <ComponentLibrary nodes={nodes} onClearCanvas={handleClearCanvas} />}
+          {showComponentLibrary && (
+            <div className="flex flex-col">
+              {/* Tab Navigation */}
+              <div className="bg-white border-r border-gray-200 border-b border-gray-200">
+                <div className="flex">
+                  <button
+                    onClick={() => setLeftPanelTab('components')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                      leftPanelTab === 'components'
+                        ? 'border-blue-500 text-blue-600 bg-blue-50'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Components
+                  </button>
+                  <button
+                    onClick={() => setLeftPanelTab('hld')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                      leftPanelTab === 'hld'
+                        ? 'border-blue-500 text-blue-600 bg-blue-50'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    HLD
+                  </button>
+                  <button
+                    onClick={() => setLeftPanelTab('lld')}
+                    className={`px-4 py-2 text-sm font-medium border-b-2 ${
+                      leftPanelTab === 'lld'
+                        ? 'border-blue-500 text-blue-600 bg-blue-50'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    LLD
+                  </button>
+                </div>
+              </div>
+
+              {/* Panel Content */}
+              {leftPanelTab === 'components' && (
+                <ComponentLibrary nodes={nodes} onClearCanvas={handleClearCanvas} />
+              )}
+              {leftPanelTab === 'hld' && (
+                <HLDPanel
+                  pipelineName={pipelineName}
+                  pipelineDescription={pipelineDescription}
+                  nodes={nodes}
+                  edges={edges}
+                  region={pipelineRegion}
+                />
+              )}
+              {leftPanelTab === 'lld' && (
+                <LLDPanel
+                  pipelineName={pipelineName}
+                  pipelineDescription={pipelineDescription}
+                  nodes={nodes}
+                  edges={edges}
+                  region={pipelineRegion}
+                />
+              )}
+            </div>
+          )}
 
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
