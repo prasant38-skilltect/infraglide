@@ -13,6 +13,7 @@ import LLD from "@/pages/lld";
 import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
 import DeployedResources from "@/pages/deployed-resources";
+import SettingsPage from "@/pages/settings";
 
 
 function Router() {
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/hld" component={HLD} />
       <Route path="/lld" component={LLD} />
       <Route path="/deployed-resources" component={DeployedResources} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
