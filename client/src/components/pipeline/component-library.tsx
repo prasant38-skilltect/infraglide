@@ -182,43 +182,70 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
     setTargetProvider("");
   };
 
-  const renderComponents = (components: typeof awsComponents) => (
-    <div className="space-y-4">
-      {components.map((category) => (
-        <div key={category.category}>
-          <h4 className="text-sm font-medium text-gray-700 mb-3">
-            {category.category}
-          </h4>
-          <div className="space-y-2">
-            {category.items.map((component) => {
-              const Icon = component.icon;
-              return (
-                <div
-                  key={component.type}
-                  className="p-3 border border-gray-200 rounded-lg cursor-move hover:bg-gray-50 hover:border-gray-300 transition-all bg-white"
-                  draggable
-                  onDragStart={(event) => onDragStart(event, component.type)}
-                >
-                  <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-gray-600" />
-                    <div className="text-sm font-medium text-gray-900">
-                      {component.name}
+  const getProviderColor = (provider: string) => {
+    switch (provider) {
+      case 'aws': return { bg: 'rgba(255, 153, 0, 0.1)', border: 'rgb(255, 153, 0)', icon: 'rgb(255, 153, 0)' };
+      case 'azure': return { bg: 'rgba(0, 120, 215, 0.1)', border: 'rgb(0, 120, 215)', icon: 'rgb(0, 120, 215)' };
+      case 'gcp': return { bg: 'rgba(52, 168, 83, 0.1)', border: 'rgb(52, 168, 83)', icon: 'rgb(52, 168, 83)' };
+      default: return { bg: 'rgba(138, 83, 214, 0.1)', border: 'rgb(138, 83, 214)', icon: 'rgb(138, 83, 214)' };
+    }
+  };
+
+  const renderComponents = (components: typeof awsComponents) => {
+    const colors = getProviderColor(selectedTab);
+    return (
+      <div className="space-y-4">
+        {components.map((category) => (
+          <div key={category.category}>
+            <h4 className="text-sm font-medium mb-3" style={{ color: colors.icon }}>
+              {category.category}
+            </h4>
+            <div className="space-y-2">
+              {category.items.map((component) => {
+                const Icon = component.icon;
+                return (
+                  <div
+                    key={component.type}
+                    className="p-3 rounded-lg cursor-move transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                    style={{
+                      border: `1px solid ${colors.border}`,
+                      backgroundColor: colors.bg
+                    }}
+                    draggable
+                    onDragStart={(event) => onDragStart(event, component.type)}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = `0 4px 12px ${colors.border}20`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = '';
+                      e.currentTarget.style.boxShadow = '';
+                    }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className="w-4 h-4" style={{ color: colors.icon }} />
+                      <div className="text-sm font-medium text-gray-800">
+                        {component.name}
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   return (
     <>
-      <div className="w-80 bg-white flex flex-col">
-        <div className="p-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">
+      <div className="w-80 bg-white flex flex-col shadow-lg">
+        <div className="p-4 border-b" style={{
+          background: 'linear-gradient(to right, rgba(138, 83, 214, 0.1), rgba(138, 83, 214, 0.05))',
+          borderBottomColor: 'rgb(138, 83, 214)'
+        }}>
+          <h3 className="text-lg font-semibold" style={{ color: 'rgb(138, 83, 214)' }}>
             Cloud Components
           </h3>
           <p className="text-sm text-gray-600 mt-1">

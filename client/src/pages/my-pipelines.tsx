@@ -434,13 +434,26 @@ export default function MyPipelines() {
   const getProviderBadgeColor = (provider: string) => {
     switch (provider) {
       case "AWS":
-        return "bg-orange-100 text-orange-800 border-orange-200";
+        return "text-white shadow-sm font-medium";
       case "Azure":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "text-white shadow-sm font-medium";
       case "GCP":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "text-white shadow-sm font-medium";
       default:
         return "bg-gray-100 text-gray-800 border-gray-200";
+    }
+  };
+
+  const getProviderBadgeStyle = (provider: string) => {
+    switch (provider) {
+      case "AWS":
+        return { backgroundColor: 'rgb(255, 153, 0)' };
+      case "Azure":
+        return { backgroundColor: 'rgb(0, 120, 215)' };
+      case "GCP":
+        return { backgroundColor: 'rgb(52, 168, 83)' };
+      default:
+        return {};
     }
   };
 
@@ -619,6 +632,7 @@ export default function MyPipelines() {
                               <Badge
                                 variant="outline"
                                 className={getProviderBadgeColor(provider)}
+                                style={getProviderBadgeStyle(provider)}
                               >
                                 {provider}
                               </Badge>

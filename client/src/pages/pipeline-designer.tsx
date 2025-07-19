@@ -1249,6 +1249,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowImportModal(true)}
+                      className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Import
@@ -1257,6 +1258,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={handleExportPipeline}
+                      className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 transition-all duration-200"
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export
@@ -1265,6 +1267,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={validateAllComponents}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 transition-all duration-200"
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Validate
@@ -1274,6 +1277,11 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handlePreviewPipeline}
                       disabled={!pipelineName}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 disabled:opacity-50"
+                      style={!pipelineName ? {} : {
+                        borderColor: 'rgb(138, 83, 214)',
+                        color: 'rgb(138, 83, 214)'
+                      }}
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Preview
@@ -1283,6 +1291,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handleDeployPipeline}
                       disabled={!pipelineName}
+                      className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-all duration-200 disabled:opacity-50 shadow-sm hover:shadow-md"
                     >
                       <Rocket className="w-4 h-4 mr-1" />
                       Deploy
@@ -1292,6 +1301,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handleDestroyPipeline}
                       disabled={!pipelineName}
+                      className="bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
                     >
                       <Zap className="w-4 h-4 mr-1" />
                       Destroy
@@ -1300,6 +1310,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={() => window.open('/hub', '_blank')}
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200"
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Publish

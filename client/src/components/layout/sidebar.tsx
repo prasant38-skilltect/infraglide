@@ -29,23 +29,31 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="w-64 bg-white shadow-lg border-r border-gray-200 flex flex-col">
+    <div className="w-64 shadow-lg border-r border-purple-200 flex flex-col" style={{
+      background: 'linear-gradient(to bottom, #0a1423, #1e1d48)'
+    }}>
       {/* Logo and Brand */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-purple-400/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{
+              background: 'rgb(138, 83, 214)'
+            }}>
               <Cloud className="text-white w-5 h-5" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">InfraGlide</h1>
+            <h1 className="text-xl font-bold text-white">InfraGlide</h1>
           </div>
           <Button
             onClick={() => setShowAskJane(true)}
             size="sm"
-            className="rounded-full w-10 h-10 bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-200 p-0"
+            className="rounded-full w-10 h-10 shadow-md hover:shadow-lg transition-all duration-200 p-0"
+            style={{
+              background: 'rgb(138, 83, 214)',
+              color: 'white'
+            }}
             title="Ask Jane - AI Assistant"
           >
-            <MessageCircle className="w-5 h-5 text-white" />
+            <MessageCircle className="w-5 h-5" />
           </Button>
         </div>
       </div>
@@ -57,11 +65,25 @@ export default function Sidebar() {
           return (
             <Link key={item.name} href={item.href}>
               <div
-                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200 ${
                   isActive(item.href)
-                    ? "bg-primary text-white"
-                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    ? "text-white shadow-md"
+                    : "text-purple-100 hover:text-white"
                 }`}
+                style={isActive(item.href) ? {
+                  background: 'rgb(138, 83, 214)',
+                  boxShadow: '0 4px 12px rgba(138, 83, 214, 0.3)'
+                } : {}}
+                onMouseEnter={(e) => {
+                  if (!isActive(item.href)) {
+                    e.currentTarget.style.background = 'rgba(138, 83, 214, 0.2)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive(item.href)) {
+                    e.currentTarget.style.background = '';
+                  }
+                }}
               >
                 <Icon className="w-5 h-5" />
                 <span className="font-medium">{item.name}</span>
@@ -72,14 +94,16 @@ export default function Sidebar() {
       </nav>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-purple-400/30">
         <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-600" />
+          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{
+            background: 'rgba(138, 83, 214, 0.3)'
+          }}>
+            <User className="w-5 h-5 text-purple-200" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-900">John Developer</p>
-            <p className="text-xs text-gray-500">john@company.com</p>
+            <p className="text-sm font-medium text-purple-100">John Developer</p>
+            <p className="text-xs text-purple-300">john@company.com</p>
           </div>
         </div>
       </div>
@@ -89,7 +113,7 @@ export default function Sidebar() {
         <DialogContent className="max-w-4xl h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-blue-600" />
+              <MessageCircle className="w-5 h-5" style={{ color: 'rgb(138, 83, 214)' }} />
               Ask Jane - AI Infrastructure Assistant
             </DialogTitle>
           </DialogHeader>

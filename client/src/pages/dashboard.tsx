@@ -156,10 +156,14 @@ export default function Dashboard() {
           <div className="max-w-7xl mx-auto space-y-6">
             {/* Enhanced Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(138, 83, 214)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Pipelines</CardTitle>
-                  <Projector className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(138, 83, 214, 0.1)' }}>
+                    <Projector className="h-4 w-4" style={{ color: 'rgb(138, 83, 214)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalPipelines}</div>
@@ -169,10 +173,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(34, 197, 94)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Active Pipelines</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                    <Activity className="h-4 w-4" style={{ color: 'rgb(34, 197, 94)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{activePipelines}</div>
@@ -182,10 +190,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(59, 130, 246)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                    <Users className="h-4 w-4" style={{ color: 'rgb(59, 130, 246)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalUsers}</div>
@@ -195,10 +207,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(249, 115, 22)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Services</CardTitle>
-                  <Server className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)' }}>
+                    <Server className="h-4 w-4" style={{ color: 'rgb(249, 115, 22)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalServices}</div>
@@ -211,10 +227,14 @@ export default function Dashboard() {
 
             {/* Additional Metrics Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(16, 185, 129)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)' }}>
+                    <CheckCircle className="h-4 w-4" style={{ color: 'rgb(16, 185, 129)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -226,10 +246,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(168, 85, 247)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Running Deployments</CardTitle>
-                  <Rocket className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}>
+                    <Rocket className="h-4 w-4" style={{ color: 'rgb(168, 85, 247)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
@@ -241,10 +265,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(14, 165, 233)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Unique Regions</CardTitle>
-                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(14, 165, 233, 0.1)' }}>
+                    <Globe className="h-4 w-4" style={{ color: 'rgb(14, 165, 233)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{Object.keys(regionData).length}</div>
@@ -254,10 +282,14 @@ export default function Dashboard() {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card className="border-l-4 shadow-md hover:shadow-lg transition-all duration-200" style={{
+                borderLeftColor: 'rgb(245, 101, 101)'
+              }}>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Service Types</CardTitle>
-                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(245, 101, 101, 0.1)' }}>
+                    <Layers className="h-4 w-4" style={{ color: 'rgb(245, 101, 101)' }} />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{Object.keys(serviceTypes).length}</div>

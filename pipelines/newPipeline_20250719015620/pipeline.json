@@ -1,0 +1,75 @@
+{
+  "id": 110,
+  "name": "newPipeline_20250719015620",
+  "description": "",
+  "region": "us-east-1",
+  "updatedAt": "2025-07-19T04:36:33.111Z",
+  "components": [
+    {
+      "id": "ec2-1752890187157",
+      "name": "EC2-psudgs",
+      "type": "ec2",
+      "config": {},
+      "position": {
+        "x": 249.62275,
+        "y": 33.56000000000006
+      }
+    },
+    {
+      "id": "lambda-1752890196463",
+      "name": "LAMBDA-4f6wba",
+      "type": "lambda",
+      "config": {},
+      "position": {
+        "x": 55.67975000000007,
+        "y": 184.33600000000007
+      }
+    },
+    {
+      "id": "ecs-1752890208230",
+      "name": "ECS-41coem",
+      "type": "ecs",
+      "config": {},
+      "position": {
+        "x": 428.92775000000006,
+        "y": 184.33599999999998
+      }
+    },
+    {
+      "id": "vpc-1752890298562",
+      "name": "VPC-0r961l",
+      "type": "vpc",
+      "config": {},
+      "position": {
+        "x": 272.5437500000001,
+        "y": 292.33599999999996
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "reactflow__edge-ec2-1752890187157-lambda-1752890196463",
+      "type": "smoothstep",
+      "source": "ec2-1752890187157",
+      "target": "lambda-1752890196463"
+    },
+    {
+      "id": "reactflow__edge-ec2-1752890187157-ecs-1752890208230",
+      "type": "smoothstep",
+      "source": "ec2-1752890187157",
+      "target": "ecs-1752890208230"
+    },
+    {
+      "id": "reactflow__edge-ecs-1752890208230-vpc-1752890298562",
+      "type": "smoothstep",
+      "source": "ecs-1752890208230",
+      "target": "vpc-1752890298562"
+    },
+    {
+      "id": "reactflow__edge-lambda-1752890196463-vpc-1752890298562",
+      "type": "smoothstep",
+      "source": "lambda-1752890196463",
+      "target": "vpc-1752890298562"
+    }
+  ]
+}
