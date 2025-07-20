@@ -458,6 +458,39 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
+  // Get pipeline versions
+  app.get("/api/pipelines/versions/:name", requireAuth, async (req, res) => {
+    try {
+      const name = req.params.name;
+      const versions = await storage.getPipelineVersions(name, req.user!.id);
+      res.json(versions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch pipeline versions" });
+    }
+  });
+
+  // Create a new version of a pipeline
+  app.post("/api/pipelines/:id/versions", requireAuth, async (req, res) => {
+    try {
+      const parentId = parseInt(req.params.id);
+      const existingPipeline = await storage.getPipeline(parentId);
+      
+      if (!existingPipeline || existingPipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found" });
+      }
+      
+      const validatedData = insertPipelineSchema.parse(req.body);
+      const newVersion = await storage.createPipelineVersion(validatedData, parentId);
+      
+      res.status(201).json(newVersion);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid pipeline data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create pipeline version" });
+    }
+  });
+
   app.delete("/api/pipelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);

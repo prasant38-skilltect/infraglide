@@ -27,6 +27,7 @@ import VersionConflictModal from "@/components/modals/version-conflict-modal";
 import CredentialSelectionModal from "@/components/modals/credential-selection-modal";
 import AddCredentialModal from "@/components/modals/add-credential-modal";
 import ImportPipelineModal from "@/components/modals/import-pipeline-modal";
+import PipelineVersionDialog from "@/components/pipeline-version-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -70,8 +71,26 @@ export default function PipelineDesigner() {
   const pipelineId = params.id ? parseInt(params.id) : null;
   const { toast } = useToast();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, originalOnNodesChange] = useNodesState([]);
+  const [edges, setEdges, originalOnEdgesChange] = useEdgesState([]);
+
+  // Wrap onNodesChange to track changes
+  const onNodesChange = useCallback((changes: any) => {
+    originalOnNodesChange(changes);
+    // Only track changes if we're not loading initial data
+    if (!hasImportedData.current && nodes.length > 0) {
+      setHasUnsavedChanges(true);
+    }
+  }, [originalOnNodesChange, nodes.length]);
+
+  // Wrap onEdgesChange to track changes  
+  const onEdgesChange = useCallback((changes: any) => {
+    originalOnEdgesChange(changes);
+    // Only track changes if we're not loading initial data
+    if (!hasImportedData.current && edges.length > 0) {
+      setHasUnsavedChanges(true);
+    }
+  }, [originalOnEdgesChange, edges.length]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [pipelineName, setPipelineName] = useState("New Pipeline");
@@ -86,6 +105,7 @@ export default function PipelineDesigner() {
     useState(false);
   const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showVersionDialog, setShowVersionDialog] = useState(false);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -383,6 +403,32 @@ export default function PipelineDesigner() {
     },
   });
 
+  // Create new version mutation
+  const createVersionMutation = useMutation({
+    mutationFn: async (pipelineData: any) => {
+      if (!pipelineId) throw new Error("No pipeline ID available");
+      const response = await apiRequest("POST", `/api/pipelines/${pipelineId}/versions`, pipelineData);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "New Version Created",
+        description: `Version ${data.version} has been created successfully.`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      setHasUnsavedChanges(false);
+      // Update current pipeline ID to the new version
+      setCurrentPipelineId(data.id);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create new version. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Auto-save function
   const triggerAutoSave = useCallback(async () => {
     if (!autoSaveEnabled || hasImportedData.current || autoSaveMutation.isPending) {
@@ -633,11 +679,15 @@ export default function PipelineDesigner() {
   };
 
   const handleSavePipeline = async () => {
-    // If editing existing pipeline, save directly
+    // If editing existing pipeline and there are changes, show version dialog
+    if (pipelineId && hasUnsavedChanges) {
+      setShowVersionDialog(true);
+      return;
+    }
+    
+    // If editing existing pipeline without changes, save directly
     if (pipelineId) {
-      // Capture canvas snapshot
       const snapshot = await captureCanvasSnapshot();
-
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
@@ -778,6 +828,42 @@ export default function PipelineDesigner() {
 
   const handleEditName = () => {
     setShowEditModal(true);
+  };
+
+  const handleVersionSave = async (saveOption: 'existing' | 'new', versionNotes?: string) => {
+    if (!pipelineId) return;
+
+    const snapshot = await captureCanvasSnapshot();
+    const pipelineData = {
+      name: pipelineName,
+      description: pipelineDescription,
+      region: pipelineRegion,
+      versionNotes: versionNotes || '',
+      snapshot: snapshot,
+      components: nodes.map((node) => ({
+        id: node.id,
+        type: node.data.type,
+        name: node.data.name,
+        position: node.position,
+        config: node.data.config || {},
+      })),
+      connections: edges.map((edge) => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: edge.type || "default",
+      })),
+    };
+
+    if (saveOption === 'new') {
+      // Create new version
+      createVersionMutation.mutate(pipelineData);
+    } else {
+      // Update existing version
+      savePipelineMutation.mutate(pipelineData);
+    }
+    
+    setHasUnsavedChanges(false);
   };
 
   const handleSaveNewVersion = async () => {
@@ -1437,6 +1523,15 @@ export default function PipelineDesigner() {
         onSave={handleEditPipeline}
         initialName={pipelineName}
         initialDescription={pipelineDescription}
+      />
+
+      <PipelineVersionDialog
+        isOpen={showVersionDialog}
+        onClose={() => setShowVersionDialog(false)}
+        onSave={handleVersionSave}
+        pipelineName={pipelineName}
+        currentVersion={pipeline?.version || 1}
+        hasChanges={hasUnsavedChanges}
       />
 
       <VersionConflictModal

@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Search,
   ExternalLink,
+  GitCompare,
 } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -64,6 +65,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Pipeline } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+import PipelineDiffDialog from "@/components/pipeline-diff-dialog";
 
 type SortField = "name" | "provider" | "description" | "createdAt";
 type SortDirection = "asc" | "desc";
@@ -85,6 +87,8 @@ export default function MyPipelines() {
   const [showRenameDialog, setShowRenameDialog] = useState<Pipeline | null>(null);
   const [newPipelineName, setNewPipelineName] = useState("");
   const [newPipelineDescription, setNewPipelineDescription] = useState("");
+  const [diffDialogOpen, setDiffDialogOpen] = useState(false);
+  const [diffPipelineName, setDiffPipelineName] = useState<string>("");
 
   const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -240,6 +244,11 @@ export default function MyPipelines() {
     setShowRenameDialog(pipeline);
     setNewPipelineName(pipeline.name);
     setNewPipelineDescription(pipeline.description || "");
+  };
+
+  const handlePipelineDiff = (pipelineName: string) => {
+    setDiffPipelineName(pipelineName);
+    setDiffDialogOpen(true);
   };
 
   const handleRenameConfirm = () => {
@@ -713,6 +722,18 @@ export default function MyPipelines() {
                                         size="sm"
                                         onClick={(e) => {
                                           e.stopPropagation();
+                                          handlePipelineDiff(version.name);
+                                        }}
+                                        className="h-8 px-2 text-purple-600 hover:text-purple-800"
+                                      >
+                                        <GitCompare className="w-3 h-3 mr-1" />
+                                        Pipeline Diff
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           handleDelete(version.id);
                                         }}
                                         className="h-8 px-2 text-red-600 hover:text-red-800"
@@ -900,6 +921,12 @@ export default function MyPipelines() {
         </DialogContent>
       </Dialog>
 
+      {/* Pipeline Diff Dialog */}
+      <PipelineDiffDialog
+        isOpen={diffDialogOpen}
+        onClose={() => setDiffDialogOpen(false)}
+        pipelineName={diffPipelineName}
+      />
 
     </div>
   );

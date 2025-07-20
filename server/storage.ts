@@ -37,7 +37,7 @@ import {
   type InsertResourcePermission
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -75,7 +75,9 @@ export interface IStorage {
   getPipelines(projectId?: number, userId?: number): Promise<Pipeline[]>;
   getPipeline(id: number): Promise<Pipeline | undefined>;
   getPipelinesByName(name: string, userId?: number): Promise<Pipeline[]>;
+  getPipelineVersions(name: string, userId?: number): Promise<Pipeline[]>;
   createPipeline(pipeline: InsertPipeline): Promise<Pipeline>;
+  createPipelineVersion(pipeline: InsertPipeline, parentId: number): Promise<Pipeline>;
   updatePipeline(id: number, pipeline: Partial<InsertPipeline>): Promise<Pipeline | undefined>;
   deletePipeline(id: number): Promise<boolean>;
 
@@ -658,6 +660,47 @@ export class DatabaseStorage implements IStorage {
         .where(eq(pipelines.userId, userId));
     }
     return db.select().from(pipelines).where(eq(pipelines.name, name));
+  }
+
+  async getPipelineVersions(name: string, userId?: number): Promise<Pipeline[]> {
+    let query = db.select().from(pipelines).where(eq(pipelines.name, name));
+    
+    if (userId) {
+      query = query.where(eq(pipelines.userId, userId));
+    }
+    
+    const result = await query.orderBy(desc(pipelines.version));
+    return result;
+  }
+
+  async createPipelineVersion(insertPipeline: InsertPipeline, parentId: number): Promise<Pipeline> {
+    // Get the parent pipeline to determine the next version number
+    const parentPipeline = await this.getPipeline(parentId);
+    if (!parentPipeline) {
+      throw new Error("Parent pipeline not found");
+    }
+
+    // Get all versions of this pipeline to determine the next version number
+    const existingVersions = await this.getPipelineVersions(parentPipeline.name, parentPipeline.userId);
+    const nextVersion = Math.max(...existingVersions.map(p => p.version), 0) + 1;
+
+    // Mark all previous versions as not latest
+    await db.update(pipelines)
+      .set({ isLatestVersion: false })
+      .where(eq(pipelines.name, parentPipeline.name));
+
+    // Create the new version
+    const [pipeline] = await db
+      .insert(pipelines)
+      .values({
+        ...insertPipeline,
+        version: nextVersion,
+        parentPipelineId: parentId,
+        isLatestVersion: true
+      })
+      .returning();
+    
+    return pipeline;
   }
 
   async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {
