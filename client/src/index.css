@@ -2,98 +2,125 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: hsl(0, 0%, 98%);
-    --foreground: hsl(0, 0%, 26%);
-    --card: hsl(0, 0%, 100%);
-    --card-foreground: hsl(0, 0%, 26%);
-    --popover: hsl(0, 0%, 100%);
-    --popover-foreground: hsl(0, 0%, 26%);
-    --primary: hsl(207, 90%, 54%);
-    --primary-foreground: hsl(0, 0%, 100%);
-    --secondary: hsl(0, 0%, 26%);
-    --secondary-foreground: hsl(0, 0%, 100%);
-    --muted: hsl(0, 0%, 96%);
-    --muted-foreground: hsl(0, 0%, 45%);
-    --accent: hsl(0, 0%, 96%);
-    --accent-foreground: hsl(0, 0%, 26%);
-    --destructive: hsl(0, 84%, 60%);
-    --destructive-foreground: hsl(0, 0%, 98%);
-    --border: hsl(0, 0%, 89%);
-    --input: hsl(0, 0%, 89%);
-    --ring: hsl(207, 90%, 54%);
-    --chart-1: hsl(12, 76%, 61%);
-    --chart-2: hsl(173, 58%, 39%);
-    --chart-3: hsl(197, 37%, 24%);
-    --chart-4: hsl(43, 74%, 66%);
-    --chart-5: hsl(27, 87%, 67%);
-    --radius: 0.5rem;
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(222, 84%, 4.9%);
+  --muted: hsl(267, 44%, 96%);
+  --muted-foreground: hsl(267, 8%, 45%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(222, 84%, 4.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(222, 84%, 4.9%);
+  --border: hsl(267, 30%, 90%);
+  --input: hsl(267, 30%, 95%);
+  --primary: hsl(267, 44%, 58%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(267, 44%, 96%);
+  --secondary-foreground: hsl(267, 44%, 15%);
+  --accent: hsl(267, 44%, 96%);
+  --accent-foreground: hsl(267, 44%, 15%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(267, 44%, 58%);
+  --radius: 0.5rem;
+  
+  /* Custom colors for professional look */
+  --purple-primary: rgb(138, 83, 214);
+  --gradient-start: #0a1423;
+  --gradient-end: #1e1d48;
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(38, 92%, 50%);
+  --info: hsl(199, 89%, 48%);
+}
 
-    /* Custom colors for cloud providers */
-    --aws-orange: hsl(35, 100%, 50%);
-    --gcp-blue: hsl(217, 89%, 61%);
-    --azure-blue: hsl(207, 100%, 42%);
-    --success-green: hsl(122, 39%, 49%);
-    --warning-orange: hsl(38, 100%, 50%);
-    --error-red: hsl(4, 90%, 58%);
-    --purple: hsl(262, 83%, 58%);
-  }
-
-  .dark {
-    --background: hsl(222.2, 84%, 4.9%);
-    --foreground: hsl(210, 40%, 98%);
-    --card: hsl(222.2, 84%, 4.9%);
-    --card-foreground: hsl(210, 40%, 98%);
-    --popover: hsl(222.2, 84%, 4.9%);
-    --popover-foreground: hsl(210, 40%, 98%);
-    --primary: hsl(207, 90%, 54%);
-    --primary-foreground: hsl(222.2, 84%, 4.9%);
-    --secondary: hsl(217.2, 32.6%, 17.5%);
-    --secondary-foreground: hsl(210, 40%, 98%);
-    --muted: hsl(217.2, 32.6%, 17.5%);
-    --muted-foreground: hsl(215, 20.2%, 65.1%);
-    --accent: hsl(217.2, 32.6%, 17.5%);
-    --accent-foreground: hsl(210, 40%, 98%);
-    --destructive: hsl(0, 62.8%, 30.6%);
-    --destructive-foreground: hsl(210, 40%, 98%);
-    --border: hsl(217.2, 32.6%, 17.5%);
-    --input: hsl(217.2, 32.6%, 17.5%);
-    --ring: hsl(212.7, 26.8%, 83.9%);
-    --chart-1: hsl(220, 70%, 50%);
-    --chart-2: hsl(160, 60%, 45%);
-    --chart-3: hsl(30, 80%, 55%);
-    --chart-4: hsl(280, 65%, 60%);
-    --chart-5: hsl(340, 75%, 55%);
-  }
+.dark {
+  --background: hsl(222, 84%, 4.9%);
+  --foreground: hsl(210, 40%, 98%);
+  --muted: hsl(217, 32%, 17.5%);
+  --muted-foreground: hsl(215, 20.2%, 65.1%);
+  --popover: hsl(222, 84%, 4.9%);
+  --popover-foreground: hsl(210, 40%, 98%);
+  --card: hsl(222, 84%, 4.9%);
+  --card-foreground: hsl(210, 40%, 98%);
+  --border: hsl(217, 32%, 17.5%);
+  --input: hsl(217, 32%, 17.5%);
+  --primary: hsl(267, 44%, 58%);
+  --primary-foreground: hsl(210, 40%, 98%);
+  --secondary: hsl(217, 32%, 17.5%);
+  --secondary-foreground: hsl(210, 40%, 98%);
+  --accent: hsl(217, 32%, 17.5%);
+  --accent-foreground: hsl(210, 40%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(210, 40%, 98%);
+  --ring: hsl(267, 44%, 58%);
+  --radius: 0.5rem;
 }
 
 @layer base {
   * {
     @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground font-['Roboto',sans-serif];
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Custom scrollbar styles */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
   }
 }
 
-@layer components {
-  .aws-color {
-    color: hsl(35, 100%, 50%);
-  }
-  .gcp-color {
-    color: hsl(217, 89%, 61%);
-  }
-  .azure-color {
-    color: hsl(207, 100%, 42%);
-  }
-  .success-color {
-    color: hsl(122, 39%, 49%);
-  }
-  .warning-color {
-    color: hsl(38, 100%, 50%);
-  }
-  .error-color {
-    color: hsl(4, 90%, 58%);
-  }
+/* React Flow customizations */
+.react-flow__node {
+  font-family: inherit;
+}
+
+.react-flow__edge {
+  stroke: hsl(20, 5.9%, 90%);
+  stroke-width: 2px;
+}
+
+.react-flow__edge.selected {
+  stroke: hsl(207, 90%, 54%);
+}
+
+.react-flow__handle {
+  background: hsl(207, 90%, 54%);
+  border: 2px solid hsl(211, 100%, 99%);
+}
+
+.react-flow__controls {
+  background: hsl(0, 0%, 100%);
+  border: 1px solid hsl(20, 5.9%, 90%);
+  border-radius: 0.5rem;
+}
+
+.react-flow__controls button {
+  background: hsl(0, 0%, 100%);
+  border: none;
+  color: hsl(20, 14.3%, 4.1%);
+}
+
+.react-flow__controls button:hover {
+  background: hsl(60, 4.8%, 95.9%);
 }

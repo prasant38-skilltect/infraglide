@@ -1,162 +1,108 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { relations } from "drizzle-orm";
 
-export const users = pgTable("users", {
+export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  email: text("email"),
-  fullName: text("full_name"),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const cloudProviders = pgTable("cloud_providers", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
-  type: text("type").notNull(), // aws, gcp, azure
-  credentials: jsonb("credentials").notNull(),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const pipelines = pgTable("pipelines", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
   name: text("name").notNull(),
   description: text("description"),
-  provider: text("provider").notNull(), // aws, gcp, azure
-  region: text("region"),
-  configuration: jsonb("configuration").notNull(),
-  status: text("status").default("draft"), // draft, active, archived
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  version: integer("version").notNull().default(1),
+  projectId: integer("project_id").references(() => projects.id),
+  region: text("region").notNull().default("us-east-1"),
+  components: jsonb("components").notNull().default([]),
+  connections: jsonb("connections").notNull().default([]),
+  snapshot: text("snapshot"), // Base64 encoded image of the pipeline canvas
+  credentialId: integer("credential_id").references(() => credentials.id),
+  credentialName: text("credential_name"),
+  credentialUsername: text("credential_username"),
+  credentialPassword: text("credential_password"),
+  isTemplate: boolean("is_template").default(false),
+  status: text("status").notNull().default("draft"), // draft, deployed, failed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const deployments = pgTable("deployments", {
   id: serial("id").primaryKey(),
-  pipelineId: integer("pipeline_id").references(() => pipelines.id),
-  status: text("status").notNull(), // pending, running, success, failed
-  environment: text("environment"), // dev, staging, prod
-  terraformState: jsonb("terraform_state"),
-  logs: text("logs"),
-  startedAt: timestamp("started_at").defaultNow(),
-  completedAt: timestamp("completed_at"),
+  pipelineId: integer("pipeline_id").references(() => pipelines.id).notNull(),
+  environment: text("environment").notNull().default("development"),
+  status: text("status").notNull().default("pending"), // pending, running, success, failed
+  notes: text("notes"),
+  validateConfig: boolean("validate_config").default(true),
+  dryRun: boolean("dry_run").default(false),
+  notifications: boolean("notifications").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const resources = pgTable("resources", {
+export const credentials = pgTable("credentials", {
   id: serial("id").primaryKey(),
-  deploymentId: integer("deployment_id").references(() => deployments.id),
-  pipelineId: integer("pipeline_id").references(() => pipelines.id),
-  provider: text("provider").notNull(),
-  type: text("type").notNull(), // ec2, s3, gke, etc.
   name: text("name").notNull(),
-  region: text("region"),
-  status: text("status").notNull(), // creating, running, stopped, terminated
-  configuration: jsonb("configuration"),
-  cost: text("cost"), // daily cost estimate
-  tags: jsonb("tags"),
-  createdAt: timestamp("created_at").defaultNow(),
+  username: text("username").notNull(),
+  password: text("password").notNull(),
+  provider: text("provider").notNull(), // AWS, GCP, Azure
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-// Relations
-export const usersRelations = relations(users, ({ many }) => ({
-  cloudProviders: many(cloudProviders),
-  pipelines: many(pipelines),
-}));
-
-export const cloudProvidersRelations = relations(cloudProviders, ({ one }) => ({
-  user: one(users, {
-    fields: [cloudProviders.userId],
-    references: [users.id],
-  }),
-}));
-
-export const pipelinesRelations = relations(pipelines, ({ one, many }) => ({
-  user: one(users, {
-    fields: [pipelines.userId],
-    references: [users.id],
-  }),
-  deployments: many(deployments),
-  resources: many(resources),
-}));
-
-export const deploymentsRelations = relations(deployments, ({ one, many }) => ({
-  pipeline: one(pipelines, {
-    fields: [deployments.pipelineId],
-    references: [pipelines.id],
-  }),
-  resources: many(resources),
-}));
-
-export const resourcesRelations = relations(resources, ({ one }) => ({
-  deployment: one(deployments, {
-    fields: [resources.deploymentId],
-    references: [deployments.id],
-  }),
-  pipeline: one(pipelines, {
-    fields: [resources.pipelineId],
-    references: [pipelines.id],
-  }),
-}));
-
-// Insert schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-  fullName: true,
+// Component schemas
+export const componentConfigSchema = z.object({
+  id: z.string(),
+  type: z.enum([
+    // AWS
+    "ec2", "s3", "rds", "lambda", "vpc", "alb", "dynamodb",
+    // Azure
+    "azure-vm", "azure-functions", "azure-storage", "azure-sql", "azure-cosmos", "azure-vnet", "azure-lb",
+    // GCP
+    "gcp-vm", "gcp-functions", "gcp-storage", "gcp-sql", "gcp-firestore", "gcp-vpc", "gcp-lb"
+  ]),
+  name: z.string(),
+  position: z.object({ x: z.number(), y: z.number() }),
+  config: z.record(z.any()),
 });
 
-export const insertCloudProviderSchema = createInsertSchema(cloudProviders).pick({
-  userId: true,
-  name: true,
-  type: true,
-  credentials: true,
-  isActive: true,
+export const pipelineConnectionSchema = z.object({
+  id: z.string(),
+  source: z.string(),
+  target: z.string(),
+  type: z.string().optional(),
 });
 
-export const insertPipelineSchema = createInsertSchema(pipelines).pick({
-  userId: true,
-  name: true,
-  description: true,
-  provider: true,
-  region: true,
-  configuration: true,
-  status: true,
+export const insertProjectSchema = createInsertSchema(projects).omit({
+  id: true,
+  createdAt: true,
 });
 
-export const insertDeploymentSchema = createInsertSchema(deployments).pick({
-  pipelineId: true,
-  status: true,
-  environment: true,
-  terraformState: true,
-  logs: true,
+export const insertPipelineSchema = createInsertSchema(pipelines).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
-export const insertResourceSchema = createInsertSchema(resources).pick({
-  deploymentId: true,
-  pipelineId: true,
-  provider: true,
-  type: true,
-  name: true,
-  region: true,
-  status: true,
-  configuration: true,
-  cost: true,
-  tags: true,
+export const insertDeploymentSchema = createInsertSchema(deployments).omit({
+  id: true,
+  createdAt: true,
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type CloudProvider = typeof cloudProviders.$inferSelect;
-export type InsertCloudProvider = z.infer<typeof insertCloudProviderSchema>;
+export const insertCredentialSchema = createInsertSchema(credentials).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type Project = typeof projects.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
-export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type Deployment = typeof deployments.$inferSelect;
+export type Credential = typeof credentials.$inferSelect;
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
-export type Resource = typeof resources.$inferSelect;
-export type InsertResource = z.infer<typeof insertResourceSchema>;
+export type InsertCredential = z.infer<typeof insertCredentialSchema>;
+export type ComponentConfig = z.infer<typeof componentConfigSchema>;
+export type PipelineConnection = z.infer<typeof pipelineConnectionSchema>;
