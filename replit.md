@@ -125,6 +125,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 20, 2025
+- **Implemented Complete Autosave and Terraform Generation System**
+  - Added automatic pipeline saving 2 seconds after component changes to prevent excessive API calls
+  - Implemented silent autosave without UI notifications to avoid spam
+  - Components dragged to canvas automatically trigger pipeline creation and Terraform generation
+  - Created `/api/generate-terraform` endpoint for converting pipeline components to Terraform JSON
+  - Enhanced pipeline directory structure with automatic `main.tf.json` generation alongside `pipeline.json` and `README.md`
+  - Added comprehensive Terraform resource mapping for AWS (EC2, S3, RDS, Lambda, VPC), Azure (VM, Storage), and GCP (Compute, Storage)
+  - Pipeline components now include `componentType` field for proper Terraform resource identification
+  - Terraform configurations include proper provider setup with version constraints and default values
+  - Multiple components automatically append to the same `main.tf.json` file with unique resource naming
+  - Integration with autosave ensures Terraform files are updated whenever pipeline components change
+
 ### January 18, 2025
 - **Updated My Pipelines Interface**
   - Replaced "Import" button with "Open in Canvas" button in My Pipelines table

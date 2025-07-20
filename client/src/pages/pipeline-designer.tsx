@@ -305,6 +305,25 @@ export default function PipelineDesigner() {
 
         setHasUnsavedChanges(false);
         
+        // Generate Terraform configuration for the components
+        try {
+          await apiRequest("/api/generate-terraform", {
+            method: "POST",
+            body: {
+              pipelineName: savedPipeline.name,
+              components: nodes.map(node => ({
+                id: node.id,
+                type: node.data?.componentType || node.type,
+                data: node.data
+              })),
+              provider: getCloudProvider(nodes)
+            }
+          });
+          console.log("Terraform configuration generated for:", savedPipeline.name);
+        } catch (terraformError) {
+          console.error("Failed to generate Terraform configuration:", terraformError);
+        }
+        
         // Invalidate queries to update My Pipelines
         queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
         
@@ -720,6 +739,7 @@ export default function PipelineDesigner() {
         type: "cloudComponent",
         position,
         data: {
+          componentType: type, // Store the original component type for Terraform generation
           type,
           name: `${type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
           config: {},
