@@ -20,22 +20,7 @@ export const sessions = pgTable("sessions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const ldapConfig = pgTable("ldap_config", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  url: text("url").notNull(),
-  baseDN: text("base_dn").notNull(),
-  bindDN: text("bind_dn"),
-  bindPassword: text("bind_password"),
-  userSearchBase: text("user_search_base").notNull(),
-  userSearchFilter: text("user_search_filter").notNull().default("(sAMAccountName={{username}})"),
-  emailAttribute: text("email_attribute").default("mail"),
-  firstNameAttribute: text("first_name_attribute").default("givenName"),
-  lastNameAttribute: text("last_name_attribute").default("sn"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+// LDAP configuration removed for email-based authentication
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
@@ -216,11 +201,7 @@ export const insertSessionSchema = createInsertSchema(sessions).omit({
   createdAt: true,
 });
 
-export const insertLdapConfigSchema = createInsertSchema(ldapConfig).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
+// LDAP schema removed for email-based authentication
 
 export const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -239,7 +220,7 @@ export const signupSchema = z.object({
 
 export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
-export type LdapConfig = typeof ldapConfig.$inferSelect;
+// LDAP types removed for email-based authentication
 export type Project = typeof projects.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type Deployment = typeof deployments.$inferSelect;
@@ -251,7 +232,7 @@ export type UserRole = typeof userRoles.$inferSelect;
 export type ResourcePermission = typeof resourcePermissions.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
-export type InsertLdapConfig = z.infer<typeof insertLdapConfigSchema>;
+// LDAP insert types removed for email-based authentication
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;

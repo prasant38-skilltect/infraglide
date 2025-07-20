@@ -7,7 +7,6 @@ import {
   insertDeploymentSchema, 
   insertCredentialSchema,
   insertUserSchema,
-  insertLdapConfigSchema,
   loginSchema,
   signupSchema
 } from "@shared/schema";
