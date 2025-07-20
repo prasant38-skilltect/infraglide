@@ -7,9 +7,6 @@ import { Link } from "wouter";
 
 export default function SettingsPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      
       <main className="flex-1 overflow-y-auto p-6">
         <div className="max-w-4xl mx-auto">
           <div className="mb-8">
@@ -181,6 +178,5 @@ export default function SettingsPage() {
           </Card>
         </div>
       </main>
-    </div>
   );
 }

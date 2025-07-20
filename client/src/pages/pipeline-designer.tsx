@@ -114,7 +114,7 @@ export default function PipelineDesigner() {
     nextVersion: number;
   } | null>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(null);
@@ -174,10 +174,7 @@ export default function PipelineDesigner() {
     }
   }, [reactFlowInstance]);
 
-  // Always hide the sidebar when entering pipeline designer
-  useEffect(() => {
-    setIsSidebarCollapsed(true);
-  }, []);
+
 
   // Check for imported pipeline data from sessionStorage (My Pipelines or Ask Jane)
   useEffect(() => {
@@ -1273,23 +1270,12 @@ export default function PipelineDesigner() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {!isSidebarCollapsed && <Sidebar />}
-
+    <>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              {isSidebarCollapsed && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsSidebarCollapsed(false)}
-                >
-                  <Menu className="w-4 h-4" />
-                </Button>
-              )}
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
                   Pipeline Designer
@@ -1454,16 +1440,7 @@ export default function PipelineDesigner() {
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
-                  {!isSidebarCollapsed && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsSidebarCollapsed(true)}
-                      title="Hide sidebar"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
-                  )}
+
                 </div>
               </div>
             </div>
@@ -1584,6 +1561,6 @@ export default function PipelineDesigner() {
         currentPipelineName={pipelineName}
         currentVersion={pipeline?.version || 1}
       />
-    </div>
+    </>
   );
 }
