@@ -48,7 +48,10 @@ export default function Credentials() {
 
   const createCredentialMutation = useMutation({
     mutationFn: async (credentialData: any) => {
-      const response = await apiRequest("POST", "/api/credentials", credentialData);
+      const response = await apiRequest("/api/credentials", {
+        method: "POST",
+        body: JSON.stringify(credentialData),
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -71,7 +74,10 @@ export default function Credentials() {
 
   const updateCredentialMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
-      const response = await apiRequest("PUT", `/api/credentials/${id}`, data);
+      const response = await apiRequest(`/api/credentials/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -95,7 +101,9 @@ export default function Credentials() {
 
   const deleteCredentialMutation = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/credentials/${id}`);
+      await apiRequest(`/api/credentials/${id}`, {
+        method: "DELETE",
+      });
     },
     onSuccess: () => {
       toast({

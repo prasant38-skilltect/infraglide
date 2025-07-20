@@ -10,6 +10,9 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   password: text("password").notNull(), // hashed password
   isAdmin: boolean("is_admin").default(false),
+  isActive: boolean("is_active").default(true),
+  lastLoginAt: timestamp("last_login_at"),
+  authProvider: text("auth_provider").default("email"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -151,11 +154,13 @@ export const insertUserSchema = createInsertSchema(users).omit({
 
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
+  userId: true, // userId will be added by the server from auth context
   createdAt: true,
 });
 
 export const insertPipelineSchema = createInsertSchema(pipelines).omit({
   id: true,
+  userId: true, // userId will be added by the server from auth context
   createdAt: true,
   updatedAt: true,
 });
@@ -193,6 +198,7 @@ export const insertResourcePermissionSchema = createInsertSchema(resourcePermiss
 
 export const insertCredentialSchema = createInsertSchema(credentials).omit({
   id: true,
+  userId: true, // userId will be added by the server from auth context
   createdAt: true,
   updatedAt: true,
 });

@@ -89,83 +89,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: req.user!.id,
         email: req.user!.email,
         username: req.user!.username,
-        firstName: req.user!.firstName,
-        lastName: req.user!.lastName,
-        authProvider: req.user!.authProvider,
+        fullName: req.user!.fullName,
         isAdmin: req.user!.isAdmin,
       }
     });
   });
 
-  // LDAP Configuration routes (admin only)
-  app.get("/api/ldap-configs", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const configs = await storage.getLdapConfigs();
-      res.json(configs);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch LDAP configurations" });
-    }
-  });
-
-  app.post("/api/ldap-configs", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const validatedData = insertLdapConfigSchema.parse(req.body);
-      const config = await storage.createLdapConfig(validatedData);
-      res.status(201).json(config);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid LDAP configuration", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create LDAP configuration" });
-    }
-  });
-
-  app.put("/api/ldap-configs/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const validatedData = insertLdapConfigSchema.partial().parse(req.body);
-      const config = await storage.updateLdapConfig(id, validatedData);
-      if (!config) {
-        return res.status(404).json({ error: "LDAP configuration not found" });
-      }
-      res.json(config);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid LDAP configuration", details: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update LDAP configuration" });
-    }
-  });
-
-  app.delete("/api/ldap-configs/:id", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const deleted = await storage.deleteLdapConfig(id);
-      if (!deleted) {
-        return res.status(404).json({ error: "LDAP configuration not found" });
-      }
-      res.status(204).send();
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete LDAP configuration" });
-    }
-  });
-
-  // Test LDAP connection
-  app.post("/api/ldap-configs/:id/test", requireAuth, requireAdmin, async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ error: "Username and password required for testing" });
-      }
-
-      const user = await authService.authenticateLDAP(username, password, id);
-      res.json({ message: "LDAP authentication successful", user: { username: user.username, email: user.email } });
-    } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "LDAP test failed" });
-    }
-  });
+  // LDAP Configuration routes removed for email-based authentication
 
   // User management routes (admin only)
   app.get("/api/users", requireAuth, requireAdmin, async (req, res) => {
@@ -175,8 +105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        fullName: user.fullName,
         authProvider: user.authProvider,
         isActive: user.isActive,
         isAdmin: user.isAdmin,
@@ -206,8 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         email: user.email,
         username: user.username,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        fullName: user.fullName,
         authProvider: user.authProvider,
         isActive: user.isActive,
         isAdmin: user.isAdmin,

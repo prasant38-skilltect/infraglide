@@ -59,7 +59,7 @@ export interface IStorage {
   // Projects
   getProjects(userId?: number): Promise<Project[]>;
   getProject(id: number): Promise<Project | undefined>;
-  createProject(project: InsertProject): Promise<Project>;
+  createProject(project: InsertProject & { userId: number }): Promise<Project>;
   updateProject(id: number, project: Partial<InsertProject>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
 
@@ -68,8 +68,8 @@ export interface IStorage {
   getPipeline(id: number): Promise<Pipeline | undefined>;
   getPipelinesByName(name: string, userId?: number): Promise<Pipeline[]>;
   getPipelineVersions(name: string, userId?: number): Promise<Pipeline[]>;
-  createPipeline(pipeline: InsertPipeline): Promise<Pipeline>;
-  createPipelineVersion(pipeline: InsertPipeline, parentId: number): Promise<Pipeline>;
+  createPipeline(pipeline: InsertPipeline & { userId: number }): Promise<Pipeline>;
+  createPipelineVersion(pipeline: InsertPipeline & { userId: number }, parentId: number): Promise<Pipeline>;
   updatePipeline(id: number, pipeline: Partial<InsertPipeline>): Promise<Pipeline | undefined>;
   deletePipeline(id: number): Promise<boolean>;
 
@@ -82,7 +82,7 @@ export interface IStorage {
   // Credentials
   getCredentials(userId?: number): Promise<Credential[]>;
   getCredential(id: number): Promise<Credential | undefined>;
-  createCredential(credential: InsertCredential): Promise<Credential>;
+  createCredential(credential: InsertCredential & { userId: number }): Promise<Credential>;
   updateCredential(id: number, credential: Partial<InsertCredential>): Promise<Credential | undefined>;
   deleteCredential(id: number): Promise<boolean>;
 
@@ -177,6 +177,8 @@ export class MemStorage implements IStorage {
       fullName: "Admin User",
       password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewUyYzFo1oQq/BQe", // password: admin123
       isAdmin: true,
+      isActive: true,
+      authProvider: "email",
     });
   }
 
@@ -204,6 +206,9 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       isAdmin: insertUser.isAdmin ?? null,
+      isActive: insertUser.isActive ?? true,
+      lastLoginAt: insertUser.lastLoginAt ?? null,
+      authProvider: insertUser.authProvider ?? "email",
       createdAt: now,
     };
     this.users.set(id, user);
@@ -277,7 +282,7 @@ export class MemStorage implements IStorage {
     return this.projects.get(id);
   }
 
-  async createProject(insertProject: InsertProject): Promise<Project> {
+  async createProject(insertProject: InsertProject & { userId: number }): Promise<Project> {
     const id = this.currentProjectId++;
     const project: Project = {
       ...insertProject,
@@ -333,7 +338,7 @@ export class MemStorage implements IStorage {
     return filteredPipelines;
   }
 
-  async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {
+  async createPipeline(insertPipeline: InsertPipeline & { userId: number }): Promise<Pipeline> {
     const id = this.currentPipelineId++;
     const now = new Date();
     const pipeline: Pipeline = {
@@ -432,7 +437,7 @@ export class MemStorage implements IStorage {
     return this.credentials.get(id);
   }
 
-  async createCredential(insertCredential: InsertCredential): Promise<Credential> {
+  async createCredential(insertCredential: InsertCredential & { userId: number }): Promise<Credential> {
     const id = this.currentCredentialId++;
     const now = new Date();
     const credential: Credential = {
@@ -467,7 +472,7 @@ export class MemStorage implements IStorage {
     return this.getPipelinesByName(name, userId);
   }
 
-  async createPipelineVersion(insertPipeline: InsertPipeline, parentId: number): Promise<Pipeline> {
+  async createPipelineVersion(insertPipeline: InsertPipeline & { userId: number }, parentId: number): Promise<Pipeline> {
     const pipeline = await this.createPipeline({
       ...insertPipeline,
       parentPipelineId: parentId,
@@ -758,7 +763,7 @@ export class DatabaseStorage implements IStorage {
     return project || undefined;
   }
 
-  async createProject(insertProject: InsertProject): Promise<Project> {
+  async createProject(insertProject: InsertProject & { userId: number }): Promise<Project> {
     const [project] = await db
       .insert(projects)
       .values(insertProject)
@@ -819,7 +824,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(pipelines.version));
   }
 
-  async createPipelineVersion(insertPipeline: InsertPipeline, parentId: number): Promise<Pipeline> {
+  async createPipelineVersion(insertPipeline: InsertPipeline & { userId: number }, parentId: number): Promise<Pipeline> {
     // Get the parent pipeline to determine the next version number
     const parentPipeline = await this.getPipeline(parentId);
     if (!parentPipeline) {
@@ -849,7 +854,7 @@ export class DatabaseStorage implements IStorage {
     return pipeline;
   }
 
-  async createPipeline(insertPipeline: InsertPipeline): Promise<Pipeline> {
+  async createPipeline(insertPipeline: InsertPipeline & { userId: number }): Promise<Pipeline> {
     const [pipeline] = await db
       .insert(pipelines)
       .values(insertPipeline)
@@ -914,7 +919,7 @@ export class DatabaseStorage implements IStorage {
     return credential || undefined;
   }
 
-  async createCredential(insertCredential: InsertCredential): Promise<Credential> {
+  async createCredential(insertCredential: InsertCredential & { userId: number }): Promise<Credential> {
     const [credential] = await db
       .insert(credentials)
       .values(insertCredential)
