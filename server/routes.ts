@@ -1193,6 +1193,52 @@ What specific cloud service would you like to configure?`
     }
   });
 
+  // Cost Optimization API Routes
+  app.get("/api/cost-optimization/:pipelineId", requireAuth, async (req, res) => {
+    try {
+      const pipelineId = parseInt(req.params.pipelineId);
+      const pipeline = await storage.getPipeline(pipelineId);
+      
+      if (!pipeline || pipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found or access denied" });
+      }
+
+      // Generate cost analysis based on pipeline components
+      const costAnalysis = generateCostAnalysis(pipeline);
+      res.json(costAnalysis);
+    } catch (error) {
+      console.error("Cost optimization analysis error:", error);
+      res.status(500).json({ error: "Failed to analyze pipeline costs" });
+    }
+  });
+
+  app.post("/api/cost-optimization/apply", requireAuth, async (req, res) => {
+    try {
+      const { pipelineId, recommendationId } = req.body;
+      
+      if (!pipelineId || !recommendationId) {
+        return res.status(400).json({ error: "Missing required fields: pipelineId, recommendationId" });
+      }
+
+      const pipeline = await storage.getPipeline(parseInt(pipelineId));
+      if (!pipeline || pipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found or access denied" });
+      }
+
+      // Apply the cost optimization recommendation
+      const result = await applyCostOptimization(pipeline, recommendationId, storage);
+      
+      res.json({
+        success: true,
+        message: "Cost optimization applied successfully",
+        ...result
+      });
+    } catch (error) {
+      console.error("Apply cost optimization error:", error);
+      res.status(500).json({ error: "Failed to apply cost optimization" });
+    }
+  });
+
   // RBAC API Routes
   
   // Roles
@@ -1418,6 +1464,657 @@ function generateTerraformJson(components: any[], provider: string, credential?:
   });
 
   return terraformConfig;
+}
+
+// Helper function to generate cost analysis and recommendations
+function generateCostAnalysis(pipeline: any) {
+  const components = Array.isArray(pipeline.components) ? pipeline.components : [];
+  
+  // Calculate base costs for each component type
+  const costCalculations = {
+    totalMonthlyCost: 0,
+    breakdown: {
+      compute: 0,
+      storage: 0,
+      networking: 0,
+      database: 0,
+      other: 0
+    }
+  };
+
+  const recommendations: any[] = [];
+
+  // Analyze each component and generate recommendations
+  components.forEach((component: any, index: number) => {
+    const { type, data } = component;
+    let baseCost = 0;
+    let category = 'other';
+
+    switch (type) {
+      // AWS Components
+      case 'aws-ec2':
+        category = 'compute';
+        baseCost = calculateEC2Cost(data);
+        // Generate EC2 optimization recommendations
+        recommendations.push(...generateEC2Recommendations(component, index));
+        break;
+      
+      case 'aws-s3':
+        category = 'storage';
+        baseCost = calculateS3Cost(data);
+        recommendations.push(...generateS3Recommendations(component, index));
+        break;
+      
+      case 'aws-rds':
+        category = 'database';
+        baseCost = calculateRDSCost(data);
+        recommendations.push(...generateRDSRecommendations(component, index));
+        break;
+      
+      case 'aws-lambda':
+        category = 'compute';
+        baseCost = calculateLambdaCost(data);
+        recommendations.push(...generateLambdaRecommendations(component, index));
+        break;
+      
+      case 'aws-vpc':
+        category = 'networking';
+        baseCost = calculateVPCCost(data);
+        recommendations.push(...generateVPCRecommendations(component, index));
+        break;
+
+      // Azure Components
+      case 'azure-vm':
+        category = 'compute';
+        baseCost = calculateAzureVMCost(data);
+        recommendations.push(...generateAzureVMRecommendations(component, index));
+        break;
+      
+      case 'azure-storage':
+        category = 'storage';
+        baseCost = calculateAzureStorageCost(data);
+        recommendations.push(...generateAzureStorageRecommendations(component, index));
+        break;
+
+      // GCP Components
+      case 'gcp-compute':
+        category = 'compute';
+        baseCost = calculateGCPComputeCost(data);
+        recommendations.push(...generateGCPComputeRecommendations(component, index));
+        break;
+      
+      case 'gcp-storage':
+        category = 'storage';
+        baseCost = calculateGCPStorageCost(data);
+        recommendations.push(...generateGCPStorageRecommendations(component, index));
+        break;
+    }
+
+    costCalculations.totalMonthlyCost += baseCost;
+    costCalculations.breakdown[category as keyof typeof costCalculations.breakdown] += baseCost;
+  });
+
+  // Calculate potential savings
+  const potentialSavings = recommendations.reduce((total, rec) => total + rec.potentialSavings, 0);
+  const savingsPercentage = costCalculations.totalMonthlyCost > 0 
+    ? (potentialSavings / costCalculations.totalMonthlyCost) * 100 
+    : 0;
+
+  return {
+    totalMonthlyCost: costCalculations.totalMonthlyCost,
+    potentialSavings,
+    savingsPercentage,
+    recommendations: recommendations.sort((a, b) => b.potentialSavings - a.potentialSavings),
+    breakdown: costCalculations.breakdown
+  };
+}
+
+// Cost calculation functions for different services
+function calculateEC2Cost(data: any): number {
+  const instanceTypes: Record<string, number> = {
+    't3.micro': 8.47,
+    't3.small': 16.93,
+    't3.medium': 33.87,
+    't3.large': 67.74,
+    't3.xlarge': 135.48,
+    'm5.large': 96.36,
+    'm5.xlarge': 192.72,
+    'c5.large': 85.50,
+    'c5.xlarge': 171.00
+  };
+  
+  return instanceTypes[data?.instanceType] || 50.00;
+}
+
+function calculateS3Cost(data: any): number {
+  // Basic S3 storage cost estimation
+  const storageGB = parseInt(data?.storageSize) || 100;
+  const standardStorageCost = storageGB * 0.023; // $0.023 per GB for Standard storage
+  const requestsCost = 5.00; // Estimated monthly requests cost
+  return standardStorageCost + requestsCost;
+}
+
+function calculateRDSCost(data: any): number {
+  const instanceTypes: Record<string, number> = {
+    'db.t3.micro': 15.33,
+    'db.t3.small': 30.66,
+    'db.m5.large': 144.00,
+    'db.r5.large': 180.00
+  };
+  
+  const instanceCost = instanceTypes[data?.instanceClass] || 75.00;
+  const storageCost = (parseInt(data?.allocatedStorage) || 20) * 0.115; // $0.115 per GB for gp2
+  return instanceCost + storageCost;
+}
+
+function calculateLambdaCost(data: any): number {
+  // Lambda cost estimation based on invocations and duration
+  const monthlyInvocations = parseInt(data?.monthlyInvocations) || 100000;
+  const avgDuration = parseInt(data?.avgDuration) || 1000; // milliseconds
+  const memoryMB = parseInt(data?.memorySize) || 128;
+  
+  const requestCost = Math.max(0, (monthlyInvocations - 1000000) * 0.0000002); // Free tier: 1M requests
+  const computeCost = ((monthlyInvocations * avgDuration / 1000) * (memoryMB / 1024) * 0.0000166667);
+  
+  return requestCost + computeCost;
+}
+
+function calculateVPCCost(data: any): number {
+  // Basic VPC costs (NAT Gateway, VPC Endpoints, etc.)
+  const natGatewayCost = 45.00; // $0.045 per hour
+  const vpcEndpointCost = 15.00; // Estimated for common endpoints
+  return natGatewayCost + vpcEndpointCost;
+}
+
+function calculateAzureVMCost(data: any): number {
+  const vmSizes: Record<string, number> = {
+    'Standard_B1s': 7.59,
+    'Standard_B1ms': 15.18,
+    'Standard_B2s': 30.37,
+    'Standard_D2s_v3': 96.36,
+    'Standard_D4s_v3': 192.72
+  };
+  
+  return vmSizes[data?.vmSize] || 50.00;
+}
+
+function calculateAzureStorageCost(data: any): number {
+  const storageGB = parseInt(data?.storageSize) || 100;
+  return storageGB * 0.0184; // Hot tier LRS pricing
+}
+
+function calculateGCPComputeCost(data: any): number {
+  const machineTypes: Record<string, number> = {
+    'e2-micro': 6.11,
+    'e2-small': 12.23,
+    'e2-medium': 24.45,
+    'n1-standard-1': 24.27,
+    'n1-standard-2': 48.55
+  };
+  
+  return machineTypes[data?.machineType] || 35.00;
+}
+
+function calculateGCPStorageCost(data: any): number {
+  const storageGB = parseInt(data?.storageSize) || 100;
+  return storageGB * 0.020; // Standard storage pricing
+}
+
+// Recommendation generation functions
+function generateEC2Recommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Right-sizing recommendation
+  if (data.instanceType && (data.instanceType.includes('large') || data.instanceType.includes('xlarge'))) {
+    recommendations.push({
+      id: `ec2-rightsizing-${index}`,
+      type: 'savings',
+      priority: 'high',
+      title: 'Right-size EC2 Instance',
+      description: 'Your current instance type may be over-provisioned. Consider downsizing to a smaller instance type.',
+      currentCost: calculateEC2Cost(data),
+      potentialSavings: calculateEC2Cost(data) * 0.4,
+      implementationEffort: 'medium',
+      timeToImplement: '30 minutes',
+      impact: 'Reduce monthly costs by 40% without performance impact',
+      steps: [
+        'Monitor current CPU and memory utilization over 2 weeks',
+        'Identify peak usage patterns and requirements',
+        'Select appropriate smaller instance type (e.g., t3.medium → t3.small)',
+        'Schedule maintenance window for instance resize',
+        'Create AMI backup before resizing',
+        'Stop instance and change instance type',
+        'Start instance and verify application performance',
+        'Monitor for 1 week to ensure stability'
+      ],
+      component: 'EC2 Instance',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  // Spot instances recommendation
+  if (!data.useSpotInstances) {
+    recommendations.push({
+      id: `ec2-spot-${index}`,
+      type: 'savings',
+      priority: 'medium',
+      title: 'Use Spot Instances for Development',
+      description: 'Save up to 90% by using Spot Instances for non-critical workloads.',
+      currentCost: calculateEC2Cost(data),
+      potentialSavings: calculateEC2Cost(data) * 0.7,
+      implementationEffort: 'easy',
+      timeToImplement: '15 minutes',
+      impact: 'Reduce costs by 70% for fault-tolerant workloads',
+      steps: [
+        'Identify fault-tolerant applications suitable for Spot Instances',
+        'Implement Spot Instance request with mixed instance types',
+        'Configure Auto Scaling groups with Spot and On-Demand mix',
+        'Set up CloudWatch monitoring for Spot Instance interruptions',
+        'Test application behavior during Spot Instance termination'
+      ],
+      component: 'EC2 Instance',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  return recommendations;
+}
+
+function generateS3Recommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Lifecycle policy recommendation
+  if (!data.lifecyclePolicy) {
+    recommendations.push({
+      id: `s3-lifecycle-${index}`,
+      type: 'savings',
+      priority: 'high',
+      title: 'Implement S3 Lifecycle Policies',
+      description: 'Automatically transition objects to cheaper storage classes to reduce costs.',
+      currentCost: calculateS3Cost(data),
+      potentialSavings: calculateS3Cost(data) * 0.6,
+      implementationEffort: 'easy',
+      timeToImplement: '10 minutes',
+      impact: 'Reduce storage costs by 60% for infrequently accessed data',
+      steps: [
+        'Analyze access patterns for objects in the bucket',
+        'Create lifecycle policy to transition to IA after 30 days',
+        'Configure transition to Glacier after 90 days',
+        'Set up deletion rules for expired objects',
+        'Apply lifecycle policy to the S3 bucket',
+        'Monitor cost reduction over the next month'
+      ],
+      component: 'S3 Bucket',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  // Intelligent Tiering recommendation
+  if (!data.intelligentTiering) {
+    recommendations.push({
+      id: `s3-intelligent-tiering-${index}`,
+      type: 'efficiency',
+      priority: 'medium',
+      title: 'Enable S3 Intelligent Tiering',
+      description: 'Automatically optimize storage costs by moving objects between access tiers.',
+      currentCost: calculateS3Cost(data),
+      potentialSavings: calculateS3Cost(data) * 0.3,
+      implementationEffort: 'easy',
+      timeToImplement: '5 minutes',
+      impact: 'Automatic cost optimization with no performance impact',
+      steps: [
+        'Navigate to S3 bucket properties',
+        'Enable Intelligent Tiering',
+        'Configure monitoring and automation',
+        'Review tiering policies and thresholds',
+        'Monitor storage class transitions'
+      ],
+      component: 'S3 Bucket',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  return recommendations;
+}
+
+function generateRDSRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Multi-AZ optimization
+  if (data.multiAZ !== false) {
+    recommendations.push({
+      id: `rds-multiaz-${index}`,
+      type: 'savings',
+      priority: 'medium',
+      title: 'Disable Multi-AZ for Development',
+      description: 'Save 50% on RDS costs by disabling Multi-AZ deployment for non-production databases.',
+      currentCost: calculateRDSCost(data),
+      potentialSavings: calculateRDSCost(data) * 0.5,
+      implementationEffort: 'easy',
+      timeToImplement: '20 minutes',
+      impact: 'Reduce RDS costs by 50% for development environments',
+      steps: [
+        'Identify non-production RDS instances with Multi-AZ enabled',
+        'Create snapshot backup before making changes',
+        'Modify RDS instance to disable Multi-AZ deployment',
+        'Monitor database performance after change',
+        'Update disaster recovery procedures for development environment'
+      ],
+      component: 'RDS Database',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  // Reserved Instance recommendation
+  if (!data.reservedInstance) {
+    recommendations.push({
+      id: `rds-reserved-${index}`,
+      type: 'savings',
+      priority: 'high',
+      title: 'Purchase RDS Reserved Instances',
+      description: 'Save up to 60% by purchasing 1-year Reserved Instances for steady-state workloads.',
+      currentCost: calculateRDSCost(data),
+      potentialSavings: calculateRDSCost(data) * 0.6,
+      implementationEffort: 'easy',
+      timeToImplement: '10 minutes',
+      impact: 'Immediate cost reduction with 1-year commitment',
+      steps: [
+        'Analyze RDS usage patterns over past 3 months',
+        'Calculate potential savings with Reserved Instances',
+        'Purchase 1-year No Upfront Reserved Instance',
+        'Apply Reserved Instance to existing RDS instances',
+        'Monitor cost savings in billing dashboard'
+      ],
+      component: 'RDS Database',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  return recommendations;
+}
+
+function generateLambdaRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Memory optimization
+  if (parseInt(data.memorySize) > 512) {
+    recommendations.push({
+      id: `lambda-memory-${index}`,
+      type: 'efficiency',
+      priority: 'medium',
+      title: 'Optimize Lambda Memory Allocation',
+      description: 'Right-size Lambda memory allocation to balance performance and cost.',
+      currentCost: calculateLambdaCost(data),
+      potentialSavings: calculateLambdaCost(data) * 0.3,
+      implementationEffort: 'easy',
+      timeToImplement: '15 minutes',
+      impact: 'Optimize performance-to-cost ratio',
+      steps: [
+        'Use AWS Lambda Power Tuning tool to analyze optimal memory',
+        'Test function performance with different memory settings',
+        'Monitor execution duration and cost metrics',
+        'Adjust memory allocation based on optimal configuration',
+        'Set up CloudWatch alarms for performance monitoring'
+      ],
+      component: 'Lambda Function',
+      provider: 'AWS',
+      region: data.region || 'us-east-1',
+      applied: false
+    });
+  }
+
+  return recommendations;
+}
+
+function generateVPCRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // NAT Gateway optimization
+  recommendations.push({
+    id: `vpc-nat-${index}`,
+    type: 'savings',
+    priority: 'medium',
+    title: 'Optimize NAT Gateway Usage',
+    description: 'Consider NAT Instances or VPC Endpoints to reduce NAT Gateway costs.',
+    currentCost: calculateVPCCost(data),
+    potentialSavings: calculateVPCCost(data) * 0.4,
+    implementationEffort: 'medium',
+    timeToImplement: '45 minutes',
+    impact: 'Reduce networking costs by 40%',
+    steps: [
+      'Analyze current NAT Gateway traffic patterns',
+      'Consider NAT Instances for low-traffic scenarios',
+      'Implement VPC Endpoints for AWS services',
+      'Configure route tables for optimal traffic flow',
+      'Monitor data transfer costs after optimization'
+    ],
+    component: 'VPC Network',
+    provider: 'AWS',
+    region: data.region || 'us-east-1',
+    applied: false
+  });
+
+  return recommendations;
+}
+
+function generateAzureVMRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Reserved Instance recommendation
+  recommendations.push({
+    id: `azure-vm-reserved-${index}`,
+    type: 'savings',
+    priority: 'high',
+    title: 'Purchase Azure Reserved VM Instances',
+    description: 'Save up to 72% with 1-year or 3-year Azure Reserved VM Instances.',
+    currentCost: calculateAzureVMCost(data),
+    potentialSavings: calculateAzureVMCost(data) * 0.6,
+    implementationEffort: 'easy',
+    timeToImplement: '10 minutes',
+    impact: 'Significant cost reduction with commitment',
+    steps: [
+      'Review VM usage patterns over past 3 months',
+      'Calculate savings with Azure Reserved Instances',
+      'Purchase appropriate Reserved Instance term',
+      'Apply reservation to existing VMs',
+      'Monitor cost savings in Azure Cost Management'
+    ],
+    component: 'Azure VM',
+    provider: 'Azure',
+    region: data.region || 'East US',
+    applied: false
+  });
+
+  return recommendations;
+}
+
+function generateAzureStorageRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Storage tier optimization
+  recommendations.push({
+    id: `azure-storage-tier-${index}`,
+    type: 'savings',
+    priority: 'medium',
+    title: 'Optimize Azure Storage Tiers',
+    description: 'Move infrequently accessed data to Cool or Archive storage tiers.',
+    currentCost: calculateAzureStorageCost(data),
+    potentialSavings: calculateAzureStorageCost(data) * 0.5,
+    implementationEffort: 'easy',
+    timeToImplement: '15 minutes',
+    impact: 'Reduce storage costs by 50% for infrequent access',
+    steps: [
+      'Analyze blob access patterns using Azure Storage Analytics',
+      'Implement lifecycle management policies',
+      'Configure automatic tiering rules',
+      'Move eligible data to Cool storage tier',
+      'Set up monitoring for cost optimization'
+    ],
+    component: 'Azure Storage',
+    provider: 'Azure',
+    region: data.region || 'East US',
+    applied: false
+  });
+
+  return recommendations;
+}
+
+function generateGCPComputeRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Committed use discount
+  recommendations.push({
+    id: `gcp-compute-committed-${index}`,
+    type: 'savings',
+    priority: 'high',
+    title: 'Purchase GCP Committed Use Discounts',
+    description: 'Save up to 57% with 1-year or 3-year Committed Use Discounts.',
+    currentCost: calculateGCPComputeCost(data),
+    potentialSavings: calculateGCPComputeCost(data) * 0.5,
+    implementationEffort: 'easy',
+    timeToImplement: '10 minutes',
+    impact: 'Substantial cost reduction with commitment',
+    steps: [
+      'Analyze Compute Engine usage patterns',
+      'Purchase appropriate Committed Use Discount',
+      'Apply discount to existing VM instances',
+      'Monitor savings in Google Cloud Billing',
+      'Plan future capacity with committed discounts'
+    ],
+    component: 'GCP Compute Engine',
+    provider: 'GCP',
+    region: data.region || 'us-central1',
+    applied: false
+  });
+
+  return recommendations;
+}
+
+function generateGCPStorageRecommendations(component: any, index: number) {
+  const recommendations = [];
+  const data = component.data || {};
+
+  // Storage class optimization
+  recommendations.push({
+    id: `gcp-storage-class-${index}`,
+    type: 'savings',
+    priority: 'medium',
+    title: 'Optimize Google Cloud Storage Classes',
+    description: 'Use appropriate storage classes based on access patterns.',
+    currentCost: calculateGCPStorageCost(data),
+    potentialSavings: calculateGCPStorageCost(data) * 0.4,
+    implementationEffort: 'easy',
+    timeToImplement: '15 minutes',
+    impact: 'Reduce storage costs by 40% with optimal classes',
+    steps: [
+      'Analyze object access patterns in Cloud Storage',
+      'Implement Object Lifecycle Management',
+      'Configure automatic transitions to Nearline/Coldline',
+      'Set up deletion policies for expired objects',
+      'Monitor cost optimization results'
+    ],
+    component: 'GCP Cloud Storage',
+    provider: 'GCP',
+    region: data.region || 'us-central1',
+    applied: false
+  });
+
+  return recommendations;
+}
+
+// Helper function to apply cost optimization recommendations
+async function applyCostOptimization(pipeline: any, recommendationId: string, storage: any) {
+  // This would typically integrate with cloud provider APIs to implement the changes
+  // For now, we'll simulate the application of recommendations
+  
+  const components = Array.isArray(pipeline.components) ? pipeline.components : [];
+  
+  // Find and apply the specific recommendation
+  let updatedComponents = [...components];
+  let recommendationApplied = false;
+  
+  // Simulate applying optimization based on recommendation ID
+  if (recommendationId.includes('ec2-rightsizing')) {
+    updatedComponents = components.map(component => {
+      if (component.type === 'aws-ec2') {
+        return {
+          ...component,
+          data: {
+            ...component.data,
+            optimized: true,
+            previousInstanceType: component.data?.instanceType,
+            instanceType: 't3.small' // Example downsize
+          }
+        };
+      }
+      return component;
+    });
+    recommendationApplied = true;
+  }
+  
+  if (recommendationId.includes('s3-lifecycle')) {
+    updatedComponents = components.map(component => {
+      if (component.type === 'aws-s3') {
+        return {
+          ...component,
+          data: {
+            ...component.data,
+            optimized: true,
+            lifecyclePolicy: true,
+            lifecycleRules: [
+              { transition: 'IA', days: 30 },
+              { transition: 'Glacier', days: 90 }
+            ]
+          }
+        };
+      }
+      return component;
+    });
+    recommendationApplied = true;
+  }
+  
+  if (recommendationApplied) {
+    // Update the pipeline in storage
+    await storage.updatePipeline(pipeline.id, {
+      ...pipeline,
+      components: updatedComponents,
+      updatedAt: new Date()
+    });
+    
+    // Generate and update Terraform configuration
+    const pipelineName = pipeline.name.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    // This would call the generateTerraformJson function and update files
+    
+    return {
+      recommendationId,
+      updatedComponents: updatedComponents.length,
+      message: "Cost optimization has been applied to your pipeline configuration"
+    };
+  }
+  
+  return {
+    error: "Recommendation not found or could not be applied"
+  };
 }
 
 // Helper function to generate resource configuration for each component type

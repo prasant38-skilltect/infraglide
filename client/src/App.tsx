@@ -15,6 +15,7 @@ import LLD from "@/pages/lld";
 import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
 import DeployedResources from "@/pages/deployed-resources";
+import CostOptimization from "@/pages/cost-optimization";
 import SettingsPage from "@/pages/settings";
 import AccessManagement from "@/pages/access-management";
 import LoginPage from "@/pages/login";
@@ -84,6 +85,7 @@ function ProtectedRouter() {
           <Route path="/hld" component={HLD} />
           <Route path="/lld" component={LLD} />
           <Route path="/deployed-resources" component={DeployedResources} />
+          <Route path="/cost-optimization" component={CostOptimization} />
           <Route path="/access-management" component={AccessManagement} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />
