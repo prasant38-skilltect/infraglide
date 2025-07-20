@@ -136,12 +136,22 @@ export class MemStorage implements IStorage {
   private pipelines: Map<number, Pipeline>;
   private deployments: Map<number, Deployment>;
   private credentials: Map<number, Credential>;
+  private roles: Map<number, Role>;
+  private permissions: Map<number, Permission>;
+  private rolePermissions: Map<number, RolePermission>;
+  private userRoles: Map<number, UserRole>;
+  private resourcePermissions: Map<number, ResourcePermission>;
   private currentUserId: number;
   private currentLdapConfigId: number;
   private currentProjectId: number;
   private currentPipelineId: number;
   private currentDeploymentId: number;
   private currentCredentialId: number;
+  private currentRoleId: number;
+  private currentPermissionId: number;
+  private currentRolePermissionId: number;
+  private currentUserRoleId: number;
+  private currentResourcePermissionId: number;
 
   constructor() {
     this.users = new Map();
@@ -151,22 +161,29 @@ export class MemStorage implements IStorage {
     this.pipelines = new Map();
     this.deployments = new Map();
     this.credentials = new Map();
+    this.roles = new Map();
+    this.permissions = new Map();
+    this.rolePermissions = new Map();
+    this.userRoles = new Map();
+    this.resourcePermissions = new Map();
     this.currentUserId = 1;
     this.currentLdapConfigId = 1;
     this.currentProjectId = 1;
     this.currentPipelineId = 1;
     this.currentDeploymentId = 1;
     this.currentCredentialId = 1;
+    this.currentRoleId = 1;
+    this.currentPermissionId = 1;
+    this.currentRolePermissionId = 1;
+    this.currentUserRoleId = 1;
+    this.currentResourcePermissionId = 1;
 
     // Create default admin user
     this.createUser({
       email: "admin@infraglide.com",
       username: "admin",
-      firstName: "Admin",
-      lastName: "User",
-      passwordHash: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewUyYzFo1oQq/BQe", // password: admin123
-      authProvider: "local",
-      isActive: true,
+      fullName: "Admin User",
+      password: "$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewUyYzFo1oQq/BQe", // password: admin123
       isAdmin: true,
     });
   }
@@ -194,9 +211,8 @@ export class MemStorage implements IStorage {
     const user: User = {
       ...insertUser,
       id,
-      lastLoginAt: null,
+      isAdmin: insertUser.isAdmin ?? null,
       createdAt: now,
-      updatedAt: now,
     };
     this.users.set(id, user);
     return user;
@@ -209,7 +225,6 @@ export class MemStorage implements IStorage {
     const updatedUser: User = {
       ...user,
       ...userData,
-      updatedAt: new Date(),
     };
     this.users.set(id, updatedUser);
     return updatedUser;
@@ -247,7 +262,7 @@ export class MemStorage implements IStorage {
 
   async cleanupExpiredSessions(): Promise<void> {
     const now = new Date();
-    for (const [id, session] of this.sessions.entries()) {
+    for (const [id, session] of Array.from(this.sessions.entries())) {
       if (session.expiresAt < now) {
         this.sessions.delete(id);
       }
@@ -268,6 +283,13 @@ export class MemStorage implements IStorage {
     const now = new Date();
     const config: LdapConfig = {
       ...insertConfig,
+      bindDN: insertConfig.bindDN ?? null,
+      bindPassword: insertConfig.bindPassword ?? null,
+      userSearchFilter: insertConfig.userSearchFilter || "(sAMAccountName={{username}})",
+      emailAttribute: insertConfig.emailAttribute ?? null,
+      firstNameAttribute: insertConfig.firstNameAttribute ?? null,
+      lastNameAttribute: insertConfig.lastNameAttribute ?? null,
+      isActive: insertConfig.isActive ?? null,
       id,
       createdAt: now,
       updatedAt: now,
@@ -368,21 +390,17 @@ export class MemStorage implements IStorage {
     const pipeline: Pipeline = {
       ...insertPipeline,
       id,
-      name: insertPipeline.name,
-      description: insertPipeline.description || null,
-      version: insertPipeline.version || 1,
-      provider: insertPipeline.provider || "aws",
-      region: insertPipeline.region || "us-east-1",
+      description: insertPipeline.description ?? null,
       status: insertPipeline.status || "draft",
-      projectId: insertPipeline.projectId || null,
-      components: insertPipeline.components || [],
-      connections: insertPipeline.connections || [],
-      snapshot: insertPipeline.snapshot || null,
-      credentialId: insertPipeline.credentialId || null,
-      credentialName: insertPipeline.credentialName || null,
-      credentialUsername: insertPipeline.credentialUsername || null,
-      credentialPassword: insertPipeline.credentialPassword || null,
-      isTemplate: insertPipeline.isTemplate || false,
+      parentPipelineId: insertPipeline.parentPipelineId ?? null,
+      isLatestVersion: insertPipeline.isLatestVersion ?? null,
+      versionNotes: insertPipeline.versionNotes ?? null,
+      snapshot: insertPipeline.snapshot ?? null,
+      credentialId: insertPipeline.credentialId ?? null,
+      credentialName: insertPipeline.credentialName ?? null,
+      credentialUsername: insertPipeline.credentialUsername ?? null,
+      credentialPassword: insertPipeline.credentialPassword ?? null,
+      isTemplate: insertPipeline.isTemplate ?? null,
       createdAt: now,
       updatedAt: now,
     };
@@ -488,6 +506,212 @@ export class MemStorage implements IStorage {
   async deleteCredential(id: number): Promise<boolean> {
     return this.credentials.delete(id);
   }
+
+  // Missing pipeline methods
+  async getPipelineVersions(name: string, userId?: number): Promise<Pipeline[]> {
+    return this.getPipelinesByName(name, userId);
+  }
+
+  async createPipelineVersion(insertPipeline: InsertPipeline, parentId: number): Promise<Pipeline> {
+    const pipeline = await this.createPipeline({
+      ...insertPipeline,
+      parentPipelineId: parentId,
+    });
+    return pipeline;
+  }
+
+  // RBAC - Roles
+  async getRoles(): Promise<Role[]> {
+    return Array.from(this.roles.values());
+  }
+
+  async getRole(id: number): Promise<Role | undefined> {
+    return this.roles.get(id);
+  }
+
+  async createRole(insertRole: InsertRole): Promise<Role> {
+    const id = this.currentRoleId++;
+    const role: Role = {
+      ...insertRole,
+      id,
+      description: insertRole.description ?? null,
+      isSystem: insertRole.isSystem ?? null,
+      createdAt: new Date(),
+    };
+    this.roles.set(id, role);
+    return role;
+  }
+
+  async updateRole(id: number, roleData: Partial<InsertRole>): Promise<Role | undefined> {
+    const role = this.roles.get(id);
+    if (!role) return undefined;
+
+    const updatedRole: Role = { ...role, ...roleData };
+    this.roles.set(id, updatedRole);
+    return updatedRole;
+  }
+
+  async deleteRole(id: number): Promise<boolean> {
+    return this.roles.delete(id);
+  }
+
+  // RBAC - Permissions
+  async getPermissions(): Promise<Permission[]> {
+    return Array.from(this.permissions.values());
+  }
+
+  async getPermission(id: number): Promise<Permission | undefined> {
+    return this.permissions.get(id);
+  }
+
+  async createPermission(insertPermission: InsertPermission): Promise<Permission> {
+    const id = this.currentPermissionId++;
+    const permission: Permission = {
+      ...insertPermission,
+      id,
+      description: insertPermission.description ?? null,
+      createdAt: new Date(),
+    };
+    this.permissions.set(id, permission);
+    return permission;
+  }
+
+  async updatePermission(id: number, permissionData: Partial<InsertPermission>): Promise<Permission | undefined> {
+    const permission = this.permissions.get(id);
+    if (!permission) return undefined;
+
+    const updatedPermission: Permission = { ...permission, ...permissionData };
+    this.permissions.set(id, updatedPermission);
+    return updatedPermission;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    return this.permissions.delete(id);
+  }
+
+  // RBAC - Role Permissions
+  async getRolePermissions(roleId?: number): Promise<RolePermission[]> {
+    const allRolePermissions = Array.from(this.rolePermissions.values());
+    if (roleId) {
+      return allRolePermissions.filter(rp => rp.roleId === roleId);
+    }
+    return allRolePermissions;
+  }
+
+  async createRolePermission(insertRolePermission: InsertRolePermission): Promise<RolePermission> {
+    const id = this.currentRolePermissionId++;
+    const rolePermission: RolePermission = {
+      ...insertRolePermission,
+      id,
+      createdAt: new Date(),
+    };
+    this.rolePermissions.set(id, rolePermission);
+    return rolePermission;
+  }
+
+  async deleteRolePermission(roleId: number, permissionId: number): Promise<boolean> {
+    for (const [id, rp] of Array.from(this.rolePermissions.entries())) {
+      if (rp.roleId === roleId && rp.permissionId === permissionId) {
+        return this.rolePermissions.delete(id);
+      }
+    }
+    return false;
+  }
+
+  // RBAC - User Roles
+  async getUserRoles(userId?: number): Promise<UserRole[]> {
+    const allUserRoles = Array.from(this.userRoles.values());
+    if (userId) {
+      return allUserRoles.filter(ur => ur.userId === userId);
+    }
+    return allUserRoles;
+  }
+
+  async createUserRole(insertUserRole: InsertUserRole): Promise<UserRole> {
+    const id = this.currentUserRoleId++;
+    const userRole: UserRole = {
+      ...insertUserRole,
+      id,
+      createdAt: new Date(),
+    };
+    this.userRoles.set(id, userRole);
+    return userRole;
+  }
+
+  async deleteUserRole(userId: number, roleId: number): Promise<boolean> {
+    for (const [id, ur] of Array.from(this.userRoles.entries())) {
+      if (ur.userId === userId && ur.roleId === roleId) {
+        return this.userRoles.delete(id);
+      }
+    }
+    return false;
+  }
+
+  // RBAC - Resource Permissions
+  async getResourcePermissions(userId?: number, resource?: string): Promise<ResourcePermission[]> {
+    let allResourcePermissions = Array.from(this.resourcePermissions.values());
+    
+    if (userId) {
+      allResourcePermissions = allResourcePermissions.filter(rp => rp.userId === userId);
+    }
+    
+    if (resource) {
+      allResourcePermissions = allResourcePermissions.filter(rp => rp.resource === resource);
+    }
+    
+    return allResourcePermissions;
+  }
+
+  async createResourcePermission(insertResourcePermission: InsertResourcePermission): Promise<ResourcePermission> {
+    const id = this.currentResourcePermissionId++;
+    const resourcePermission: ResourcePermission = {
+      ...insertResourcePermission,
+      id,
+      createdAt: new Date(),
+    };
+    this.resourcePermissions.set(id, resourcePermission);
+    return resourcePermission;
+  }
+
+  async deleteResourcePermission(id: number): Promise<boolean> {
+    return this.resourcePermissions.delete(id);
+  }
+
+  // RBAC - Helper Methods
+  async getUserPermissions(userId: number): Promise<Permission[]> {
+    const userRoles = await this.getUserRoles(userId);
+    const permissions: Permission[] = [];
+    
+    for (const userRole of userRoles) {
+      const rolePermissions = await this.getRolePermissions(userRole.roleId);
+      for (const rolePermission of rolePermissions) {
+        const permission = await this.getPermission(rolePermission.permissionId);
+        if (permission) {
+          permissions.push(permission);
+        }
+      }
+    }
+    
+    return permissions;
+  }
+
+  async hasPermission(userId: number, resource: string, action: string, resourceId?: number): Promise<boolean> {
+    // Check direct resource permissions first
+    const resourcePermissions = await this.getResourcePermissions(userId, resource);
+    const hasDirectPermission = resourcePermissions.some(rp => 
+      rp.action === action && (resourceId === undefined || rp.resourceId === resourceId)
+    );
+    
+    if (hasDirectPermission) {
+      return true;
+    }
+    
+    // Check role-based permissions
+    const userPermissions = await this.getUserPermissions(userId);
+    return userPermissions.some(permission => 
+      permission.resource === resource && permission.action === action
+    );
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -522,7 +746,7 @@ export class DatabaseStorage implements IStorage {
   async updateUser(id: number, userData: Partial<InsertUser>): Promise<User | undefined> {
     const [user] = await db
       .update(users)
-      .set({ ...userData, updatedAt: new Date() })
+      .set(userData)
       .where(eq(users.id, id))
       .returning();
     return user;
@@ -530,7 +754,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Sessions
@@ -557,7 +781,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteSession(id: string): Promise<boolean> {
     const result = await db.delete(sessions).where(eq(sessions.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   async cleanupExpiredSessions(): Promise<void> {
@@ -593,7 +817,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteLdapConfig(id: number): Promise<boolean> {
     const result = await db.delete(ldapConfig).where(eq(ldapConfig.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount || 0) > 0;
   }
 
   // Projects
@@ -989,10 +1213,9 @@ async function initializeRBACSystem(storage: DatabaseStorage) {
     for (const resource of resources) {
       for (const action of actions) {
         await storage.createPermission({
-          name: `${resource}:${action}`,
-          description: `${action} access to ${resource}`,
           resource,
-          action
+          action,
+          description: `${action} access to ${resource}`
         });
       }
     }
