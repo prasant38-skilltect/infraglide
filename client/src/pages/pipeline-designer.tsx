@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import ReactFlow, {
   Node,
@@ -56,6 +56,7 @@ import {
   X,
   Loader2,
   Cloud,
+  ArrowLeft,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -71,6 +72,7 @@ const nodeTypes: NodeTypes = {
 export default function PipelineDesigner() {
   const params = useParams();
   const pipelineId = params.id ? parseInt(params.id) : null;
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const [nodes, setNodes, originalOnNodesChange] = useNodesState([]);
@@ -607,6 +609,10 @@ export default function PipelineDesigner() {
     },
     onError: (error) => {
       console.error("Auto-save failed:", error);
+      // Show more detailed error for debugging
+      if (error instanceof Error) {
+        console.error("Auto-save error details:", error.message);
+      }
     },
   });
 
@@ -1504,6 +1510,15 @@ export default function PipelineDesigner() {
             <div className="bg-gray-100 border-b border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setLocation('/')}
+                    className="text-gray-600 hover:text-gray-800"
+                  >
+                    <ArrowLeft className="w-4 h-4 mr-1" />
+                    Back
+                  </Button>
                   <div className="flex items-center space-x-2">
                     <div className="flex flex-col">
                       <span className="font-medium text-gray-900">
