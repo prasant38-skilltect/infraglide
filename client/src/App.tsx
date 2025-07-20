@@ -55,7 +55,21 @@ function ProtectedRouter() {
     );
   }
 
-  // Show main app with sidebar for authenticated users
+  // Check if current route is pipeline designer (hide sidebar for full-screen canvas)
+  const isPipelinePage = location.startsWith('/pipeline');
+  
+  // Show pipeline designer without sidebar for full-screen canvas experience
+  if (isPipelinePage) {
+    return (
+      <div className="flex h-screen bg-background">
+        <main className="flex-1 overflow-y-auto">
+          <Route path="/pipeline/:id?" component={PipelineDesigner} />
+        </main>
+      </div>
+    );
+  }
+
+  // Show main app with sidebar for all other authenticated pages
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
@@ -63,7 +77,6 @@ function ProtectedRouter() {
         <Switch>
           <Route path="/" component={Dashboard} />
           <Route path="/dashboard" component={Dashboard} />
-          <Route path="/pipeline/:id?" component={PipelineDesigner} />
           <Route path="/my-pipelines" component={MyPipelines} />
           <Route path="/credentials" component={Credentials} />
           <Route path="/hub" component={Hub} />
