@@ -29,7 +29,22 @@ export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
+  userId: integer("user_id").references(() => users.id).notNull(), // Project owner
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Project members table for sharing access
+export const projectMembers = pgTable("project_members", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
   userId: integer("user_id").references(() => users.id).notNull(),
+  roleId: integer("role_id").references(() => roles.id).notNull(), // Project-specific role
+  invitedBy: integer("invited_by").references(() => users.id).notNull(),
+  inviteEmail: text("invite_email").notNull(),
+  status: text("status").notNull().default("pending"), // pending, accepted, rejected
+  joinedAt: timestamp("joined_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -38,7 +53,7 @@ export const pipelines = pgTable("pipelines", {
   name: text("name").notNull(),
   description: text("description"),
   version: integer("version").notNull().default(1),
-  projectId: integer("project_id").references(() => projects.id),
+  projectId: integer("project_id").references(() => projects.id).notNull(), // REQUIRED - all pipelines must belong to a project
   userId: integer("user_id").references(() => users.id).notNull(),
   provider: text("provider").notNull().default("aws"), // aws, gcp, azure
   region: text("region").notNull().default("us-east-1"),
@@ -118,6 +133,7 @@ export const credentials = pgTable("credentials", {
   username: text("username").notNull(),
   password: text("password").notNull(),
   provider: text("provider").notNull(), // AWS, GCP, Azure
+  projectId: integer("project_id").references(() => projects.id).notNull(), // REQUIRED - all credentials must belong to a project
   userId: integer("user_id").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -156,6 +172,18 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   userId: true, // userId will be added by the server from auth context
   createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectMemberSchema = createInsertSchema(projectMembers).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Schema for project invite
+export const projectInviteSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  roleId: z.number().int().positive("Valid role ID is required"),
 });
 
 export const insertPipelineSchema = createInsertSchema(pipelines).omit({
@@ -228,6 +256,7 @@ export type User = typeof users.$inferSelect;
 export type Session = typeof sessions.$inferSelect;
 // LDAP types removed for email-based authentication
 export type Project = typeof projects.$inferSelect;
+export type ProjectMember = typeof projectMembers.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type Deployment = typeof deployments.$inferSelect;
 export type Credential = typeof credentials.$inferSelect;
@@ -240,6 +269,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 // LDAP insert types removed for email-based authentication
 export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;
 export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
 export type InsertCredential = z.infer<typeof insertCredentialSchema>;
@@ -250,5 +280,6 @@ export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type InsertResourcePermission = z.infer<typeof insertResourcePermissionSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type SignupRequest = z.infer<typeof signupSchema>;
+export type ProjectInvite = z.infer<typeof projectInviteSchema>;
 export type ComponentConfig = z.infer<typeof componentConfigSchema>;
 export type PipelineConnection = z.infer<typeof pipelineConnectionSchema>;

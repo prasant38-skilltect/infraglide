@@ -284,11 +284,14 @@ export class MemStorage implements IStorage {
 
   async createProject(insertProject: InsertProject & { userId: number }): Promise<Project> {
     const id = this.currentProjectId++;
+    const now = new Date();
     const project: Project = {
       ...insertProject,
       id,
       description: insertProject.description || null,
-      createdAt: new Date(),
+      isActive: insertProject.isActive ?? true,
+      createdAt: now,
+      updatedAt: now,
     };
     this.projects.set(id, project);
     return project;
@@ -298,7 +301,11 @@ export class MemStorage implements IStorage {
     const project = this.projects.get(id);
     if (!project) return undefined;
 
-    const updatedProject: Project = { ...project, ...insertProject };
+    const updatedProject: Project = { 
+      ...project, 
+      ...insertProject,
+      updatedAt: new Date()
+    };
     this.projects.set(id, updatedProject);
     return updatedProject;
   }
@@ -347,7 +354,7 @@ export class MemStorage implements IStorage {
       description: insertPipeline.description ?? null,
       version: insertPipeline.version || 1,
       status: insertPipeline.status || "draft",
-      projectId: insertPipeline.projectId || null,
+      projectId: insertPipeline.projectId ?? 1, // Default to first project - should be validated by API
       provider: insertPipeline.provider || "aws",
       region: insertPipeline.region || "us-east-1",
       components: insertPipeline.components || {},
@@ -424,7 +431,9 @@ export class MemStorage implements IStorage {
     return updatedDeployment;
   }
 
-  // Credentials
+
+
+  // Credentials  
   async getCredentials(userId?: number): Promise<Credential[]> {
     const allCredentials = Array.from(this.credentials.values());
     if (userId) {

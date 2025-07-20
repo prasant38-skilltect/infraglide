@@ -1,25 +1,47 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import ProjectSelector from "@/components/ui/project-selector";
 
 import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector, Users, Server, Globe, Layers, Activity, TrendingUp, Database, Cloud, Shield, Zap } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
-import type { Pipeline, Deployment, Credential } from "@shared/schema";
+import type { Pipeline, Deployment, Credential, Project } from "@shared/schema";
 
 export default function Dashboard() {
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
+
+  // Get user's projects
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  // Set the first project as default if none selected
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) {
+      setSelectedProjectId(projects[0].id);
+    }
+  }, [projects, selectedProjectId]);
+
+  // Fetch project-specific data only if a project is selected
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery<Pipeline[]>({
-    queryKey: ["/api/pipelines"],
+    queryKey: ["/api/pipelines", selectedProjectId],
+    enabled: !!selectedProjectId,
   });
 
   const { data: deployments = [], isLoading: deploymentsLoading } = useQuery<Deployment[]>({
-    queryKey: ["/api/deployments"],
+    queryKey: ["/api/deployments", selectedProjectId],
+    enabled: !!selectedProjectId,
   });
 
   const { data: credentials = [], isLoading: credentialsLoading } = useQuery<Credential[]>({
-    queryKey: ["/api/credentials"],
+    queryKey: ["/api/credentials", selectedProjectId],
+    enabled: !!selectedProjectId,
   });
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // Calculate metrics
   const totalPipelines = pipelines.length;
@@ -138,14 +160,25 @@ export default function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
-              <p className="text-sm text-gray-600 mt-1">Manage your AWS infrastructure pipelines</p>
+              <p className="text-sm text-gray-600 mt-1">
+                {selectedProject 
+                  ? `Managing infrastructure for project: ${selectedProject.name}`
+                  : "Select a project to view your infrastructure pipelines"
+                }
+              </p>
             </div>
-            <Link href="/pipeline">
-              <Button className="bg-primary hover:bg-blue-600">
-                <Plus className="w-4 h-4 mr-2" />
-                New Pipeline
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <ProjectSelector
+                selectedProjectId={selectedProjectId}
+                onProjectChange={setSelectedProjectId}
+              />
+              <Link href="/pipeline">
+                <Button className="bg-primary hover:bg-blue-600" disabled={!selectedProjectId}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  New Pipeline
+                </Button>
+              </Link>
+            </div>
           </div>
         </header>
 

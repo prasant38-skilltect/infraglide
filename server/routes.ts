@@ -152,13 +152,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Projects routes
+  // Project routes with complete isolation
   app.get("/api/projects", requireAuth, async (req, res) => {
     try {
       const projects = await storage.getProjects(req.user!.id);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.post("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject({ ...validatedData, userId: req.user!.id });
+      res.status(201).json(project);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid project data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create project" });
     }
   });
 
@@ -172,6 +185,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(project);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.put("/api/projects/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertProjectSchema.partial().parse(req.body);
+      
+      const project = await storage.getProject(id);
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      const updatedProject = await storage.updateProject(id, validatedData);
+      res.json(updatedProject);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid project data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const project = await storage.getProject(id);
+      
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+
+      await storage.deleteProject(id);
+      res.json({ message: "Project deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
     }
   });
 
