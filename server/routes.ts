@@ -558,12 +558,14 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  // Credentials routes
+  // Credentials routes - now with project isolation
   app.get("/api/credentials", requireAuth, async (req, res) => {
     try {
-      const credentials = await storage.getCredentials(req.user!.id);
+      const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
+      const credentials = await storage.getCredentials(req.user!.id, projectId);
       res.json(credentials);
     } catch (error) {
+      console.error("Failed to fetch credentials:", error);
       res.status(500).json({ error: "Failed to fetch credentials" });
     }
   });
@@ -577,21 +579,29 @@ This directory was automatically created when the pipeline was saved in InfraGli
       }
       res.json(credential);
     } catch (error) {
+      console.error("Failed to fetch credential:", error);
       res.status(500).json({ error: "Failed to fetch credential" });
     }
   });
 
   app.post("/api/credentials", requireAuth, async (req, res) => {
     try {
+      console.log("Creating credential with data:", req.body);
       const validatedData = insertCredentialSchema.parse(req.body);
       const credentialData = { ...validatedData, userId: req.user!.id };
+      console.log("Validated credential data:", credentialData);
+      
       const credential = await storage.createCredential(credentialData);
+      console.log("Created credential:", credential);
+      
       res.status(201).json(credential);
     } catch (error) {
+      console.error("Credential creation error:", error);
       if (error instanceof z.ZodError) {
+        console.error("Validation errors:", error.errors);
         return res.status(400).json({ error: "Invalid credential data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create credential" });
+      res.status(500).json({ error: "Failed to create credential", details: error.message });
     }
   });
 

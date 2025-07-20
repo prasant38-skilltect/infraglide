@@ -915,9 +915,12 @@ export class DatabaseStorage implements IStorage {
     return deployment || undefined;
   }
 
-  // Credentials
-  async getCredentials(userId?: number): Promise<Credential[]> {
-    if (userId) {
+  // Credentials with project isolation
+  async getCredentials(userId?: number, projectId?: number): Promise<Credential[]> {
+    if (userId && projectId) {
+      return db.select().from(credentials)
+        .where(and(eq(credentials.userId, userId), eq(credentials.projectId, projectId)));
+    } else if (userId) {
       return db.select().from(credentials).where(eq(credentials.userId, userId));
     }
     return db.select().from(credentials);
