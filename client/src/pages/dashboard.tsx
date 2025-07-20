@@ -13,20 +13,15 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 import type { Pipeline, Deployment, Credential, Project } from "@shared/schema";
 
 export default function Dashboard() {
-  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  
+  // Get selected project from localStorage (consistent with other pages)
+  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
 
   // Get user's projects
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
-
-  // Set the first project as default if none selected
-  useEffect(() => {
-    if (!selectedProjectId && projects.length > 0) {
-      setSelectedProjectId(projects[0].id);
-    }
-  }, [projects, selectedProjectId]);
 
   // Fetch project-specific data only if a project is selected
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery<Pipeline[]>({

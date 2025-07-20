@@ -81,11 +81,11 @@ function ProtectedRouter() {
           <Route path="/my-pipelines" component={MyPipelines} />
           <Route path="/credentials" component={Credentials} />
           <Route path="/hub" component={Hub} />
-          <Route path="/architecture" component={Architecture} />
           <Route path="/hld" component={HLD} />
           <Route path="/lld" component={LLD} />
+          <Route path="/architecture" component={Architecture} />
           <Route path="/deployed-resources" component={DeployedResources} />
-          <Route path="/cost-optimization" component={CostOptimization} />
+          <Route path="/cost-optimization/:pipelineId?" component={CostOptimization} />
           <Route path="/access-management" component={AccessManagement} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />

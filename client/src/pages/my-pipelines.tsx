@@ -73,6 +73,9 @@ type SortDirection = "asc" | "desc";
 export default function MyPipelines() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Get selected project from localStorage
+  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
   const [location, setLocation] = useLocation();
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -90,13 +93,15 @@ export default function MyPipelines() {
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [diffPipelineName, setDiffPipelineName] = useState<string>("");
 
-  // Fetch both owned and shared pipelines
+  // Fetch both owned and shared pipelines filtered by selected project
   const { data: ownedPipelines = [], isLoading: isLoadingOwned } = useQuery<Pipeline[]>({
-    queryKey: ["/api/pipelines"],
+    queryKey: ["/api/pipelines", { projectId: selectedProjectId }],
+    queryFn: () => apiRequest(`/api/pipelines?projectId=${selectedProjectId}`),
   });
 
   const { data: sharedPipelines = [], isLoading: isLoadingShared } = useQuery<Pipeline[]>({
-    queryKey: ["/api/shared/pipelines"],
+    queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }],
+    queryFn: () => apiRequest(`/api/shared/pipelines?projectId=${selectedProjectId}`),
   });
 
   // Combine pipelines with ownership indicators
@@ -116,6 +121,7 @@ export default function MyPipelines() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
       toast({
         title: "Pipeline deleted",
         description: "Pipeline has been successfully deleted.",
@@ -142,6 +148,7 @@ export default function MyPipelines() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
       toast({
         title: "Pipeline updated",
         description: "Pipeline name and description have been updated.",

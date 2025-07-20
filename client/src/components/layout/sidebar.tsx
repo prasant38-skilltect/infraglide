@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import AskJaneContent from "@/components/ask-jane-content";
+import SimpleProjectSelector from "@/components/ui/simple-project-selector";
 
 export default function Sidebar() {
   const [location] = useLocation();
@@ -62,6 +63,11 @@ export default function Sidebar() {
             <MessageCircle className="w-5 h-5" />
           </Button>
         </div>
+      </div>
+      
+      {/* Project Selector */}
+      <div className="p-4 border-b border-purple-400/30">
+        <SimpleProjectSelector />
       </div>
 
       {/* Navigation */}

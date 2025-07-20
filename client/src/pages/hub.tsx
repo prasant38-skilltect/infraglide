@@ -56,9 +56,13 @@ export default function Hub() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user's pipelines for publishing
+  // Get selected project from localStorage
+  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
+
+  // Fetch user's pipelines for publishing from selected project
   const { data: userPipelines } = useQuery<Pipeline[]>({
-    queryKey: ["/api/pipelines"],
+    queryKey: ["/api/pipelines", { projectId: selectedProjectId }],
+    queryFn: () => apiRequest(`/api/pipelines?projectId=${selectedProjectId}`),
   });
 
   // Hub pipelines (empty - all demo resources removed)

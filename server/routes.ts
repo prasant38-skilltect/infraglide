@@ -1587,7 +1587,8 @@ What specific cloud service would you like to configure?`
   // Get pipelines shared with current user
   app.get("/api/shared/pipelines", requireAuth, async (req, res) => {
     try {
-      const sharedPipelines = await storage.getPipelinesSharedWithUser(req.user!.id);
+      const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
+      const sharedPipelines = await storage.getPipelinesSharedWithUser(req.user!.id, projectId);
       res.json(sharedPipelines);
     } catch (error) {
       console.error("Failed to fetch shared pipelines:", error);

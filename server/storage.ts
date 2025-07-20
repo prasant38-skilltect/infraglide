@@ -724,7 +724,7 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async getPipelinesSharedWithUser(userId: number): Promise<Pipeline[]> {
+  async getPipelinesSharedWithUser(userId: number, projectId?: number): Promise<Pipeline[]> {
     // For MemStorage, this would return empty array since it's mainly for testing
     return [];
   }
@@ -1209,7 +1209,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(projectShares).where(eq(projectShares.sharedWithUserId, userId));
   }
 
-  async getPipelinesSharedWithUser(userId: number): Promise<Pipeline[]> {
+  async getPipelinesSharedWithUser(userId: number, projectId?: number): Promise<Pipeline[]> {
     const sharedPipelinePermissions = await db.select({
       pipelineId: resourcePermissions.resourceId,
       permission: resourcePermissions.permission
@@ -1227,9 +1227,16 @@ export class DatabaseStorage implements IStorage {
     }
 
     const pipelineIds = sharedPipelinePermissions.map(p => p.pipelineId);
-    const sharedPipelines = await db.select()
+    let query = db.select()
       .from(pipelines)
       .where(inArray(pipelines.id, pipelineIds));
+    
+    // Filter by project if specified
+    if (projectId) {
+      query = query.where(eq(pipelines.projectId, projectId));
+    }
+    
+    const sharedPipelines = await query;
 
     // Add permission info to each pipeline
     return sharedPipelines.map(pipeline => ({
