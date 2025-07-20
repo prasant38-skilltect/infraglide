@@ -23,9 +23,8 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
-      authProvider: "local",
     },
   });
 
@@ -51,7 +50,7 @@ export default function LoginPage() {
 
       toast({
         title: "Login successful",
-        description: `Welcome back, ${data.user.firstName}!`,
+        description: `Welcome back, ${data.user.fullName}!`,
       });
 
       // Redirect to dashboard
@@ -85,37 +84,15 @@ export default function LoginPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
-                name="authProvider"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Authentication Method</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select authentication method" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="local">Local Account</SelectItem>
-                        <SelectItem value="ldap">LDAP/Active Directory</SelectItem>
-                        <SelectItem value="ad">Active Directory</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username or Email</FormLabel>
+                    <FormLabel>Email</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
-                        placeholder="Enter your username or email"
+                        type="email"
+                        placeholder="Enter your email address"
                         disabled={isLoading}
                       />
                     </FormControl>
@@ -187,13 +164,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {form.watch("authProvider") === "local" && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                <strong>Demo Account:</strong> Use username "admin" and password "admin123" to test the application.
-              </p>
-            </div>
-          )}
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>Demo Account:</strong> Use email "admin@infraglide.com" and password "admin123" to test the application.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

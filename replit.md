@@ -126,6 +126,19 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 20, 2025
+- **Converted to Email-Based Authentication System**
+  - Removed all LDAP/Active Directory authentication options from login and registration
+  - Updated login form to use email instead of username for authentication  
+  - Modified signup form to remove username field and use email as primary identifier
+  - Updated authentication schemas to enforce email validation and password confirmation
+  - Cleaned up server authentication service to remove all LDAP integration code
+  - Removed LDAP configuration management from storage interfaces and implementations
+  - Updated demo account instructions to use email format (admin@infraglide.com)
+  - Simplified authentication flow to pure email/password based system
+  - Fixed pipeline creation issues and removed unused LDAP-related imports
+  - Authentication system now fully focused on email-based user management
+
+### January 20, 2025
 - **Implemented One-Click Cloud Cost Optimization Recommendations Feature**
   - Created comprehensive Cost Optimization page with pipeline analysis and smart recommendations
   - Added cost calculation engine for AWS, Azure, and GCP services with realistic pricing models

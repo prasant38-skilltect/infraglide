@@ -5,7 +5,6 @@ import {
   credentials,
   users,
   sessions,
-  ldapConfig,
   roles,
   permissions,
   rolePermissions,
@@ -17,7 +16,6 @@ import {
   type Credential,
   type User,
   type Session,
-  type LdapConfig,
   type Role,
   type Permission,
   type RolePermission,
@@ -29,7 +27,6 @@ import {
   type InsertCredential,
   type InsertUser,
   type InsertSession,
-  type InsertLdapConfig,
   type InsertRole,
   type InsertPermission,
   type InsertRolePermission,
@@ -57,12 +54,7 @@ export interface IStorage {
   deleteSession(id: string): Promise<boolean>;
   cleanupExpiredSessions(): Promise<void>;
 
-  // LDAP Configuration
-  getLdapConfigs(): Promise<LdapConfig[]>;
-  getLdapConfigById(id: number): Promise<LdapConfig | undefined>;
-  createLdapConfig(config: InsertLdapConfig): Promise<LdapConfig>;
-  updateLdapConfig(id: number, config: Partial<InsertLdapConfig>): Promise<LdapConfig | undefined>;
-  deleteLdapConfig(id: number): Promise<boolean>;
+  // LDAP Configuration removed for email-based authentication
 
   // Projects
   getProjects(userId?: number): Promise<Project[]>;
@@ -131,7 +123,7 @@ export interface IStorage {
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private sessions: Map<string, Session>;
-  private ldapConfigs: Map<number, LdapConfig>;
+
   private projects: Map<number, Project>;
   private pipelines: Map<number, Pipeline>;
   private deployments: Map<number, Deployment>;
@@ -142,7 +134,7 @@ export class MemStorage implements IStorage {
   private userRoles: Map<number, UserRole>;
   private resourcePermissions: Map<number, ResourcePermission>;
   private currentUserId: number;
-  private currentLdapConfigId: number;
+
   private currentProjectId: number;
   private currentPipelineId: number;
   private currentDeploymentId: number;
@@ -156,7 +148,7 @@ export class MemStorage implements IStorage {
   constructor() {
     this.users = new Map();
     this.sessions = new Map();
-    this.ldapConfigs = new Map();
+
     this.projects = new Map();
     this.pipelines = new Map();
     this.deployments = new Map();
@@ -167,7 +159,7 @@ export class MemStorage implements IStorage {
     this.userRoles = new Map();
     this.resourcePermissions = new Map();
     this.currentUserId = 1;
-    this.currentLdapConfigId = 1;
+
     this.currentProjectId = 1;
     this.currentPipelineId = 1;
     this.currentDeploymentId = 1;
@@ -270,50 +262,7 @@ export class MemStorage implements IStorage {
   }
 
   // LDAP Configuration methods
-  async getLdapConfigs(): Promise<LdapConfig[]> {
-    return Array.from(this.ldapConfigs.values());
-  }
-
-  async getLdapConfigById(id: number): Promise<LdapConfig | undefined> {
-    return this.ldapConfigs.get(id);
-  }
-
-  async createLdapConfig(insertConfig: InsertLdapConfig): Promise<LdapConfig> {
-    const id = this.currentLdapConfigId++;
-    const now = new Date();
-    const config: LdapConfig = {
-      ...insertConfig,
-      bindDN: insertConfig.bindDN ?? null,
-      bindPassword: insertConfig.bindPassword ?? null,
-      userSearchFilter: insertConfig.userSearchFilter || "(sAMAccountName={{username}})",
-      emailAttribute: insertConfig.emailAttribute ?? null,
-      firstNameAttribute: insertConfig.firstNameAttribute ?? null,
-      lastNameAttribute: insertConfig.lastNameAttribute ?? null,
-      isActive: insertConfig.isActive ?? null,
-      id,
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.ldapConfigs.set(id, config);
-    return config;
-  }
-
-  async updateLdapConfig(id: number, configData: Partial<InsertLdapConfig>): Promise<LdapConfig | undefined> {
-    const config = this.ldapConfigs.get(id);
-    if (!config) return undefined;
-
-    const updatedConfig: LdapConfig = {
-      ...config,
-      ...configData,
-      updatedAt: new Date(),
-    };
-    this.ldapConfigs.set(id, updatedConfig);
-    return updatedConfig;
-  }
-
-  async deleteLdapConfig(id: number): Promise<boolean> {
-    return this.ldapConfigs.delete(id);
-  }
+  // LDAP methods removed - email-based authentication only
 
   // Projects
   async getProjects(userId?: number): Promise<Project[]> {
@@ -391,7 +340,13 @@ export class MemStorage implements IStorage {
       ...insertPipeline,
       id,
       description: insertPipeline.description ?? null,
+      version: insertPipeline.version || 1,
       status: insertPipeline.status || "draft",
+      projectId: insertPipeline.projectId || null,
+      provider: insertPipeline.provider || "aws",
+      region: insertPipeline.region || "us-east-1",
+      components: insertPipeline.components || {},
+      connections: insertPipeline.connections || {},
       parentPipelineId: insertPipeline.parentPipelineId ?? null,
       isLatestVersion: insertPipeline.isLatestVersion ?? null,
       versionNotes: insertPipeline.versionNotes ?? null,
@@ -788,37 +743,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(sessions).where(eq(sessions.expiresAt, new Date()));
   }
 
-  // LDAP Configuration
-  async getLdapConfigs(): Promise<LdapConfig[]> {
-    return db.select().from(ldapConfig);
-  }
-
-  async getLdapConfigById(id: number): Promise<LdapConfig | undefined> {
-    const result = await db.select().from(ldapConfig).where(eq(ldapConfig.id, id));
-    return result[0];
-  }
-
-  async createLdapConfig(insertConfig: InsertLdapConfig): Promise<LdapConfig> {
-    const [config] = await db
-      .insert(ldapConfig)
-      .values(insertConfig)
-      .returning();
-    return config;
-  }
-
-  async updateLdapConfig(id: number, configData: Partial<InsertLdapConfig>): Promise<LdapConfig | undefined> {
-    const [config] = await db
-      .update(ldapConfig)
-      .set({ ...configData, updatedAt: new Date() })
-      .where(eq(ldapConfig.id, id))
-      .returning();
-    return config;
-  }
-
-  async deleteLdapConfig(id: number): Promise<boolean> {
-    const result = await db.delete(ldapConfig).where(eq(ldapConfig.id, id));
-    return (result.rowCount || 0) > 0;
-  }
+  // LDAP Configuration removed for email-based authentication
 
   // Projects
   async getProjects(userId?: number): Promise<Project[]> {

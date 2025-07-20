@@ -24,9 +24,9 @@ export default function SignupPage() {
     resolver: zodResolver(signupSchema),
     defaultValues: {
       email: "",
-      username: "",
       fullName: "",
       password: "",
+      confirmPassword: "",
     },
   });
 
@@ -121,23 +121,7 @@ export default function SignupPage() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="johndoe"
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               <FormField
                 control={form.control}
