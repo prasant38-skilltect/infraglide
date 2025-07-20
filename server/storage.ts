@@ -643,7 +643,7 @@ export class MemStorage implements IStorage {
     }
     
     if (resource) {
-      allResourcePermissions = allResourcePermissions.filter(rp => rp.resource === resource);
+      allResourcePermissions = allResourcePermissions.filter(rp => rp.resourceType === resource);
     }
     
     return allResourcePermissions;
@@ -654,7 +654,7 @@ export class MemStorage implements IStorage {
     const resourcePermission: ResourcePermission = {
       ...insertResourcePermission,
       id,
-      createdAt: new Date(),
+      grantedAt: new Date(),
     };
     this.resourcePermissions.set(id, resourcePermission);
     return resourcePermission;
@@ -1218,7 +1218,7 @@ export class DatabaseStorage implements IStorage {
       .where(
         and(
           eq(resourcePermissions.userId, userId),
-          eq(resourcePermissions.resource, 'pipelines')
+          eq(resourcePermissions.resourceType, 'pipelines')
         )
       );
 
@@ -1244,14 +1244,14 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(resourcePermissions)
       .where(and(
         eq(resourcePermissions.userId, userId), 
-        eq(resourcePermissions.resource, resourceType)
+        eq(resourcePermissions.resourceType, resourceType)
       ));
   }
 
   async getResourcePermissionsByTypeAndId(resourceType: string, resourceId: number): Promise<ResourcePermission[]> {
     return await db.select().from(resourcePermissions)
       .where(and(
-        eq(resourcePermissions.resource, resourceType), 
+        eq(resourcePermissions.resourceType, resourceType), 
         eq(resourcePermissions.resourceId, resourceId)
       ));
   }

@@ -352,8 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: pipeline.provider,
           region: pipeline.region,
           createdAt: new Date().toISOString(),
-          components: pipeline.components,
-          connections: pipeline.connections
+          components: Array.isArray(pipeline.components) ? pipeline.components : [],
+          connections: Array.isArray(pipeline.connections) ? pipeline.connections : []
         };
         
         await fs.writeFile(
@@ -426,8 +426,8 @@ This directory was automatically created when the pipeline was saved in InfraGli
           provider: pipeline.provider,
           region: pipeline.region,
           updatedAt: new Date().toISOString(),
-          components: pipeline.components,
-          connections: pipeline.connections
+          components: Array.isArray(pipeline.components) ? pipeline.components : [],
+          connections: Array.isArray(pipeline.connections) ? pipeline.connections : []
         };
         
         await fs.writeFile(

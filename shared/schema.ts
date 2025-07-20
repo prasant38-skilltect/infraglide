@@ -121,12 +121,12 @@ export const resourcePermissions = pgTable("resource_permissions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
   projectId: integer("project_id").references(() => projects.id).notNull(), // Link to project for easier querying
-  resource: text("resource").notNull(), // projects, pipelines, credentials
+  resourceType: text("resource_type").notNull(), // projects, pipelines, credentials
   resourceId: integer("resource_id").notNull(), // ID of the specific resource
   permission: text("permission").notNull(), // owner, editor, viewer
   grantedBy: integer("granted_by").references(() => users.id).notNull(),
   userEmail: text("user_email").notNull(), // Email of the user being granted access
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
 });
 
 // Project sharing table for easier management
