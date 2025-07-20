@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Sidebar from "@/components/layout/sidebar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -203,8 +203,6 @@ export default function DeployedResources() {
 
   if (!credentials || credentials.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <Sidebar />
         <div className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
             <div className="text-center py-12">
@@ -219,14 +217,10 @@ export default function DeployedResources() {
             </div>
           </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      
       <div className="flex-1 p-8">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
@@ -423,6 +417,5 @@ export default function DeployedResources() {
           )}
         </div>
       </div>
-    </div>
   );
 }

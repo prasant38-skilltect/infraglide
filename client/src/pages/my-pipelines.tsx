@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 
-import Sidebar from "@/components/layout/sidebar";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -468,21 +468,17 @@ export default function MyPipelines() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen">
-        <Sidebar />
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading pipelines...</p>
           </div>
         </div>
-      </div>
     );
   }
 
   return (
-    <div className="flex h-screen">
-      <Sidebar />
+    <>
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
@@ -843,7 +839,7 @@ export default function MyPipelines() {
           </Card>
         </div>
       </div>
-      
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
         <AlertDialogContent>
@@ -927,7 +923,6 @@ export default function MyPipelines() {
         onClose={() => setDiffDialogOpen(false)}
         pipelineName={diffPipelineName}
       />
-
-    </div>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import Sidebar from "@/components/layout/sidebar";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -111,12 +111,9 @@ export default function LLD() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex">
-        <Sidebar />
         <div className="flex-1 p-8">
           <div className="text-center">Loading pipelines...</div>
         </div>
-      </div>
     );
   }
 
@@ -126,9 +123,6 @@ export default function LLD() {
   const connectionDetails = getConnectionDetails(connections, components);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      <Sidebar />
-      
       <div className="flex-1 p-8">
         <div className="max-w-6xl mx-auto space-y-6">
           {/* Header */}
@@ -307,6 +301,5 @@ export default function LLD() {
           )}
         </div>
       </div>
-    </div>
   );
 }

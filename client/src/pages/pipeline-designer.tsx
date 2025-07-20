@@ -16,7 +16,7 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-import Sidebar from "@/components/layout/sidebar";
+
 import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
 import ConsoleLog from "@/components/ui/console-log";
@@ -1582,7 +1582,7 @@ export default function PipelineDesigner() {
         onClose={() => setShowPublishModal(false)}
         currentPipelineId={currentPipelineId}
         currentPipelineName={pipelineName}
-        currentVersion={currentVersion}
+        currentVersion={pipeline?.version || 1}
       />
     </div>
   );
