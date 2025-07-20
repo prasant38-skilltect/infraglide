@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import ProjectSelector from "@/components/ui/project-selector";
+
 import ShareProjectModal from "@/components/modals/share-project-modal";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -185,10 +185,6 @@ export default function Dashboard() {
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <ProjectSelector
-                selectedProjectId={selectedProjectId}
-                onProjectChange={setSelectedProjectId}
-              />
               {selectedProject && (
                 <Button 
                   variant="outline"
