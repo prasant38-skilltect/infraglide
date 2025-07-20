@@ -63,7 +63,7 @@ export const pipelines = pgTable("pipelines", {
   credentialPassword: text("credential_password"),
   isTemplate: boolean("is_template").default(false),
   status: text("status").notNull().default("draft"), // draft, deployed, failed
-  parentPipelineId: integer("parent_pipeline_id").references(() => pipelines.id),
+  parentPipelineId: integer("parent_pipeline_id"),
   isLatestVersion: boolean("is_latest_version").default(true),
   versionNotes: text("version_notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

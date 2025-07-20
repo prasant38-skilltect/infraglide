@@ -37,7 +37,7 @@ import {
   type InsertResourcePermission
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -633,12 +633,9 @@ export class DatabaseStorage implements IStorage {
 
   // Pipelines
   async getPipelines(projectId?: number, userId?: number): Promise<Pipeline[]> {
-    let query = db.select().from(pipelines);
-    
     if (projectId && userId) {
       return db.select().from(pipelines)
-        .where(eq(pipelines.projectId, projectId))
-        .where(eq(pipelines.userId, userId));
+        .where(and(eq(pipelines.projectId, projectId), eq(pipelines.userId, userId)));
     } else if (projectId) {
       return db.select().from(pipelines).where(eq(pipelines.projectId, projectId));
     } else if (userId) {
@@ -656,21 +653,21 @@ export class DatabaseStorage implements IStorage {
   async getPipelinesByName(name: string, userId?: number): Promise<Pipeline[]> {
     if (userId) {
       return db.select().from(pipelines)
-        .where(eq(pipelines.name, name))
-        .where(eq(pipelines.userId, userId));
+        .where(and(eq(pipelines.name, name), eq(pipelines.userId, userId)));
     }
     return db.select().from(pipelines).where(eq(pipelines.name, name));
   }
 
   async getPipelineVersions(name: string, userId?: number): Promise<Pipeline[]> {
-    let query = db.select().from(pipelines).where(eq(pipelines.name, name));
-    
     if (userId) {
-      query = query.where(eq(pipelines.userId, userId));
+      return db.select().from(pipelines)
+        .where(and(eq(pipelines.name, name), eq(pipelines.userId, userId)))
+        .orderBy(desc(pipelines.version));
     }
     
-    const result = await query.orderBy(desc(pipelines.version));
-    return result;
+    return db.select().from(pipelines)
+      .where(eq(pipelines.name, name))
+      .orderBy(desc(pipelines.version));
   }
 
   async createPipelineVersion(insertPipeline: InsertPipeline, parentId: number): Promise<Pipeline> {
