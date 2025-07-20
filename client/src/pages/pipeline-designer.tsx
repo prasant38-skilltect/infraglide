@@ -55,6 +55,7 @@ import {
   Menu,
   X,
   Loader2,
+  Cloud,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -1276,6 +1277,15 @@ export default function PipelineDesigner() {
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Logo and Brand */}
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{
+                  background: 'rgb(138, 83, 214)'
+                }}>
+                  <Cloud className="text-white w-5 h-5" />
+                </div>
+                <div className="border-r border-gray-300 h-8"></div>
+              </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
                   Pipeline Designer

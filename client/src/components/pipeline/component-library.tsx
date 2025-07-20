@@ -24,6 +24,8 @@ import {
   List,
   Search,
   Filter,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 
 const awsComponents = [
@@ -157,6 +159,7 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
@@ -255,48 +258,68 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
 
     return (
       <div className="space-y-4">
-        {filtered.map((category) => (
-          <div key={category.category}>
-            <h4 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: colors.icon }}>
-              {category.category}
-              <Badge variant="secondary" className="text-xs">
-                {category.items.length}
-              </Badge>
-            </h4>
-            <div className="grid grid-cols-1 gap-2">
-              {category.items.map((component) => {
-                const Icon = component.icon;
-                return (
-                  <div
-                    key={component.type}
-                    className="p-3 rounded-lg cursor-move transition-all duration-200 bg-white shadow-sm hover:shadow-md"
-                    style={{
-                      border: `1px solid ${colors.border}`,
-                      backgroundColor: colors.bg
-                    }}
-                    draggable
-                    onDragStart={(event) => onDragStart(event, component.type)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = `0 4px 12px ${colors.border}20`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = '';
-                      e.currentTarget.style.boxShadow = '';
-                    }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className="w-4 h-4" style={{ color: colors.icon }} />
-                      <div className="text-sm font-medium text-gray-800">
-                        {component.name}
+        {filtered.map((category) => {
+          const isCollapsed = collapsedCategories.has(category.category);
+          const toggleCollapse = () => {
+            const newCollapsed = new Set(collapsedCategories);
+            if (isCollapsed) {
+              newCollapsed.delete(category.category);
+            } else {
+              newCollapsed.add(category.category);
+            }
+            setCollapsedCategories(newCollapsed);
+          };
+
+          return (
+            <div key={category.category}>
+              <button
+                onClick={toggleCollapse}
+                className="w-full text-sm font-medium mb-3 flex items-center gap-2 hover:opacity-70 transition-opacity"
+                style={{ color: colors.icon }}
+              >
+                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {category.category}
+                <Badge variant="secondary" className="text-xs">
+                  {category.items.length}
+                </Badge>
+              </button>
+              {!isCollapsed && (
+                <div className="grid grid-cols-1 gap-2">
+                  {category.items.map((component) => {
+                    const Icon = component.icon;
+                    return (
+                      <div
+                        key={component.type}
+                        className="p-3 rounded-lg cursor-move transition-all duration-200 bg-white shadow-sm hover:shadow-md"
+                        style={{
+                          border: `1px solid ${colors.border}`,
+                          backgroundColor: colors.bg
+                        }}
+                        draggable
+                        onDragStart={(event) => onDragStart(event, component.type)}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = `0 4px 12px ${colors.border}20`;
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.transform = '';
+                          e.currentTarget.style.boxShadow = '';
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Icon className="w-4 h-4" style={{ color: colors.icon }} />
+                          <div className="text-sm font-medium text-gray-800">
+                            {component.name}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     );
   };
@@ -307,7 +330,7 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
 
   return (
     <>
-      <div className="w-80 bg-white flex flex-col shadow-lg">
+      <div className="w-96 bg-white flex flex-col shadow-lg">
         <div className="p-4 border-b" style={{
           background: 'linear-gradient(to right, rgba(138, 83, 214, 0.1), rgba(138, 83, 214, 0.05))',
           borderBottomColor: 'rgb(138, 83, 214)'
