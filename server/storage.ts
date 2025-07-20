@@ -121,6 +121,16 @@ export interface IStorage {
   // RBAC - Helper Methods
   getUserPermissions(userId: number): Promise<Permission[]>;
   hasPermission(userId: number, resource: string, action: string, resourceId?: number): Promise<boolean>;
+
+  // Project sharing methods
+  createProjectShare(data: InsertProjectShare): Promise<ProjectShare>;
+  getProjectShares(projectId: number): Promise<ProjectShare[]>;
+  getProjectsSharedWithUser(userId: number): Promise<ProjectShare[]>;
+  deleteProjectShare(id: number): Promise<boolean>;
+
+  // Resource permission methods for individual resource sharing
+  getUserResourcePermissions(userId: number, resourceType: string): Promise<ResourcePermission[]>;
+  getResourcePermissionsByTypeAndId(resourceType: string, resourceId: number): Promise<ResourcePermission[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -136,7 +146,9 @@ export class MemStorage implements IStorage {
   private rolePermissions: Map<number, RolePermission>;
   private userRoles: Map<number, UserRole>;
   private resourcePermissions: Map<number, ResourcePermission>;
+  private projectShares: Map<number, ProjectShare>;
   private currentUserId: number;
+  private currentProjectShareId: number;
 
   private currentProjectId: number;
   private currentPipelineId: number;
@@ -161,7 +173,9 @@ export class MemStorage implements IStorage {
     this.rolePermissions = new Map();
     this.userRoles = new Map();
     this.resourcePermissions = new Map();
+    this.projectShares = new Map();
     this.currentUserId = 1;
+    this.currentProjectShareId = 1;
 
     this.currentProjectId = 1;
     this.currentPipelineId = 1;
@@ -360,8 +374,8 @@ export class MemStorage implements IStorage {
       projectId: insertPipeline.projectId ?? 1, // Default to first project - should be validated by API
       provider: insertPipeline.provider || "aws",
       region: insertPipeline.region || "us-east-1",
-      components: insertPipeline.components || {},
-      connections: insertPipeline.connections || {},
+      components: Array.isArray(insertPipeline.components) ? insertPipeline.components : (insertPipeline.components || []),
+      connections: Array.isArray(insertPipeline.connections) ? insertPipeline.connections : (insertPipeline.connections || []),
       parentPipelineId: insertPipeline.parentPipelineId ?? null,
       isLatestVersion: insertPipeline.isLatestVersion ?? null,
       versionNotes: insertPipeline.versionNotes ?? null,
@@ -682,6 +696,47 @@ export class MemStorage implements IStorage {
     const userPermissions = await this.getUserPermissions(userId);
     return userPermissions.some(permission => 
       permission.resource === resource && permission.action === action
+    );
+  }
+
+  // Project sharing methods implementation
+  async createProjectShare(data: InsertProjectShare): Promise<ProjectShare> {
+    const id = this.currentProjectShareId++;
+    const share: ProjectShare = {
+      ...data,
+      id,
+      createdAt: new Date(),
+    };
+    this.projectShares.set(id, share);
+    return share;
+  }
+
+  async getProjectShares(projectId: number): Promise<ProjectShare[]> {
+    return Array.from(this.projectShares.values()).filter(
+      share => share.projectId === projectId
+    );
+  }
+
+  async getProjectsSharedWithUser(userId: number): Promise<ProjectShare[]> {
+    return Array.from(this.projectShares.values()).filter(
+      share => share.sharedWithUserId === userId
+    );
+  }
+
+  async deleteProjectShare(id: number): Promise<boolean> {
+    return this.projectShares.delete(id);
+  }
+
+  // Resource permission methods for individual resource sharing
+  async getUserResourcePermissions(userId: number, resourceType: string): Promise<ResourcePermission[]> {
+    return Array.from(this.resourcePermissions.values()).filter(
+      perm => perm.userId === userId && perm.resource === resourceType
+    );
+  }
+
+  async getResourcePermissionsByTypeAndId(resourceType: string, resourceId: number): Promise<ResourcePermission[]> {
+    return Array.from(this.resourcePermissions.values()).filter(
+      perm => perm.resource === resourceType && perm.resourceId === resourceId
     );
   }
 }
@@ -1141,6 +1196,28 @@ export class DatabaseStorage implements IStorage {
     }
     
     return false;
+  }
+
+  // Project sharing methods - Database implementation
+  async getProjectsSharedWithUser(userId: number): Promise<ProjectShare[]> {
+    return await db.select().from(projectShares).where(eq(projectShares.sharedWithUserId, userId));
+  }
+
+  // Resource permission methods for individual resource sharing
+  async getUserResourcePermissions(userId: number, resourceType: string): Promise<ResourcePermission[]> {
+    return await db.select().from(resourcePermissions)
+      .where(and(
+        eq(resourcePermissions.userId, userId), 
+        eq(resourcePermissions.resource, resourceType)
+      ));
+  }
+
+  async getResourcePermissionsByTypeAndId(resourceType: string, resourceId: number): Promise<ResourcePermission[]> {
+    return await db.select().from(resourcePermissions)
+      .where(and(
+        eq(resourcePermissions.resource, resourceType), 
+        eq(resourcePermissions.resourceId, resourceId)
+      ));
   }
 }
 

@@ -125,18 +125,25 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### January 20, 2025 - Complete RBAC System Implementation
-- **Successfully Implemented Role-Based Access Control (RBAC) with Project Sharing**
+### January 20, 2025 - Complete RBAC System Implementation with Granular Resource Sharing
+- **Successfully Implemented Full Role-Based Access Control (RBAC) with Multi-Level Resource Sharing**
   - Added comprehensive database schema with `project_shares` and `resource_permissions` tables for granular access control
   - Created ShareProjectModal component for email-based user invitations with viewer/editor permission levels
-  - Implemented backend API routes `/api/projects/:id/share`, `/api/projects/:id/shares`, and DELETE endpoints for share management
-  - Enhanced storage methods with `createProjectShare`, `getProjectShares`, and `deleteProjectShare` functionality
-  - Fixed LSP errors by adding missing imports for `projectShares`, `InsertProjectShare`, and `ProjectShare` types
-  - Added Share Project button to dashboard header that opens modal for project collaboration
-  - Users become default owners of projects they create with automatic share record creation
-  - System now supports complete project isolation with email-based user sharing and role management
-  - Demo account (admin@infraglide.com / admin123) ready for testing project sharing functionality
-  - RBAC system includes comprehensive permission checking for project access and resource management
+  - Implemented backend API routes `/api/projects/:id/share`, `/api/projects/:id/shares`, and DELETE endpoints for project share management
+  - **Added Individual Resource Sharing System for Pipelines and Credentials**
+    - Implemented `/api/resources/:type/:id/share` endpoint for sharing individual pipelines and credentials with specific users
+    - Added `/api/resources/:type/:id/shares` endpoint to view resource-specific permission lists
+    - Created `/api/shared/projects` endpoint to fetch all projects shared with current user
+    - Enhanced project selector to display both owned projects and shared projects with permission badges
+    - Users can now share individual resources (pipelines/credentials) independent of project-level access
+  - Fixed all LSP errors by adding missing imports and implementing complete storage interface methods
+  - Enhanced storage methods with `createProjectShare`, `getProjectShares`, `deleteProjectShare`, and resource permission methods
+  - Fixed credential creation issues with proper project ID validation and comprehensive error logging
+  - Added comprehensive project isolation with email-based user sharing and granular role management
+  - Users become default owners of projects they create with automatic ownership records
+  - System now supports complete multi-level resource isolation: project-level AND individual resource-level sharing
+  - Demo account (admin@infraglide.com / admin123) ready for testing comprehensive RBAC and resource sharing functionality
+  - RBAC system includes comprehensive permission checking for project access, pipeline sharing, and credential management
 
 ### January 20, 2025 - Complete Project-Based Infrastructure Management System
 - **Successfully Implemented Complete Project-Based Resource Isolation System**

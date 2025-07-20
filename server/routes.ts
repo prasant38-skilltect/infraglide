@@ -587,6 +587,12 @@ This directory was automatically created when the pipeline was saved in InfraGli
   app.post("/api/credentials", requireAuth, async (req, res) => {
     try {
       console.log("Creating credential with data:", req.body);
+      
+      // Ensure projectId is provided and validate
+      if (!req.body.projectId) {
+        return res.status(400).json({ error: "Project ID is required for credential creation" });
+      }
+      
       const validatedData = insertCredentialSchema.parse(req.body);
       const credentialData = { ...validatedData, userId: req.user!.id };
       console.log("Validated credential data:", credentialData);
@@ -1461,6 +1467,93 @@ What specific cloud service would you like to configure?`
     } catch (error) {
       console.error("Failed to delete project share:", error);
       res.status(500).json({ error: "Failed to delete project share" });
+    }
+  });
+
+  // Resource sharing endpoints for individual pipelines and credentials
+  app.post("/api/resources/:type/:id/share", requireAuth, async (req, res) => {
+    try {
+      const resourceType = req.params.type; // 'pipelines' or 'credentials'
+      const resourceId = parseInt(req.params.id);
+      const { userEmail, permission } = req.body;
+
+      // Validate resource type
+      if (!['pipelines', 'credentials'].includes(resourceType)) {
+        return res.status(400).json({ error: "Invalid resource type" });
+      }
+
+      // Check if user owns the resource
+      let resource;
+      if (resourceType === 'pipelines') {
+        resource = await storage.getPipeline(resourceId);
+      } else {
+        resource = await storage.getCredential(resourceId);
+      }
+
+      if (!resource || resource.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Resource not found or access denied" });
+      }
+
+      // Find user by email
+      const sharedWithUser = await storage.getUserByEmail(userEmail);
+      if (!sharedWithUser) {
+        return res.status(404).json({ error: "User not found with that email" });
+      }
+
+      // Create resource permission
+      const resourcePermission = await storage.createResourcePermission({
+        userId: sharedWithUser.id,
+        projectId: resource.projectId || 1,
+        resource: resourceType,
+        resourceId,
+        permission,
+        grantedBy: req.user!.id,
+        userEmail,
+      });
+
+      res.status(201).json(resourcePermission);
+    } catch (error) {
+      console.error("Resource sharing error:", error);
+      res.status(500).json({ error: "Failed to share resource" });
+    }
+  });
+
+  // Get resources shared with current user
+  app.get("/api/shared/projects", requireAuth, async (req, res) => {
+    try {
+      const sharedProjects = await storage.getProjectsSharedWithUser(req.user!.id);
+      
+      // Get full project details for each shared project
+      const projectDetails = await Promise.all(
+        sharedProjects.map(async (share) => {
+          const project = await storage.getProject(share.projectId);
+          return {
+            ...project,
+            permission: share.permission,
+            sharedBy: share.sharedBy,
+            sharedAt: share.createdAt
+          };
+        })
+      );
+
+      res.json(projectDetails);
+    } catch (error) {
+      console.error("Failed to fetch shared projects:", error);
+      res.status(500).json({ error: "Failed to fetch shared projects" });
+    }
+  });
+
+  // Get specific resource permissions  
+  app.get("/api/resources/:type/:id/shares", requireAuth, async (req, res) => {
+    try {
+      const resourceType = req.params.type;
+      const resourceId = parseInt(req.params.id);
+
+      const permissions = await storage.getResourcePermissionsByTypeAndId(resourceType, resourceId);
+      res.json(permissions);
+    } catch (error) {
+      console.error("Failed to fetch resource permissions:", error);
+      res.status(500).json({ error: "Failed to fetch resource permissions" });
     }
   });
 

@@ -30,10 +30,17 @@ export default function ProjectSelector({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Fetch user's projects
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
+  // Fetch user's projects and shared projects
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
+
+  const { data: sharedProjects = [], isLoading: sharedLoading } = useQuery<Project[]>({
+    queryKey: ["/api/shared/projects"],
+  });
+
+  const isLoading = projectsLoading || sharedLoading;
+  const allProjects = [...projects, ...sharedProjects];
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -62,7 +69,7 @@ export default function ProjectSelector({
     },
   });
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const selectedProject = allProjects.find(p => p.id === selectedProjectId);
 
   const handleCreateProject = async (data: { name: string; description: string }) => {
     await createProjectMutation.mutateAsync(data);
