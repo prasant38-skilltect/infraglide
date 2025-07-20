@@ -1557,6 +1557,44 @@ What specific cloud service would you like to configure?`
     }
   });
 
+  // Delete resource permission (remove sharing)
+  app.delete("/api/resources/:type/:id/shares/:shareId", requireAuth, async (req, res) => {
+    try {
+      const resourceType = req.params.type;
+      const resourceId = parseInt(req.params.id);
+      const shareId = parseInt(req.params.shareId);
+
+      // Verify user owns the resource or is the one who granted access
+      let resource;
+      if (resourceType === 'pipelines') {
+        resource = await storage.getPipeline(resourceId);
+      } else {
+        resource = await storage.getCredential(resourceId);
+      }
+
+      if (!resource || resource.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Resource not found or access denied" });
+      }
+
+      await storage.deleteResourcePermission(shareId);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to remove resource permission:", error);
+      res.status(500).json({ error: "Failed to remove resource permission" });
+    }
+  });
+
+  // Get pipelines shared with current user
+  app.get("/api/shared/pipelines", requireAuth, async (req, res) => {
+    try {
+      const sharedPipelines = await storage.getPipelinesSharedWithUser(req.user!.id);
+      res.json(sharedPipelines);
+    } catch (error) {
+      console.error("Failed to fetch shared pipelines:", error);
+      res.status(500).json({ error: "Failed to fetch shared pipelines" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

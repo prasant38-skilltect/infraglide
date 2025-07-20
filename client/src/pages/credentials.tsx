@@ -40,10 +40,15 @@ export default function Credentials() {
     username: "",
     password: "",
     provider: "",
+    projectId: null as number | null,
   });
 
+  // Get selected project from localStorage
+  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
+
   const { data: credentials = [], isLoading } = useQuery<Credential[]>({
-    queryKey: ["/api/credentials"],
+    queryKey: ["/api/credentials", { projectId: selectedProjectId }],
+    queryFn: () => apiRequest(`/api/credentials?projectId=${selectedProjectId}`),
   });
 
   const createCredentialMutation = useMutation({
@@ -127,13 +132,18 @@ export default function Credentials() {
       username: "",
       password: "",
       provider: "",
+      projectId: null,
     });
     setShowPassword(false);
     setShowEditPassword(false);
   };
 
   const handleCreate = () => {
-    createCredentialMutation.mutate(formData);
+    const credentialData = {
+      ...formData,
+      projectId: selectedProjectId,
+    };
+    createCredentialMutation.mutate(credentialData);
   };
 
   const handleEdit = (credential: Credential) => {
@@ -143,6 +153,7 @@ export default function Credentials() {
       username: credential.username,
       password: credential.password,
       provider: credential.provider,
+      projectId: credential.projectId,
     });
     setShowEditModal(true);
   };

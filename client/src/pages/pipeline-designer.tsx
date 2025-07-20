@@ -29,6 +29,7 @@ import AddCredentialModal from "@/components/modals/add-credential-modal";
 import ImportPipelineModal from "@/components/modals/import-pipeline-modal";
 import PipelineExitDialog from "@/components/modals/pipeline-exit-dialog";
 import PublishPipelineModal from "@/components/publish-pipeline-modal";
+import SharePipelineModal from "@/components/modals/share-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -57,6 +58,7 @@ import {
   Loader2,
   Cloud,
   ArrowLeft,
+  Share2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -119,6 +121,7 @@ export default function PipelineDesigner() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
@@ -1719,6 +1722,16 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => setShowShareModal(true)}
+                      disabled={!currentPipelineId}
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+                    >
+                      <Share2 className="w-4 h-4 mr-1" />
+                      Share
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => setShowPublishModal(true)}
                       className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200"
                     >
@@ -1904,6 +1917,15 @@ export default function PipelineDesigner() {
         currentPipelineName={pipelineName}
         currentVersion={pipeline?.version || 1}
       />
+
+      {currentPipelineId && (
+        <SharePipelineModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          pipelineId={currentPipelineId}
+          pipelineName={pipelineName}
+        />
+      )}
     </>
   );
 }

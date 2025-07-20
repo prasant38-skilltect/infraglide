@@ -90,9 +90,23 @@ export default function MyPipelines() {
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [diffPipelineName, setDiffPipelineName] = useState<string>("");
 
-  const { data: pipelines = [], isLoading } = useQuery<Pipeline[]>({
+  // Fetch both owned and shared pipelines
+  const { data: ownedPipelines = [], isLoading: isLoadingOwned } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
+
+  const { data: sharedPipelines = [], isLoading: isLoadingShared } = useQuery<Pipeline[]>({
+    queryKey: ["/api/shared/pipelines"],
+  });
+
+  // Combine pipelines with ownership indicators
+  const pipelines = useMemo(() => {
+    const owned = ownedPipelines.map(p => ({ ...p, isOwned: true, isShared: false }));
+    const shared = sharedPipelines.map(p => ({ ...p, isOwned: false, isShared: true }));
+    return [...owned, ...shared];
+  }, [ownedPipelines, sharedPipelines]);
+
+  const isLoading = isLoadingOwned || isLoadingShared;
 
   // Delete pipeline mutation
   const deletePipelineMutation = useMutation({

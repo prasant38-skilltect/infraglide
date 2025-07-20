@@ -37,7 +37,7 @@ import {
   type InsertProjectShare
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -126,6 +126,7 @@ export interface IStorage {
   createProjectShare(data: InsertProjectShare): Promise<ProjectShare>;
   getProjectShares(projectId: number): Promise<ProjectShare[]>;
   getProjectsSharedWithUser(userId: number): Promise<ProjectShare[]>;
+  getPipelinesSharedWithUser(userId: number): Promise<Pipeline[]>;
   deleteProjectShare(id: number): Promise<boolean>;
 
   // Resource permission methods for individual resource sharing
@@ -723,6 +724,11 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getPipelinesSharedWithUser(userId: number): Promise<Pipeline[]> {
+    // For MemStorage, this would return empty array since it's mainly for testing
+    return [];
+  }
+
   async deleteProjectShare(id: number): Promise<boolean> {
     return this.projectShares.delete(id);
   }
@@ -1201,6 +1207,36 @@ export class DatabaseStorage implements IStorage {
   // Project sharing methods - Database implementation
   async getProjectsSharedWithUser(userId: number): Promise<ProjectShare[]> {
     return await db.select().from(projectShares).where(eq(projectShares.sharedWithUserId, userId));
+  }
+
+  async getPipelinesSharedWithUser(userId: number): Promise<Pipeline[]> {
+    const sharedPipelinePermissions = await db.select({
+      pipelineId: resourcePermissions.resourceId,
+      permission: resourcePermissions.permission
+    })
+      .from(resourcePermissions)
+      .where(
+        and(
+          eq(resourcePermissions.userId, userId),
+          eq(resourcePermissions.resource, 'pipelines')
+        )
+      );
+
+    if (sharedPipelinePermissions.length === 0) {
+      return [];
+    }
+
+    const pipelineIds = sharedPipelinePermissions.map(p => p.pipelineId);
+    const sharedPipelines = await db.select()
+      .from(pipelines)
+      .where(inArray(pipelines.id, pipelineIds));
+
+    // Add permission info to each pipeline
+    return sharedPipelines.map(pipeline => ({
+      ...pipeline,
+      permission: sharedPipelinePermissions.find(p => p.pipelineId === pipeline.id)?.permission || 'viewer',
+      isShared: true
+    }));
   }
 
   // Resource permission methods for individual resource sharing
