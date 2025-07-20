@@ -42,18 +42,14 @@ export class AuthenticationService implements AuthService {
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(userData.password, 12);
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
 
     // Create user
     const insertUserData: InsertUser = {
       email: userData.email,
       username: userData.username,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      passwordHash,
-      authProvider: "local",
-      isActive: true,
-      isAdmin: false,
+      fullName: userData.fullName,
+      password: hashedPassword,
     };
 
     const user = await this.storage.createUser(insertUserData);
@@ -65,19 +61,10 @@ export class AuthenticationService implements AuthService {
   }
 
   async login(loginData: LoginRequest): Promise<{ user: User; token: string; session: Session }> {
-    let user: User;
+    // For now, only support local authentication
+    const user = await this.authenticateLocal(loginData.username, loginData.password);
 
-    if (loginData.authProvider === "local") {
-      user = await this.authenticateLocal(loginData.username, loginData.password);
-    } else if (loginData.authProvider === "ldap" || loginData.authProvider === "ad") {
-      user = await this.authenticateLDAP(loginData.username, loginData.password);
-    } else {
-      throw new Error("Invalid authentication provider");
-    }
-
-    // Update last login
-    await this.storage.updateUser(user.id, { lastLoginAt: new Date() });
-    user.lastLoginAt = new Date();
+    // Note: Last login tracking removed due to simplified schema
 
     // Create session and token
     const { token, session } = await this.createUserSession(user);
@@ -100,7 +87,7 @@ export class AuthenticationService implements AuthService {
     }
 
     const user = await this.storage.getUserById(session.userId);
-    return user?.isActive ? user : null;
+    return user || null;
   }
 
   async verifyToken(token: string): Promise<{ userId: number } | null> {
@@ -115,19 +102,14 @@ export class AuthenticationService implements AuthService {
   private async authenticateLocal(username: string, password: string): Promise<User> {
     const users = await this.storage.getUsers();
     const user = users.find(u => 
-      (u.username === username || u.email === username) && 
-      u.authProvider === "local"
+      u.username === username || u.email === username
     );
 
-    if (!user || !user.passwordHash) {
+    if (!user || !user.password) {
       throw new Error("Invalid username or password");
     }
 
-    if (!user.isActive) {
-      throw new Error("Account is disabled");
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.passwordHash);
+    const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
       throw new Error("Invalid username or password");
     }

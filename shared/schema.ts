@@ -7,15 +7,9 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   email: text("email").notNull().unique(),
   username: text("username").notNull().unique(),
-  firstName: text("first_name").notNull(),
-  lastName: text("last_name").notNull(),
-  passwordHash: text("password_hash"), // null for LDAP users
-  isActive: boolean("is_active").default(true),
-  isAdmin: boolean("is_admin").default(false),
-  authProvider: text("auth_provider").notNull().default("local"), // local, ldap, ad
-  lastLoginAt: timestamp("last_login_at"),
+  fullName: text("full_name").notNull(),
+  password: text("password").notNull(), // hashed password
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 export const sessions = pgTable("sessions", {
@@ -118,6 +112,12 @@ export const pipelineConnectionSchema = z.object({
   type: z.string().optional(),
 });
 
+// User schemas
+export const insertUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
@@ -140,13 +140,6 @@ export const insertCredentialSchema = createInsertSchema(credentials).omit({
   updatedAt: true,
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  lastLoginAt: true,
-});
-
 export const insertSessionSchema = createInsertSchema(sessions).omit({
   createdAt: true,
 });
@@ -160,14 +153,12 @@ export const insertLdapConfigSchema = createInsertSchema(ldapConfig).omit({
 export const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
-  authProvider: z.enum(["local", "ldap", "ad"]).default("local"),
 });
 
 export const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
   username: z.string().min(3, "Username must be at least 3 characters"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
+  fullName: z.string().min(1, "Full name is required"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 

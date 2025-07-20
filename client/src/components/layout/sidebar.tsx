@@ -107,7 +107,7 @@ export default function Sidebar() {
           </div>
           <div className="flex-1">
             <p className="text-sm font-medium text-purple-100">
-              {user ? `${user.firstName} ${user.lastName}` : "User"}
+              {user ? user.fullName : "User"}
             </p>
             <p className="text-xs text-purple-300">
               {user?.email || "user@example.com"}
