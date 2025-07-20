@@ -1388,6 +1388,82 @@ What specific cloud service would you like to configure?`
     }
   });
 
+  // Project sharing routes - RBAC functionality
+  app.post("/api/projects/:id/share", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const { userEmail, permission } = req.body;
+
+      // Verify project ownership or admin permissions
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(403).json({ error: "Access denied. Only project owners can share projects." });
+      }
+
+      // Find user by email
+      const targetUser = await storage.getUserByEmail(userEmail);
+      if (!targetUser) {
+        return res.status(404).json({ error: "User not found with that email address" });
+      }
+
+      // Create project share record
+      const shareData = {
+        projectId,
+        sharedWithUserId: targetUser.id,
+        sharedWithEmail: userEmail,
+        permission,
+        sharedBy: req.user!.id
+      };
+      
+      const projectShare = await storage.createProjectShare(shareData);
+      res.status(201).json(projectShare);
+    } catch (error) {
+      console.error("Project sharing error:", error);
+      res.status(500).json({ error: "Failed to share project" });
+    }
+  });
+
+  app.get("/api/projects/:id/shares", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      
+      // Verify project access
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const shares = await storage.getProjectShares(projectId);
+      res.json(shares);
+    } catch (error) {
+      console.error("Failed to fetch project shares:", error);
+      res.status(500).json({ error: "Failed to fetch project shares" });
+    }
+  });
+
+  app.delete("/api/projects/:id/shares/:shareId", requireAuth, async (req, res) => {
+    try {
+      const projectId = parseInt(req.params.id);
+      const shareId = parseInt(req.params.shareId);
+      
+      // Verify project ownership
+      const project = await storage.getProject(projectId);
+      if (!project || project.userId !== req.user!.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+
+      const deleted = await storage.deleteProjectShare(shareId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Share not found" });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Failed to delete project share:", error);
+      res.status(500).json({ error: "Failed to delete project share" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

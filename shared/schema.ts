@@ -120,10 +120,23 @@ export const userRoles = pgTable("user_roles", {
 export const resourcePermissions = pgTable("resource_permissions", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull(),
-  resource: text("resource").notNull(), // pipelines, credentials, hub
+  projectId: integer("project_id").references(() => projects.id).notNull(), // Link to project for easier querying
+  resource: text("resource").notNull(), // projects, pipelines, credentials
   resourceId: integer("resource_id").notNull(), // ID of the specific resource
-  action: text("action").notNull(), // read, write, execute, delete, share
+  permission: text("permission").notNull(), // owner, editor, viewer
   grantedBy: integer("granted_by").references(() => users.id).notNull(),
+  userEmail: text("user_email").notNull(), // Email of the user being granted access
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Project sharing table for easier management
+export const projectShares = pgTable("project_shares", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id).notNull(),
+  sharedWithUserId: integer("shared_with_user_id").references(() => users.id).notNull(),
+  sharedWithEmail: text("shared_with_email").notNull(),
+  permission: text("permission").notNull(), // owner, editor, viewer
+  sharedBy: integer("shared_by").references(() => users.id).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -231,6 +244,11 @@ export const insertCredentialSchema = createInsertSchema(credentials).omit({
   updatedAt: true,
 });
 
+export const insertProjectShareSchema = createInsertSchema(projectShares).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSessionSchema = createInsertSchema(sessions).omit({
   createdAt: true,
 });
@@ -278,6 +296,8 @@ export type InsertPermission = z.infer<typeof insertPermissionSchema>;
 export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
 export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
 export type InsertResourcePermission = z.infer<typeof insertResourcePermissionSchema>;
+export type InsertProjectShare = z.infer<typeof insertProjectShareSchema>;
+export type ProjectShare = typeof projectShares.$inferSelect;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type SignupRequest = z.infer<typeof signupSchema>;
 export type ProjectInvite = z.infer<typeof projectInviteSchema>;

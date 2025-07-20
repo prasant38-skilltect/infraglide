@@ -10,6 +10,7 @@ import {
   rolePermissions,
   userRoles,
   resourcePermissions,
+  projectShares,
   type Project, 
   type Pipeline, 
   type Deployment,
@@ -21,6 +22,7 @@ import {
   type RolePermission,
   type UserRole,
   type ResourcePermission,
+  type ProjectShare,
   type InsertProject, 
   type InsertPipeline, 
   type InsertDeployment,
@@ -31,7 +33,8 @@ import {
   type InsertPermission,
   type InsertRolePermission,
   type InsertUserRole,
-  type InsertResourcePermission
+  type InsertResourcePermission,
+  type InsertProjectShare
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and } from "drizzle-orm";
@@ -668,7 +671,7 @@ export class MemStorage implements IStorage {
     // Check direct resource permissions first
     const resourcePermissions = await this.getResourcePermissions(userId, resource);
     const hasDirectPermission = resourcePermissions.some(rp => 
-      rp.action === action && (resourceId === undefined || rp.resourceId === resourceId)
+      rp.permission === action && (resourceId === undefined || rp.resourceId === resourceId)
     );
     
     if (hasDirectPermission) {
@@ -700,8 +703,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const result = await db.select().from(users).where(eq(users.email, email));
-    return result[0];
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -777,6 +780,16 @@ export class DatabaseStorage implements IStorage {
       .insert(projects)
       .values(insertProject)
       .returning();
+
+    // Create owner record for the project creator
+    await db.insert(projectShares).values({
+      projectId: project.id,
+      sharedWithUserId: insertProject.userId,
+      sharedWithEmail: "", // Will be filled by the user's email
+      permission: "owner",
+      sharedBy: insertProject.userId,
+    });
+
     return project;
   }
 
@@ -953,6 +966,26 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
+  // Project sharing methods
+  async createProjectShare(insertProjectShare: InsertProjectShare): Promise<ProjectShare> {
+    const [projectShare] = await db
+      .insert(projectShares)
+      .values(insertProjectShare)
+      .returning();
+    return projectShare;
+  }
+
+  async getProjectShares(projectId: number): Promise<ProjectShare[]> {
+    return db.select().from(projectShares).where(eq(projectShares.projectId, projectId));
+  }
+
+  async deleteProjectShare(shareId: number): Promise<boolean> {
+    const result = await db.delete(projectShares).where(eq(projectShares.id, shareId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+
+
   // RBAC - Roles
   async getRoles(): Promise<Role[]> {
     return db.select().from(roles);
@@ -1103,7 +1136,7 @@ export class DatabaseStorage implements IStorage {
     if (resourceId) {
       const resourcePermissionsList = await this.getResourcePermissions(userId, resource);
       return resourcePermissionsList.some(rp => 
-        rp.resourceId === resourceId && rp.action === action
+        rp.resourceId === resourceId && rp.permission === action
       );
     }
     

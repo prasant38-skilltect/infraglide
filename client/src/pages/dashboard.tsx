@@ -5,14 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProjectSelector from "@/components/ui/project-selector";
+import ShareProjectModal from "@/components/modals/share-project-modal";
 import { apiRequest } from "@/lib/queryClient";
 
-import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector, Users, Server, Globe, Layers, Activity, TrendingUp, Database, Cloud, Shield, Zap } from "lucide-react";
+import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector, Users, Server, Globe, Layers, Activity, TrendingUp, Database, Cloud, Shield, Zap, Share2 } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import type { Pipeline, Deployment, Credential, Project } from "@shared/schema";
 
 export default function Dashboard() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   // Get user's projects
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
@@ -192,6 +194,15 @@ export default function Dashboard() {
                 selectedProjectId={selectedProjectId}
                 onProjectChange={setSelectedProjectId}
               />
+              {selectedProject && (
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsShareModalOpen(true)}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share Project
+                </Button>
+              )}
               <Link href="/pipeline">
                 <Button className="bg-primary hover:bg-blue-600" disabled={!selectedProjectId}>
                   <Plus className="w-4 h-4 mr-2" />
@@ -605,6 +616,16 @@ export default function Dashboard() {
             </Card>
           </div>
         </main>
+
+        {/* Share Project Modal */}
+        {selectedProject && (
+          <ShareProjectModal
+            isOpen={isShareModalOpen}
+            onClose={() => setIsShareModalOpen(false)}
+            projectId={selectedProject.id}
+            projectName={selectedProject.name}
+          />
+        )}
       </div>
-  );
+    );
 }
