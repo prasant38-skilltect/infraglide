@@ -53,8 +53,6 @@ import {
   Menu,
   X,
   Loader2,
-  Undo,
-  Redo,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
@@ -114,11 +112,6 @@ export default function PipelineDesigner() {
   // Track if we've imported data to prevent auto-generation from overriding it
   const hasImportedData = useRef(false);
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
-  
-  // History management for undo/redo
-  const [history, setHistory] = useState<{nodes: Node[], edges: Edge[]}[]>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const isUndoRedoRef = useRef(false);
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -130,73 +123,6 @@ export default function PipelineDesigner() {
       .replace(/-/g, "");
     return `newPipeline_${dateTime}`;
   };
-
-  // Save current state to history
-  const saveToHistory = useCallback(() => {
-    if (isUndoRedoRef.current) return; // Don't save if this is an undo/redo operation
-    
-    const currentState = { nodes, edges };
-    setHistory(prev => {
-      const newHistory = prev.slice(0, historyIndex + 1);
-      newHistory.push(currentState);
-      // Limit history to 50 items
-      if (newHistory.length > 50) {
-        newHistory.shift();
-        return newHistory;
-      }
-      return newHistory;
-    });
-    setHistoryIndex(prev => prev + 1);
-  }, [nodes, edges, historyIndex]);
-
-  // Undo function
-  const undo = useCallback(() => {
-    if (historyIndex > 0) {
-      const previousState = history[historyIndex - 1];
-      isUndoRedoRef.current = true;
-      setNodes(previousState.nodes);
-      setEdges(previousState.edges);
-      setHistoryIndex(prev => prev - 1);
-      setTimeout(() => { isUndoRedoRef.current = false; }, 0);
-    }
-  }, [history, historyIndex, setNodes, setEdges]);
-
-  // Redo function
-  const redo = useCallback(() => {
-    if (historyIndex < history.length - 1) {
-      const nextState = history[historyIndex + 1];
-      isUndoRedoRef.current = true;
-      setNodes(nextState.nodes);
-      setEdges(nextState.edges);
-      setHistoryIndex(prev => prev + 1);
-      setTimeout(() => { isUndoRedoRef.current = false; }, 0);
-    }
-  }, [history, historyIndex, setNodes, setEdges]);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey)) {
-        if (event.key === 'z' && !event.shiftKey) {
-          event.preventDefault();
-          undo();
-        } else if ((event.key === 'y') || (event.key === 'z' && event.shiftKey)) {
-          event.preventDefault();
-          redo();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [undo, redo]);
-
-  // Save state to history when nodes or edges change
-  useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      saveToHistory();
-    }
-  }, [nodes, edges, saveToHistory]);
 
   // Capture the canvas as an image
   const captureCanvasSnapshot = useCallback(async (): Promise<
@@ -1314,30 +1240,6 @@ export default function PipelineDesigner() {
                       onClick={() => setShowEditModal(true)}
                     >
                       <Edit3 className="w-4 h-4" />
-                    </Button>
-                  </div>
-
-                  {/* Undo/Redo Controls */}
-                  <div className="flex items-center space-x-1 border-r border-gray-300 pr-3 mr-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={undo}
-                      disabled={historyIndex <= 0}
-                      className="h-8 px-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Undo (Ctrl+Z)"
-                    >
-                      <Undo className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={redo}
-                      disabled={historyIndex >= history.length - 1}
-                      className="h-8 px-2 text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Redo (Ctrl+Y)"
-                    >
-                      <Redo className="w-4 h-4" />
                     </Button>
                   </div>
 
