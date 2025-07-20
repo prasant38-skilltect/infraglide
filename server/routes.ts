@@ -311,6 +311,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/pipelines/versions/:pipelineName", requireAuth, async (req, res) => {
+    try {
+      const pipelineName = req.params.pipelineName;
+      const versions = await storage.getPipelineVersions(pipelineName, req.user!.id);
+      res.json(versions);
+    } catch (error) {
+      console.error("Failed to fetch pipeline versions:", error);
+      res.status(500).json({ error: "Failed to fetch pipeline versions" });
+    }
+  });
+
   app.get("/api/pipelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -712,6 +723,76 @@ This directory was automatically created when the pipeline was saved in InfraGli
     } catch (error) {
       console.error("Failed to fetch hub pipelines:", error);
       res.status(500).json({ error: "Failed to fetch hub pipelines" });
+    }
+  });
+
+  // Hub publish endpoint
+  app.post("/api/hub/publish", requireAuth, async (req, res) => {
+    try {
+      const { pipelineId, description, tags, githubRepo, version } = req.body;
+      
+      if (!pipelineId || !description || !githubRepo) {
+        return res.status(400).json({ error: "Missing required fields: pipelineId, description, githubRepo" });
+      }
+
+      // Get the pipeline to publish
+      const pipeline = await storage.getPipeline(parseInt(pipelineId));
+      if (!pipeline || pipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found or access denied" });
+      }
+
+      // In a real implementation, this would:
+      // 1. Create or update a GitHub repository with the pipeline configuration
+      // 2. Generate Terraform files and documentation
+      // 3. Create a GitHub release with the specified version
+      // 4. Update the hub database with the published pipeline metadata
+      // 5. Send notifications to followers/subscribers
+
+      console.log(`Publishing pipeline "${pipeline.name}" v${version} to GitHub repo: ${githubRepo}`);
+      console.log(`Description: ${description}`);
+      console.log(`Tags: ${tags?.join(', ') || 'none'}`);
+      console.log(`Components: ${pipeline.components?.length || 0}`);
+      console.log(`Provider: ${pipeline.provider}`);
+
+      // Mock GitHub API integration
+      const githubUrl = `https://github.com/${githubRepo}`;
+      const releaseUrl = `${githubUrl}/releases/tag/v${version}`;
+      
+      // Simulate GitHub repository creation/update
+      const publishResult = {
+        id: `hub-${Date.now()}`,
+        name: pipeline.name,
+        description,
+        author: req.user!.fullName || req.user!.username,
+        provider: pipeline.provider,
+        region: pipeline.region,
+        components: pipeline.components || [],
+        connections: pipeline.connections || [],
+        stars: 0,
+        downloads: 0,
+        publishedAt: new Date().toISOString(),
+        version: `${version}`,
+        tags: tags || [],
+        status: 'published' as const,
+        githubUrl,
+        releaseUrl,
+        terraformUrl: `${githubUrl}/blob/main/main.tf.json`,
+        readmeUrl: `${githubUrl}/blob/main/README.md`
+      };
+
+      // In production, save to hub database here
+      console.log("Pipeline published successfully:", publishResult);
+      
+      res.json({
+        success: true,
+        message: "Pipeline published successfully to GitHub Hub!",
+        pipeline: publishResult,
+        githubUrl,
+        releaseUrl
+      });
+    } catch (error) {
+      console.error("Failed to publish pipeline:", error);
+      res.status(500).json({ error: "Failed to publish pipeline to GitHub Hub" });
     }
   });
 

@@ -28,6 +28,7 @@ import CredentialSelectionModal from "@/components/modals/credential-selection-m
 import AddCredentialModal from "@/components/modals/add-credential-modal";
 import ImportPipelineModal from "@/components/modals/import-pipeline-modal";
 import PipelineVersionDialog from "@/components/pipeline-version-dialog";
+import PublishPipelineModal from "@/components/publish-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -106,6 +107,7 @@ export default function PipelineDesigner() {
   const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showVersionDialog, setShowVersionDialog] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -1395,7 +1397,7 @@ export default function PipelineDesigner() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => window.open('/hub', '_blank')}
+                      onClick={() => setShowPublishModal(true)}
                       className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200"
                     >
                       <Upload className="w-4 h-4 mr-1" />
@@ -1573,6 +1575,14 @@ export default function PipelineDesigner() {
         title={consoleTitle}
         logs={consoleLogs}
         isLoading={consoleLoading}
+      />
+
+      <PublishPipelineModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        currentPipelineId={currentPipelineId}
+        currentPipelineName={pipelineName}
+        currentVersion={currentVersion}
       />
     </div>
   );
