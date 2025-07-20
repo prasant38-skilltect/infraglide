@@ -126,6 +126,16 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 ### January 20, 2025
+- **Fixed Critical Preview Functionality and Database Integration**
+  - Resolved "Unexpected token '<', '<!DOCTYPE'..." JSON parsing error in Terraform preview
+  - Installed proper Terraform v1.9.5 wrapper at `/home/runner/.local/bin/terraform` for pipeline operations
+  - Fixed database schema with correct table structures (projects, pipelines, credentials, deployments)
+  - Enhanced Terraform API endpoint `/api/terraform/execute` now returns valid JSON instead of HTML error pages
+  - Preview button now correctly executes "terraform init && terraform plan" commands in pipeline directories
+  - All Terraform operations (Preview, Deploy, Destroy) working with proper console output display
+  - Database auto-save functionality restored with PostgreSQL backend replacing in-memory storage
+  - Pipeline persistence and retrieval fully functional with proper data types and relationships
+
 - **Implemented Complete Autosave and Terraform Generation System**
   - Added automatic pipeline saving 2 seconds after component changes to prevent excessive API calls
   - Implemented silent autosave without UI notifications to avoid spam
