@@ -4,7 +4,7 @@
 Testing pipeline creation
 
 ## Provider
-AWS
+aws
 
 ## Region
 us-east-1
