@@ -186,6 +186,21 @@ Preferred communication style: Simple, everyday language.
   - Auto-scrolls to latest logs and provides loading indicators during command execution
   - Enhanced user experience with detailed feedback on infrastructure operations
 
+### January 20, 2025
+- **Implemented Version-Specific Pipeline Publishing from Pipeline Designer**
+  - Created PublishPipelineModal component with version selection and GitHub integration
+  - Modified Publish button in Pipeline Designer to open version selection modal instead of Hub page
+  - Added comprehensive API endpoint `/api/hub/publish` for publishing specific pipeline versions
+  - Users can now select which version to publish, provide descriptions, tags, and GitHub repository details
+  - Enhanced publishing workflow with proper version tracking and metadata collection
+  - Integration supports real GitHub repository creation and release management
+
+- **Installed Terraform v1.6.6 on Server**
+  - Successfully downloaded and installed Terraform binary in ~/.local/bin/terraform
+  - Added Terraform to system PATH for pipeline deployment operations
+  - Enhanced deployment capabilities for infrastructure provisioning
+  - Terraform commands now available for Preview, Deploy, and Destroy operations in Pipeline Designer
+
 ### January 18, 2025
 - **Enhanced Application with Professional Colorful Theme**
   - Updated primary color scheme to use purple `rgb(138, 83, 214)` throughout the application
