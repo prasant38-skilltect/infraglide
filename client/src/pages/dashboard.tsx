@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import ProjectSelector from "@/components/ui/project-selector";
+import { apiRequest } from "@/lib/queryClient";
 
 import { Plus, Rocket, Clock, CheckCircle, XCircle, Projector, Users, Server, Globe, Layers, Activity, TrendingUp, Database, Cloud, Shield, Zap } from "lucide-react";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
@@ -27,29 +28,48 @@ export default function Dashboard() {
 
   // Fetch project-specific data only if a project is selected
   const { data: pipelines = [], isLoading: pipelinesLoading } = useQuery<Pipeline[]>({
-    queryKey: ["/api/pipelines", selectedProjectId],
+    queryKey: ["/api/pipelines", { projectId: selectedProjectId }],
+    queryFn: selectedProjectId ? async () => {
+      const res = await apiRequest(`/api/pipelines?projectId=${selectedProjectId}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } : undefined,
     enabled: !!selectedProjectId,
   });
 
   const { data: deployments = [], isLoading: deploymentsLoading } = useQuery<Deployment[]>({
-    queryKey: ["/api/deployments", selectedProjectId],
+    queryKey: ["/api/deployments", { projectId: selectedProjectId }],
+    queryFn: selectedProjectId ? async () => {
+      const res = await apiRequest(`/api/deployments?projectId=${selectedProjectId}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } : undefined,
     enabled: !!selectedProjectId,
   });
 
   const { data: credentials = [], isLoading: credentialsLoading } = useQuery<Credential[]>({
-    queryKey: ["/api/credentials", selectedProjectId],
+    queryKey: ["/api/credentials", { projectId: selectedProjectId }],
+    queryFn: selectedProjectId ? async () => {
+      const res = await apiRequest(`/api/credentials?projectId=${selectedProjectId}`);
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } : undefined,
     enabled: !!selectedProjectId,
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  // Calculate metrics
-  const totalPipelines = pipelines.length;
-  const activePipelines = pipelines.filter(p => p.status === "deployed" || p.status === "running").length;
-  const totalUsers = credentials.length; // Using credentials as user proxy
+  // Calculate metrics - ensure pipelines is always an array
+  const pipelinesArray = Array.isArray(pipelines) ? pipelines : [];
+  const credentialsArray = Array.isArray(credentials) ? credentials : [];
+  const deploymentsArray = Array.isArray(deployments) ? deployments : [];
+  
+  const totalPipelines = pipelinesArray.length;
+  const activePipelines = pipelinesArray.filter(p => p.status === "deployed" || p.status === "running").length;
+  const totalUsers = credentialsArray.length; // Using credentials as user proxy
   
   // Calculate services and components
-  const allComponents = pipelines.flatMap(p => 
+  const allComponents = pipelinesArray.flatMap(p => 
     Array.isArray(p.components) ? p.components : []
   );
   const totalServices = allComponents.length;
@@ -68,7 +88,7 @@ export default function Dashboard() {
   };
 
   // Provider distribution
-  const providerData = pipelines.reduce((acc, pipeline) => {
+  const providerData = pipelinesArray.reduce((acc, pipeline) => {
     const provider = getCloudProvider(pipeline);
     acc[provider] = (acc[provider] || 0) + 1;
     return acc;
@@ -103,7 +123,7 @@ export default function Dashboard() {
   }));
 
   // Region distribution
-  const regionData = pipelines.reduce((acc, pipeline) => {
+  const regionData = pipelinesArray.reduce((acc, pipeline) => {
     const region = pipeline.region || 'Unknown';
     acc[region] = (acc[region] || 0) + 1;
     return acc;
@@ -122,7 +142,7 @@ export default function Dashboard() {
   });
 
   const deploymentTrends = last7Days.map(date => {
-    const dayDeployments = deployments.filter(d => {
+    const dayDeployments = deploymentsArray.filter(d => {
       const deployDate = new Date(d.createdAt);
       return deployDate.toDateString() === date.toDateString();
     });
