@@ -1,6 +1,9 @@
 import * as React from "react";
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import ProviderSwitchModal from "@/components/modals/provider-switch-modal";
 import { Node } from "reactflow";
 import {
@@ -17,6 +20,10 @@ import {
   HardDrive,
   Cpu,
   Globe,
+  LayoutGrid,
+  List,
+  Search,
+  Filter,
 } from "lucide-react";
 
 const awsComponents = [
@@ -147,6 +154,9 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
   const [selectedTab, setSelectedTab] = useState("aws");
   const [showProviderSwitchModal, setShowProviderSwitchModal] = useState(false);
   const [targetProvider, setTargetProvider] = useState("");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
 
   const onDragStart = (event: React.DragEvent, nodeType: string) => {
     event.dataTransfer.setData("application/reactflow", nodeType);
@@ -191,16 +201,69 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
     }
   };
 
+  const filteredComponents = (components: typeof awsComponents) => {
+    return components.map(category => ({
+      ...category,
+      items: category.items.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            item.type.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesCategory = selectedCategory === "all" || 
+                              category.category.toLowerCase().includes(selectedCategory.toLowerCase());
+        return matchesSearch && matchesCategory;
+      })
+    })).filter(category => category.items.length > 0);
+  };
+
   const renderComponents = (components: typeof awsComponents) => {
     const colors = getProviderColor(selectedTab);
+    const filtered = filteredComponents(components);
+    
+    if (viewMode === "list") {
+      return (
+        <div className="space-y-2">
+          {filtered.map((category) => (
+            category.items.map((component) => {
+              const Icon = component.icon;
+              return (
+                <div
+                  key={component.type}
+                  className="p-2 rounded-md cursor-move transition-all duration-200 bg-white shadow-sm hover:shadow-md flex items-center gap-3 border-l-4"
+                  style={{
+                    border: `1px solid ${colors.border}`,
+                    borderLeftColor: colors.border,
+                    backgroundColor: colors.bg
+                  }}
+                  draggable
+                  onDragStart={(event) => onDragStart(event, component.type)}
+                >
+                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: colors.icon }} />
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-800 truncate">
+                      {component.name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {category.category}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ))}
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-4">
-        {components.map((category) => (
+        {filtered.map((category) => (
           <div key={category.category}>
-            <h4 className="text-sm font-medium mb-3" style={{ color: colors.icon }}>
+            <h4 className="text-sm font-medium mb-3 flex items-center gap-2" style={{ color: colors.icon }}>
               {category.category}
+              <Badge variant="secondary" className="text-xs">
+                {category.items.length}
+              </Badge>
             </h4>
-            <div className="space-y-2">
+            <div className="grid grid-cols-1 gap-2">
               {category.items.map((component) => {
                 const Icon = component.icon;
                 return (
@@ -238,6 +301,10 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
     );
   };
 
+  const getCategories = (components: typeof awsComponents) => {
+    return ["all", ...components.map(c => c.category.toLowerCase())];
+  };
+
   return (
     <>
       <div className="w-80 bg-white flex flex-col shadow-lg">
@@ -251,6 +318,51 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
           <p className="text-sm text-gray-600 mt-1">
             Drag components to the canvas
           </p>
+        </div>
+
+        <div className="p-3 border-b space-y-3">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Search components..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 text-sm"
+            />
+          </div>
+
+          {/* View Toggle and Filter */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1 bg-gray-100 rounded-md p-1">
+              <Button
+                size="sm"
+                variant={viewMode === "grid" ? "default" : "ghost"}
+                className="h-7 px-2"
+                onClick={() => setViewMode("grid")}
+              >
+                <LayoutGrid className="w-3 h-3" />
+              </Button>
+              <Button
+                size="sm"
+                variant={viewMode === "list" ? "default" : "ghost"}
+                className="h-7 px-2"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="w-3 h-3" />
+              </Button>
+            </div>
+            
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-gray-600"
+              onClick={() => setSelectedCategory(selectedCategory === "all" ? "compute" : "all")}
+            >
+              <Filter className="w-3 h-3 mr-1" />
+              Filter
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto">
