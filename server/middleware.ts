@@ -19,19 +19,19 @@ const authService = new AuthenticationService(storage);
 // Rate limiting middleware
 export const authRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
+  max: 50, // Increase limit to 50 auth requests per windowMs  
   message: "Too many authentication attempts, please try again later.",
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // Trust proxy headers in Replit environment
+  skip: () => false, // Don't skip any requests, but use permissive settings for development
 });
 
 export const generalRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Increase limit to 1000 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
-  trustProxy: true, // Trust proxy headers in Replit environment
+  skip: () => false, // Don't skip any requests, but use permissive settings for development
 });
 
 // Authentication middleware
