@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Cloud, Home, GitBranch, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X, LogOut } from "lucide-react";
+import { Cloud, Home, GitBranch, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X, LogOut, Shield } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,7 +22,8 @@ export default function Sidebar() {
     { name: "HLD", href: "/hld", icon: Users },
     { name: "LLD", href: "/lld", icon: Code },
     { name: "Deployed Resources", href: "/deployed-resources", icon: Server },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Access Management", href: "/access-management", icon: Shield },
+  { name: "Settings", href: "/settings", icon: Settings },
   ];
 
   const isActive = (href: string) => {

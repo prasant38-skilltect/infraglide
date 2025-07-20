@@ -9,6 +9,7 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   fullName: text("full_name").notNull(),
   password: text("password").notNull(), // hashed password
+  isAdmin: boolean("is_admin").default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -78,6 +79,48 @@ export const deployments = pgTable("deployments", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// RBAC Tables
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  isSystem: boolean("is_system").default(false), // System roles cannot be deleted
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const permissions = pgTable("permissions", {
+  id: serial("id").primaryKey(),
+  resource: text("resource").notNull(), // pipelines, credentials, hub, deployments, users
+  action: text("action").notNull(), // read, write, execute, delete, share, publish
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const rolePermissions = pgTable("role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").references(() => roles.id).notNull(),
+  permissionId: integer("permission_id").references(() => permissions.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const userRoles = pgTable("user_roles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  roleId: integer("role_id").references(() => roles.id).notNull(),
+  assignedBy: integer("assigned_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const resourcePermissions = pgTable("resource_permissions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+  resource: text("resource").notNull(), // pipelines, credentials, hub
+  resourceId: integer("resource_id").notNull(), // ID of the specific resource
+  action: text("action").notNull(), // read, write, execute, delete, share
+  grantedBy: integer("granted_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const credentials = pgTable("credentials", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -134,6 +177,32 @@ export const insertDeploymentSchema = createInsertSchema(deployments).omit({
   createdAt: true,
 });
 
+// RBAC Schemas
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertPermissionSchema = createInsertSchema(permissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertRolePermissionSchema = createInsertSchema(rolePermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertUserRoleSchema = createInsertSchema(userRoles).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertResourcePermissionSchema = createInsertSchema(resourcePermissions).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertCredentialSchema = createInsertSchema(credentials).omit({
   id: true,
   createdAt: true,
@@ -169,6 +238,11 @@ export type Project = typeof projects.$inferSelect;
 export type Pipeline = typeof pipelines.$inferSelect;
 export type Deployment = typeof deployments.$inferSelect;
 export type Credential = typeof credentials.$inferSelect;
+export type Role = typeof roles.$inferSelect;
+export type Permission = typeof permissions.$inferSelect;
+export type RolePermission = typeof rolePermissions.$inferSelect;
+export type UserRole = typeof userRoles.$inferSelect;
+export type ResourcePermission = typeof resourcePermissions.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSession = z.infer<typeof insertSessionSchema>;
 export type InsertLdapConfig = z.infer<typeof insertLdapConfigSchema>;
@@ -176,6 +250,11 @@ export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertPipeline = z.infer<typeof insertPipelineSchema>;
 export type InsertDeployment = z.infer<typeof insertDeploymentSchema>;
 export type InsertCredential = z.infer<typeof insertCredentialSchema>;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type InsertPermission = z.infer<typeof insertPermissionSchema>;
+export type InsertRolePermission = z.infer<typeof insertRolePermissionSchema>;
+export type InsertUserRole = z.infer<typeof insertUserRoleSchema>;
+export type InsertResourcePermission = z.infer<typeof insertResourcePermissionSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type SignupRequest = z.infer<typeof signupSchema>;
 export type ComponentConfig = z.infer<typeof componentConfigSchema>;

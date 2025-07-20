@@ -1083,6 +1083,160 @@ What specific cloud service would you like to configure?`
     }
   });
 
+  // RBAC API Routes
+  
+  // Roles
+  app.get("/api/rbac/roles", requireAuth, async (req, res) => {
+    try {
+      const roles = await storage.getRoles();
+      res.json(roles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch roles" });
+    }
+  });
+
+  app.post("/api/rbac/roles", requireAuth, async (req, res) => {
+    try {
+      const validatedData = req.body; // Add validation schema later
+      const role = await storage.createRole(validatedData);
+      res.status(201).json(role);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to create role" });
+    }
+  });
+
+  app.put("/api/rbac/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = req.body; // Add validation schema later
+      const role = await storage.updateRole(id, validatedData);
+      if (!role) {
+        return res.status(404).json({ error: "Role not found" });
+      }
+      res.json(role);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update role" });
+    }
+  });
+
+  app.delete("/api/rbac/roles/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteRole(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Role not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete role" });
+    }
+  });
+
+  // Permissions
+  app.get("/api/rbac/permissions", requireAuth, async (req, res) => {
+    try {
+      const permissions = await storage.getPermissions();
+      res.json(permissions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch permissions" });
+    }
+  });
+
+  // User Roles
+  app.get("/api/rbac/user-roles/:userId", requireAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const userRoles = await storage.getUserRoles(userId);
+      res.json(userRoles);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch user roles" });
+    }
+  });
+
+  app.post("/api/rbac/user-roles", requireAuth, async (req, res) => {
+    try {
+      const { userId, roleId } = req.body;
+      const userRole = await storage.createUserRole({
+        userId,
+        roleId,
+        assignedBy: req.user!.id
+      });
+      res.status(201).json(userRole);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to assign role" });
+    }
+  });
+
+  app.delete("/api/rbac/user-roles/:userId/:roleId", requireAuth, async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const roleId = parseInt(req.params.roleId);
+      const deleted = await storage.deleteUserRole(userId, roleId);
+      if (!deleted) {
+        return res.status(404).json({ error: "User role not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to remove role" });
+    }
+  });
+
+  // Resource Permissions
+  app.get("/api/rbac/resource-permissions", requireAuth, async (req, res) => {
+    try {
+      const { userId, resource } = req.query;
+      const permissions = await storage.getResourcePermissions(
+        userId ? parseInt(userId as string) : undefined,
+        resource as string
+      );
+      res.json(permissions);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch resource permissions" });
+    }
+  });
+
+  app.post("/api/rbac/resource-permissions", requireAuth, async (req, res) => {
+    try {
+      const validatedData = {
+        ...req.body,
+        grantedBy: req.user!.id
+      };
+      const permission = await storage.createResourcePermission(validatedData);
+      res.status(201).json(permission);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to grant permission" });
+    }
+  });
+
+  app.delete("/api/rbac/resource-permissions/:id", requireAuth, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteResourcePermission(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Permission not found" });
+      }
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to revoke permission" });
+    }
+  });
+
+  // Check Permission
+  app.get("/api/rbac/check-permission", requireAuth, async (req, res) => {
+    try {
+      const { resource, action, resourceId } = req.query;
+      const hasPermission = await storage.hasPermission(
+        req.user!.id,
+        resource as string,
+        action as string,
+        resourceId ? parseInt(resourceId as string) : undefined
+      );
+      res.json({ hasPermission });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to check permission" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

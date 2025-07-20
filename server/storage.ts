@@ -6,6 +6,11 @@ import {
   users,
   sessions,
   ldapConfig,
+  roles,
+  permissions,
+  rolePermissions,
+  userRoles,
+  resourcePermissions,
   type Project, 
   type Pipeline, 
   type Deployment,
@@ -13,13 +18,23 @@ import {
   type User,
   type Session,
   type LdapConfig,
+  type Role,
+  type Permission,
+  type RolePermission,
+  type UserRole,
+  type ResourcePermission,
   type InsertProject, 
   type InsertPipeline, 
   type InsertDeployment,
   type InsertCredential,
   type InsertUser,
   type InsertSession,
-  type InsertLdapConfig
+  type InsertLdapConfig,
+  type InsertRole,
+  type InsertPermission,
+  type InsertRolePermission,
+  type InsertUserRole,
+  type InsertResourcePermission
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -76,6 +91,39 @@ export interface IStorage {
   createCredential(credential: InsertCredential): Promise<Credential>;
   updateCredential(id: number, credential: Partial<InsertCredential>): Promise<Credential | undefined>;
   deleteCredential(id: number): Promise<boolean>;
+
+  // RBAC - Roles
+  getRoles(): Promise<Role[]>;
+  getRole(id: number): Promise<Role | undefined>;
+  createRole(role: InsertRole): Promise<Role>;
+  updateRole(id: number, role: Partial<InsertRole>): Promise<Role | undefined>;
+  deleteRole(id: number): Promise<boolean>;
+
+  // RBAC - Permissions
+  getPermissions(): Promise<Permission[]>;
+  getPermission(id: number): Promise<Permission | undefined>;
+  createPermission(permission: InsertPermission): Promise<Permission>;
+  updatePermission(id: number, permission: Partial<InsertPermission>): Promise<Permission | undefined>;
+  deletePermission(id: number): Promise<boolean>;
+
+  // RBAC - Role Permissions
+  getRolePermissions(roleId?: number): Promise<RolePermission[]>;
+  createRolePermission(rolePermission: InsertRolePermission): Promise<RolePermission>;
+  deleteRolePermission(roleId: number, permissionId: number): Promise<boolean>;
+
+  // RBAC - User Roles
+  getUserRoles(userId?: number): Promise<UserRole[]>;
+  createUserRole(userRole: InsertUserRole): Promise<UserRole>;
+  deleteUserRole(userId: number, roleId: number): Promise<boolean>;
+
+  // RBAC - Resource Permissions
+  getResourcePermissions(userId?: number, resource?: string): Promise<ResourcePermission[]>;
+  createResourcePermission(resourcePermission: InsertResourcePermission): Promise<ResourcePermission>;
+  deleteResourcePermission(id: number): Promise<boolean>;
+
+  // RBAC - Helper Methods
+  getUserPermissions(userId: number): Promise<Permission[]>;
+  hasPermission(userId: number, resource: string, action: string, resourceId?: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -698,6 +746,224 @@ export class DatabaseStorage implements IStorage {
     const result = await db.delete(credentials).where(eq(credentials.id, id));
     return (result.rowCount ?? 0) > 0;
   }
+
+  // RBAC - Roles
+  async getRoles(): Promise<Role[]> {
+    return db.select().from(roles);
+  }
+
+  async getRole(id: number): Promise<Role | undefined> {
+    const [role] = await db.select().from(roles).where(eq(roles.id, id));
+    return role || undefined;
+  }
+
+  async createRole(insertRole: InsertRole): Promise<Role> {
+    const [role] = await db.insert(roles).values(insertRole).returning();
+    return role;
+  }
+
+  async updateRole(id: number, roleData: Partial<InsertRole>): Promise<Role | undefined> {
+    const [role] = await db.update(roles).set(roleData).where(eq(roles.id, id)).returning();
+    return role || undefined;
+  }
+
+  async deleteRole(id: number): Promise<boolean> {
+    const result = await db.delete(roles).where(eq(roles.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // RBAC - Permissions
+  async getPermissions(): Promise<Permission[]> {
+    return db.select().from(permissions);
+  }
+
+  async getPermission(id: number): Promise<Permission | undefined> {
+    const [permission] = await db.select().from(permissions).where(eq(permissions.id, id));
+    return permission || undefined;
+  }
+
+  async createPermission(insertPermission: InsertPermission): Promise<Permission> {
+    const [permission] = await db.insert(permissions).values(insertPermission).returning();
+    return permission;
+  }
+
+  async updatePermission(id: number, permissionData: Partial<InsertPermission>): Promise<Permission | undefined> {
+    const [permission] = await db.update(permissions).set(permissionData).where(eq(permissions.id, id)).returning();
+    return permission || undefined;
+  }
+
+  async deletePermission(id: number): Promise<boolean> {
+    const result = await db.delete(permissions).where(eq(permissions.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // RBAC - Role Permissions
+  async getRolePermissions(roleId?: number): Promise<RolePermission[]> {
+    if (roleId) {
+      return db.select().from(rolePermissions).where(eq(rolePermissions.roleId, roleId));
+    }
+    return db.select().from(rolePermissions);
+  }
+
+  async createRolePermission(insertRolePermission: InsertRolePermission): Promise<RolePermission> {
+    const [rolePermission] = await db.insert(rolePermissions).values(insertRolePermission).returning();
+    return rolePermission;
+  }
+
+  async deleteRolePermission(roleId: number, permissionId: number): Promise<boolean> {
+    const result = await db.delete(rolePermissions)
+      .where(eq(rolePermissions.roleId, roleId) && eq(rolePermissions.permissionId, permissionId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // RBAC - User Roles
+  async getUserRoles(userId?: number): Promise<UserRole[]> {
+    if (userId) {
+      return db.select().from(userRoles).where(eq(userRoles.userId, userId));
+    }
+    return db.select().from(userRoles);
+  }
+
+  async createUserRole(insertUserRole: InsertUserRole): Promise<UserRole> {
+    const [userRole] = await db.insert(userRoles).values(insertUserRole).returning();
+    return userRole;
+  }
+
+  async deleteUserRole(userId: number, roleId: number): Promise<boolean> {
+    const result = await db.delete(userRoles)
+      .where(eq(userRoles.userId, userId) && eq(userRoles.roleId, roleId));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // RBAC - Resource Permissions
+  async getResourcePermissions(userId?: number, resource?: string): Promise<ResourcePermission[]> {
+    let query = db.select().from(resourcePermissions);
+    
+    if (userId && resource) {
+      return db.select().from(resourcePermissions)
+        .where(eq(resourcePermissions.userId, userId) && eq(resourcePermissions.resource, resource));
+    } else if (userId) {
+      return db.select().from(resourcePermissions).where(eq(resourcePermissions.userId, userId));
+    } else if (resource) {
+      return db.select().from(resourcePermissions).where(eq(resourcePermissions.resource, resource));
+    }
+    
+    return db.select().from(resourcePermissions);
+  }
+
+  async createResourcePermission(insertResourcePermission: InsertResourcePermission): Promise<ResourcePermission> {
+    const [resourcePermission] = await db.insert(resourcePermissions).values(insertResourcePermission).returning();
+    return resourcePermission;
+  }
+
+  async deleteResourcePermission(id: number): Promise<boolean> {
+    const result = await db.delete(resourcePermissions).where(eq(resourcePermissions.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // RBAC - Helper Methods
+  async getUserPermissions(userId: number): Promise<Permission[]> {
+    // Get user roles
+    const userRolesList = await this.getUserRoles(userId);
+    if (userRolesList.length === 0) return [];
+    
+    const roleIds = userRolesList.map(ur => ur.roleId);
+    
+    // Get permissions for those roles
+    const rolePermissionsList = await db.select({
+      permissionId: rolePermissions.permissionId
+    }).from(rolePermissions).where(eq(rolePermissions.roleId, roleIds[0])); // Simple implementation
+    
+    if (rolePermissionsList.length === 0) return [];
+    
+    const permissionIds = rolePermissionsList.map(rp => rp.permissionId);
+    
+    // Get the actual permissions
+    return db.select().from(permissions).where(eq(permissions.id, permissionIds[0])); // Simple implementation
+  }
+
+  async hasPermission(userId: number, resource: string, action: string, resourceId?: number): Promise<boolean> {
+    // Check if user is admin
+    const user = await this.getUserById(userId);
+    if (user?.isAdmin) return true;
+    
+    // Check user's role-based permissions
+    const userPermissions = await this.getUserPermissions(userId);
+    const hasRolePermission = userPermissions.some(p => p.resource === resource && p.action === action);
+    
+    if (hasRolePermission) return true;
+    
+    // Check specific resource permissions
+    if (resourceId) {
+      const resourcePermissionsList = await this.getResourcePermissions(userId, resource);
+      return resourcePermissionsList.some(rp => 
+        rp.resourceId === resourceId && rp.action === action
+      );
+    }
+    
+    return false;
+  }
+}
+
+// Add RBAC initialization method
+async function initializeRBACSystem(storage: DatabaseStorage) {
+  try {
+    // Check if roles already exist
+    const existingRoles = await storage.getRoles();
+    if (existingRoles.length > 0) {
+      console.log("RBAC system already initialized");
+      return;
+    }
+
+    console.log("Initializing RBAC system...");
+
+    // Create default roles
+    const adminRole = await storage.createRole({
+      name: "Administrator",
+      description: "Full system access with all permissions",
+      isSystem: true
+    });
+
+    const managerRole = await storage.createRole({
+      name: "Manager",
+      description: "Manage projects and oversee teams",
+      isSystem: true
+    });
+
+    const developerRole = await storage.createRole({
+      name: "Developer",
+      description: "Create and manage pipelines and deployments",
+      isSystem: true
+    });
+
+    const viewerRole = await storage.createRole({
+      name: "Viewer",
+      description: "Read-only access to resources",
+      isSystem: true
+    });
+
+    // Create default permissions
+    const resources = ['pipelines', 'credentials', 'hub', 'deployments', 'users'];
+    const actions = ['read', 'write', 'execute', 'delete', 'share', 'publish'];
+
+    for (const resource of resources) {
+      for (const action of actions) {
+        await storage.createPermission({
+          name: `${resource}:${action}`,
+          description: `${action} access to ${resource}`,
+          resource,
+          action
+        });
+      }
+    }
+
+    console.log("RBAC system initialized successfully");
+  } catch (error) {
+    console.error("Failed to initialize RBAC system:", error);
+  }
 }
 
 export const storage = new DatabaseStorage();
+
+// Initialize RBAC system after storage is created
+initializeRBACSystem(storage);

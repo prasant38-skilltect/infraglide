@@ -16,6 +16,7 @@ import Architecture from "@/pages/architecture";
 import Hub from "@/pages/hub";
 import DeployedResources from "@/pages/deployed-resources";
 import SettingsPage from "@/pages/settings";
+import AccessManagement from "@/pages/access-management";
 import LoginPage from "@/pages/login";
 import SignupPage from "@/pages/signup";
 
@@ -70,6 +71,7 @@ function ProtectedRouter() {
           <Route path="/hld" component={HLD} />
           <Route path="/lld" component={LLD} />
           <Route path="/deployed-resources" component={DeployedResources} />
+          <Route path="/access-management" component={AccessManagement} />
           <Route path="/settings" component={SettingsPage} />
           <Route component={NotFound} />
         </Switch>
