@@ -8,14 +8,31 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
-  data?: unknown | undefined,
+  options: RequestInit = {},
 ): Promise<Response> {
+  const defaultHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Add authentication headers if available
+  const token = localStorage.getItem("auth_token");
+  const sessionId = localStorage.getItem("session_id");
+  
+  if (token) {
+    defaultHeaders.Authorization = `Bearer ${token}`;
+  }
+  
+  if (sessionId) {
+    defaultHeaders['X-Session-Id'] = sessionId;
+  }
+
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
     credentials: "include",
   });
 
@@ -29,7 +46,22 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const defaultHeaders: Record<string, string> = {};
+
+    // Add authentication headers if available
+    const token = localStorage.getItem("auth_token");
+    const sessionId = localStorage.getItem("session_id");
+    
+    if (token) {
+      defaultHeaders.Authorization = `Bearer ${token}`;
+    }
+    
+    if (sessionId) {
+      defaultHeaders['X-Session-Id'] = sessionId;
+    }
+
     const res = await fetch(queryKey.join("/") as string, {
+      headers: defaultHeaders,
       credentials: "include",
     });
 

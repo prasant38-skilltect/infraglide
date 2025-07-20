@@ -1,28 +1,249 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProjectSchema, insertPipelineSchema, insertDeploymentSchema, insertCredentialSchema } from "@shared/schema";
+import { 
+  insertProjectSchema, 
+  insertPipelineSchema, 
+  insertDeploymentSchema, 
+  insertCredentialSchema,
+  insertUserSchema,
+  insertLdapConfigSchema,
+  loginSchema,
+  signupSchema
+} from "@shared/schema";
 import { z } from "zod";
 import { promises as fs } from "fs";
 import path from "path";
 import { execSync } from "child_process";
+import { AuthenticationService } from "./auth";
+import { requireAuth, requireAdmin, optionalAuth, authRateLimit, generalRateLimit } from "./middleware";
+
+const authService = new AuthenticationService(storage);
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Projects routes
-  app.get("/api/projects", async (req, res) => {
+  // Apply general rate limiting to all routes
+  app.use("/api", generalRateLimit);
+
+  // Authentication routes
+  app.post("/api/auth/signup", authRateLimit, async (req, res) => {
     try {
-      const projects = await storage.getProjects();
+      const validatedData = signupSchema.parse(req.body);
+      const result = await authService.signup(validatedData);
+      
+      res.status(201).json({
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          username: result.user.username,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+          authProvider: result.user.authProvider,
+          isAdmin: result.user.isAdmin,
+        },
+        token: result.token,
+        sessionId: result.session.id,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid signup data", details: error.errors });
+      }
+      res.status(400).json({ error: error instanceof Error ? error.message : "Signup failed" });
+    }
+  });
+
+  app.post("/api/auth/login", authRateLimit, async (req, res) => {
+    try {
+      const validatedData = loginSchema.parse(req.body);
+      const result = await authService.login(validatedData);
+      
+      res.json({
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          username: result.user.username,
+          firstName: result.user.firstName,
+          lastName: result.user.lastName,
+          authProvider: result.user.authProvider,
+          isAdmin: result.user.isAdmin,
+        },
+        token: result.token,
+        sessionId: result.session.id,
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid login data", details: error.errors });
+      }
+      res.status(401).json({ error: error instanceof Error ? error.message : "Login failed" });
+    }
+  });
+
+  app.post("/api/auth/logout", requireAuth, async (req, res) => {
+    try {
+      if (req.sessionId) {
+        await authService.logout(req.sessionId);
+      }
+      res.json({ message: "Logged out successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Logout failed" });
+    }
+  });
+
+  app.get("/api/auth/me", requireAuth, async (req, res) => {
+    res.json({
+      user: {
+        id: req.user!.id,
+        email: req.user!.email,
+        username: req.user!.username,
+        firstName: req.user!.firstName,
+        lastName: req.user!.lastName,
+        authProvider: req.user!.authProvider,
+        isAdmin: req.user!.isAdmin,
+      }
+    });
+  });
+
+  // LDAP Configuration routes (admin only)
+  app.get("/api/ldap-configs", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const configs = await storage.getLdapConfigs();
+      res.json(configs);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch LDAP configurations" });
+    }
+  });
+
+  app.post("/api/ldap-configs", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const validatedData = insertLdapConfigSchema.parse(req.body);
+      const config = await storage.createLdapConfig(validatedData);
+      res.status(201).json(config);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid LDAP configuration", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create LDAP configuration" });
+    }
+  });
+
+  app.put("/api/ldap-configs/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertLdapConfigSchema.partial().parse(req.body);
+      const config = await storage.updateLdapConfig(id, validatedData);
+      if (!config) {
+        return res.status(404).json({ error: "LDAP configuration not found" });
+      }
+      res.json(config);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid LDAP configuration", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update LDAP configuration" });
+    }
+  });
+
+  app.delete("/api/ldap-configs/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteLdapConfig(id);
+      if (!deleted) {
+        return res.status(404).json({ error: "LDAP configuration not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete LDAP configuration" });
+    }
+  });
+
+  // Test LDAP connection
+  app.post("/api/ldap-configs/:id/test", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password required for testing" });
+      }
+
+      const user = await authService.authenticateLDAP(username, password, id);
+      res.json({ message: "LDAP authentication successful", user: { username: user.username, email: user.email } });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "LDAP test failed" });
+    }
+  });
+
+  // User management routes (admin only)
+  app.get("/api/users", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        authProvider: user.authProvider,
+        isActive: user.isActive,
+        isAdmin: user.isAdmin,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      }));
+      res.json(safeUsers);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch users" });
+    }
+  });
+
+  app.put("/api/users/:id", requireAuth, requireAdmin, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertUserSchema.partial().parse(req.body);
+      
+      // Don't allow password changes through this endpoint
+      delete (validatedData as any).passwordHash;
+      
+      const user = await storage.updateUser(id, validatedData);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      const safeUser = {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        authProvider: user.authProvider,
+        isActive: user.isActive,
+        isAdmin: user.isAdmin,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      };
+      
+      res.json(safeUser);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: "Invalid user data", details: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update user" });
+    }
+  });
+
+  // Projects routes
+  app.get("/api/projects", requireAuth, async (req, res) => {
+    try {
+      const projects = await storage.getProjects(req.user!.id);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
     }
   });
 
-  app.get("/api/projects/:id", async (req, res) => {
+  app.get("/api/projects/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const project = await storage.getProject(id);
-      if (!project) {
+      if (!project || project.userId !== req.user!.id) {
         return res.status(404).json({ error: "Project not found" });
       }
       res.json(project);
@@ -31,10 +252,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", requireAuth, async (req, res) => {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const projectData = { ...validatedData, userId: req.user!.id };
+      const project = await storage.createProject(projectData);
       res.status(201).json(project);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -44,15 +266,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/projects/:id", async (req, res) => {
+  app.put("/api/projects/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertProjectSchema.partial().parse(req.body);
-      const project = await storage.updateProject(id, validatedData);
-      if (!project) {
+      const project = await storage.getProject(id);
+      if (!project || project.userId !== req.user!.id) {
         return res.status(404).json({ error: "Project not found" });
       }
-      res.json(project);
+      
+      const validatedData = insertProjectSchema.partial().parse(req.body);
+      const updatedProject = await storage.updateProject(id, validatedData);
+      res.json(updatedProject);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid project data", details: error.errors });
@@ -61,13 +285,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/projects/:id", async (req, res) => {
+  app.delete("/api/projects/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteProject(id);
-      if (!deleted) {
+      const project = await storage.getProject(id);
+      if (!project || project.userId !== req.user!.id) {
         return res.status(404).json({ error: "Project not found" });
       }
+      
+      const deleted = await storage.deleteProject(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete project" });
@@ -75,21 +301,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Pipelines routes
-  app.get("/api/pipelines", async (req, res) => {
+  app.get("/api/pipelines", requireAuth, async (req, res) => {
     try {
       const projectId = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
-      const pipelines = await storage.getPipelines(projectId);
+      const pipelines = await storage.getPipelines(projectId, req.user!.id);
       res.json(pipelines);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch pipelines" });
     }
   });
 
-  app.get("/api/pipelines/:id", async (req, res) => {
+  app.get("/api/pipelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const pipeline = await storage.getPipeline(id);
-      if (!pipeline) {
+      if (!pipeline || pipeline.userId !== req.user!.id) {
         return res.status(404).json({ error: "Pipeline not found" });
       }
       res.json(pipeline);
@@ -98,10 +324,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/pipelines/check-name/:name", async (req, res) => {
+  app.get("/api/pipelines/check-name/:name", requireAuth, async (req, res) => {
     try {
       const name = req.params.name;
-      const existingPipelines = await storage.getPipelinesByName(name);
+      const existingPipelines = await storage.getPipelinesByName(name, req.user!.id);
       const exists = existingPipelines.length > 0;
       const latestVersion = exists ? Math.max(...existingPipelines.map(p => p.version)) : 0;
       
@@ -115,10 +341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/pipelines", async (req, res) => {
+  app.post("/api/pipelines", requireAuth, async (req, res) => {
     try {
       const validatedData = insertPipelineSchema.parse(req.body);
-      const pipeline = await storage.createPipeline(validatedData);
+      const pipelineData = { ...validatedData, userId: req.user!.id };
+      const pipeline = await storage.createPipeline(pipelineData);
       
       // Create directory with pipeline name
       try {
@@ -180,9 +407,14 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.put("/api/pipelines/:id", async (req, res) => {
+  app.put("/api/pipelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      const existingPipeline = await storage.getPipeline(id);
+      if (!existingPipeline || existingPipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found" });
+      }
+      
       const validatedData = insertPipelineSchema.partial().parse(req.body);
       const pipeline = await storage.updatePipeline(id, validatedData);
       if (!pipeline) {
@@ -226,12 +458,15 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.delete("/api/pipelines/:id", async (req, res) => {
+  app.delete("/api/pipelines/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
       // Get pipeline info before deletion for directory cleanup
       const pipeline = await storage.getPipeline(id);
+      if (!pipeline || pipeline.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Pipeline not found" });
+      }
       
       const deleted = await storage.deletePipeline(id);
       if (!deleted) {
@@ -257,7 +492,7 @@ This directory was automatically created when the pipeline was saved in InfraGli
   });
 
   // Deployments routes
-  app.get("/api/deployments", async (req, res) => {
+  app.get("/api/deployments", requireAuth, async (req, res) => {
     try {
       const pipelineId = req.query.pipelineId ? parseInt(req.query.pipelineId as string) : undefined;
       const deployments = await storage.getDeployments(pipelineId);
@@ -267,9 +502,18 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.post("/api/deployments", async (req, res) => {
+  app.post("/api/deployments", requireAuth, async (req, res) => {
     try {
       const validatedData = insertDeploymentSchema.parse(req.body);
+      
+      // Verify user owns the pipeline
+      if (validatedData.pipelineId) {
+        const pipeline = await storage.getPipeline(validatedData.pipelineId);
+        if (!pipeline || pipeline.userId !== req.user!.id) {
+          return res.status(403).json({ error: "Pipeline not found or access denied" });
+        }
+      }
+      
       const deployment = await storage.createDeployment(validatedData);
       
       // Simulate deployment process
@@ -290,20 +534,20 @@ This directory was automatically created when the pipeline was saved in InfraGli
   });
 
   // Credentials routes
-  app.get("/api/credentials", async (req, res) => {
+  app.get("/api/credentials", requireAuth, async (req, res) => {
     try {
-      const credentials = await storage.getCredentials();
+      const credentials = await storage.getCredentials(req.user!.id);
       res.json(credentials);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch credentials" });
     }
   });
 
-  app.get("/api/credentials/:id", async (req, res) => {
+  app.get("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const credential = await storage.getCredential(id);
-      if (!credential) {
+      if (!credential || credential.userId !== req.user!.id) {
         return res.status(404).json({ error: "Credential not found" });
       }
       res.json(credential);
@@ -312,10 +556,11 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.post("/api/credentials", async (req, res) => {
+  app.post("/api/credentials", requireAuth, async (req, res) => {
     try {
       const validatedData = insertCredentialSchema.parse(req.body);
-      const credential = await storage.createCredential(validatedData);
+      const credentialData = { ...validatedData, userId: req.user!.id };
+      const credential = await storage.createCredential(credentialData);
       res.status(201).json(credential);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -325,14 +570,16 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.put("/api/credentials/:id", async (req, res) => {
+  app.put("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const validatedData = insertCredentialSchema.partial().parse(req.body);
-      const credential = await storage.updateCredential(id, validatedData);
-      if (!credential) {
+      const existingCredential = await storage.getCredential(id);
+      if (!existingCredential || existingCredential.userId !== req.user!.id) {
         return res.status(404).json({ error: "Credential not found" });
       }
+      
+      const validatedData = insertCredentialSchema.partial().parse(req.body);
+      const credential = await storage.updateCredential(id, validatedData);
       res.json(credential);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -342,13 +589,15 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  app.delete("/api/credentials/:id", async (req, res) => {
+  app.delete("/api/credentials/:id", requireAuth, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const deleted = await storage.deleteCredential(id);
-      if (!deleted) {
+      const credential = await storage.getCredential(id);
+      if (!credential || credential.userId !== req.user!.id) {
         return res.status(404).json({ error: "Credential not found" });
       }
+      
+      const deleted = await storage.deleteCredential(id);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete credential" });

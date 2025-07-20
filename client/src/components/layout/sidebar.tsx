@@ -1,13 +1,17 @@
 import { Link, useLocation } from "wouter";
-import { Cloud, Home, GitBranch, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X } from "lucide-react";
+import { Cloud, Home, GitBranch, Settings, User, Key, Layers, Users, Code, Network, Globe, Server, Bot, MessageCircle, X, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import AskJaneContent from "@/components/ask-jane-content";
 
 export default function Sidebar() {
   const [location] = useLocation();
   const [showAskJane, setShowAskJane] = useState(false);
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
 
   const navigation = [
     { name: "Dashboard", href: "/dashboard", icon: Home },
@@ -95,17 +99,46 @@ export default function Sidebar() {
 
       {/* User Profile */}
       <div className="p-4 border-t border-purple-400/30">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 mb-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{
             background: 'rgba(138, 83, 214, 0.3)'
           }}>
             <User className="w-5 h-5 text-purple-200" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-purple-100">John Developer</p>
-            <p className="text-xs text-purple-300">john@company.com</p>
+            <p className="text-sm font-medium text-purple-100">
+              {user ? `${user.firstName} ${user.lastName}` : "User"}
+            </p>
+            <p className="text-xs text-purple-300">
+              {user?.email || "user@example.com"}
+            </p>
           </div>
         </div>
+        
+        {/* Logout Button */}
+        <Button
+          onClick={async () => {
+            try {
+              await logout();
+              toast({
+                title: "Logged out successfully",
+                description: "You have been signed out of your account.",
+              });
+            } catch (error) {
+              toast({
+                title: "Logout failed", 
+                description: "An error occurred while logging out.",
+                variant: "destructive",
+              });
+            }
+          }}
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-purple-200 hover:text-white hover:bg-purple-600/20"
+        >
+          <LogOut className="w-4 h-4 mr-2" />
+          Sign Out
+        </Button>
       </div>
 
       {/* Ask Jane Dialog */}
