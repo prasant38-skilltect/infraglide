@@ -27,7 +27,7 @@ import VersionConflictModal from "@/components/modals/version-conflict-modal";
 import CredentialSelectionModal from "@/components/modals/credential-selection-modal";
 import AddCredentialModal from "@/components/modals/add-credential-modal";
 import ImportPipelineModal from "@/components/modals/import-pipeline-modal";
-import PipelineVersionDialog from "@/components/pipeline-version-dialog";
+import PipelineExitDialog from "@/components/modals/pipeline-exit-dialog";
 import PublishPipelineModal from "@/components/publish-pipeline-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,23 +78,31 @@ export default function PipelineDesigner() {
   const [nodes, setNodes, originalOnNodesChange] = useNodesState([]);
   const [edges, setEdges, originalOnEdgesChange] = useEdgesState([]);
 
-  // Wrap onNodesChange to track changes
+  // Enhanced change tracking for components added/removed
   const onNodesChange = useCallback((changes: any) => {
     originalOnNodesChange(changes);
-    // Only track changes if we're not loading initial data
-    if (!hasImportedData.current && nodes.length > 0) {
+    // Track changes for autosave - detect add/remove operations
+    const hasNodeChanges = changes.some((change: any) => 
+      change.type === 'add' || change.type === 'remove'
+    );
+    if (!hasImportedData.current && hasNodeChanges) {
       setHasUnsavedChanges(true);
+      console.log("Node changes detected, triggering autosave");
     }
-  }, [originalOnNodesChange, nodes.length]);
+  }, [originalOnNodesChange]);
 
-  // Wrap onEdgesChange to track changes  
+  // Enhanced change tracking for connections
   const onEdgesChange = useCallback((changes: any) => {
     originalOnEdgesChange(changes);
-    // Only track changes if we're not loading initial data
-    if (!hasImportedData.current && edges.length > 0) {
+    // Track connection changes for autosave
+    const hasEdgeChanges = changes.some((change: any) => 
+      change.type === 'add' || change.type === 'remove'
+    );
+    if (!hasImportedData.current && hasEdgeChanges) {
       setHasUnsavedChanges(true);
+      console.log("Edge changes detected, triggering autosave");
     }
-  }, [originalOnEdgesChange, edges.length]);
+  }, [originalOnEdgesChange]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [pipelineName, setPipelineName] = useState("New Pipeline");
@@ -109,8 +117,9 @@ export default function PipelineDesigner() {
     useState(false);
   const [showAddCredentialModal, setShowAddCredentialModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showVersionDialog, setShowVersionDialog] = useState(false);
+  const [showExitDialog, setShowExitDialog] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -271,8 +280,15 @@ export default function PipelineDesigner() {
       try {
         setIsAutoSaving(true);
         
+        // Auto-generate pipeline name if still default and has components
+        let currentName = pipelineName;
+        if (pipelineName === "New Pipeline" && nodes.length > 0 && !currentPipelineId) {
+          currentName = generatePipelineName();
+          setPipelineName(currentName);
+        }
+        
         const pipelineData = {
-          name: pipelineName,
+          name: currentName,
           description: pipelineDescription,
           provider: getCloudProvider(nodes),
           region: pipelineRegion,
@@ -307,23 +323,24 @@ export default function PipelineDesigner() {
 
         setHasUnsavedChanges(false);
         
-        // Generate Terraform configuration for the components
-        try {
-          await apiRequest("/api/generate-terraform", {
-            method: "POST",
-            body: {
-              pipelineName: savedPipeline.name,
-              components: nodes.map(node => ({
-                id: node.id,
-                type: node.data?.componentType || node.type,
-                data: node.data
-              })),
-              provider: getCloudProvider(nodes)
-            }
-          });
-          console.log("Terraform configuration generated for:", savedPipeline.name);
-        } catch (terraformError) {
-          console.error("Failed to generate Terraform configuration:", terraformError);
+        // Generate Terraform configuration if components exist
+        if (nodes.length > 0) {
+          try {
+            await apiRequest("/api/generate-terraform", {
+              method: "POST",
+              body: {
+                pipelineName: savedPipeline.name,
+                components: nodes.map(node => ({
+                  id: node.id,
+                  type: node.data?.componentType || node.type,
+                  data: node.data
+                })),
+                provider: getCloudProvider(nodes)
+              }
+            });
+          } catch (terraformError) {
+            console.error("Failed to generate Terraform configuration:", terraformError);
+          }
         }
         
         // Invalidate queries to update My Pipelines
@@ -333,7 +350,6 @@ export default function PipelineDesigner() {
         
       } catch (error) {
         console.error("Auto-save failed:", error);
-        // Don't show error toast for auto-save failures to avoid annoying user
       } finally {
         setIsAutoSaving(false);
       }
@@ -1473,6 +1489,104 @@ export default function PipelineDesigner() {
     }
   };
 
+  // Navigation guard for back button
+  const handleBackNavigation = () => {
+    if (hasUnsavedChanges && nodes.length > 0) {
+      setPendingNavigation('/');
+      setShowExitDialog(true);
+    } else {
+      setLocation('/');
+    }
+  };
+
+  // Save pipeline when exiting
+  const handleExitSave = async (saveOption: 'existing' | 'new', versionNotes?: string) => {
+    try {
+      const pipelineData = {
+        name: pipelineName,
+        description: pipelineDescription,
+        provider: getCloudProvider(nodes),
+        region: pipelineRegion,
+        components: nodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          position: node.position,
+          data: node.data
+        })),
+        connections: edges.map(edge => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target
+        }))
+      };
+
+      if (saveOption === 'new' && currentPipelineId) {
+        // Create new version
+        const newVersionData = {
+          ...pipelineData,
+          versionNotes: versionNotes || ""
+        };
+        await apiRequest(`/api/pipelines/${currentPipelineId}/versions`, {
+          method: "POST",
+          body: newVersionData
+        });
+        toast({
+          title: "New Version Created",
+          description: "Pipeline saved as new version successfully."
+        });
+      } else if (currentPipelineId) {
+        // Update existing pipeline
+        await apiRequest(`/api/pipelines/${currentPipelineId}`, {
+          method: "PUT",
+          body: pipelineData
+        });
+        toast({
+          title: "Pipeline Updated",
+          description: "Pipeline saved successfully."
+        });
+      } else {
+        // Create new pipeline
+        if (pipelineName === "New Pipeline") {
+          pipelineData.name = generatePipelineName();
+        }
+        await apiRequest("/api/pipelines", {
+          method: "POST",
+          body: pipelineData
+        });
+        toast({
+          title: "Pipeline Saved",
+          description: "New pipeline created successfully."
+        });
+      }
+
+      setHasUnsavedChanges(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      
+      // Navigate to pending location
+      if (pendingNavigation) {
+        setLocation(pendingNavigation);
+        setPendingNavigation(null);
+      }
+    } catch (error) {
+      console.error("Save failed:", error);
+      toast({
+        title: "Save Failed",
+        description: "Failed to save pipeline. Please try again.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
+  // Discard changes and navigate
+  const handleExitDiscard = () => {
+    setHasUnsavedChanges(false);
+    if (pendingNavigation) {
+      setLocation(pendingNavigation);
+      setPendingNavigation(null);
+    }
+  };
+
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -1513,7 +1627,7 @@ export default function PipelineDesigner() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setLocation('/')}
+                    onClick={handleBackNavigation}
                     className="text-gray-600 hover:text-gray-800"
                   >
                     <ArrowLeft className="w-4 h-4 mr-1" />
@@ -1726,14 +1840,7 @@ export default function PipelineDesigner() {
         initialDescription={pipelineDescription}
       />
 
-      <PipelineVersionDialog
-        isOpen={showVersionDialog}
-        onClose={() => setShowVersionDialog(false)}
-        onSave={handleVersionSave}
-        pipelineName={pipelineName}
-        currentVersion={pipeline?.version || 1}
-        hasChanges={hasUnsavedChanges}
-      />
+
 
       <VersionConflictModal
         isOpen={showVersionConflictModal}
@@ -1766,6 +1873,20 @@ export default function PipelineDesigner() {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onImport={handleImportPipeline}
+      />
+
+      <PipelineExitDialog
+        isOpen={showExitDialog}
+        onClose={() => {
+          setShowExitDialog(false);
+          setPendingNavigation(null);
+        }}
+        onSave={handleExitSave}
+        onDiscard={handleExitDiscard}
+        pipelineName={pipelineName}
+        currentVersion={1}
+        hasUnsavedChanges={hasUnsavedChanges}
+        isExisting={!!currentPipelineId}
       />
 
       <ConsoleLog
