@@ -15,6 +15,7 @@ export const pipelines = pgTable("pipelines", {
   description: text("description"),
   version: integer("version").notNull().default(1),
   projectId: integer("project_id").references(() => projects.id),
+  provider: text("provider").notNull().default("aws"), // aws, gcp, azure
   region: text("region").notNull().default("us-east-1"),
   components: jsonb("components").notNull().default([]),
   connections: jsonb("connections").notNull().default([]),

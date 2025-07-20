@@ -155,7 +155,7 @@ ${pipeline.provider}
 ${pipeline.region}
 
 ## Components
-${pipeline.components.length} components configured
+${Array.isArray(pipeline.components) ? pipeline.components.length : 0} components configured
 
 ## Created
 ${new Date().toLocaleDateString()}
@@ -465,8 +465,8 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
   });
 
-  function generateMockResources(provider: string, accountName: string) {
-    const baseResources = [];
+  function generateMockResources(provider: string, accountName: string): any[] {
+    const baseResources: any[] = [];
     const regions = {
       'AWS': ['us-east-1', 'us-west-2', 'eu-west-1'],
       'Azure': ['eastus', 'westus2', 'westeurope'], 
