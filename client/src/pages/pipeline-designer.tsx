@@ -16,7 +16,6 @@ import ReactFlow, {
 } from "reactflow";
 import "reactflow/dist/style.css";
 
-
 import ComponentLibrary from "@/components/pipeline/component-library";
 import PropertiesPanel from "@/components/pipeline/properties-panel";
 import ConsoleLog from "@/components/ui/console-log";
@@ -81,30 +80,36 @@ export default function PipelineDesigner() {
   const [edges, setEdges, originalOnEdgesChange] = useEdgesState([]);
 
   // Enhanced change tracking for components added/removed
-  const onNodesChange = useCallback((changes: any) => {
-    originalOnNodesChange(changes);
-    // Track changes for autosave - detect add/remove operations
-    const hasNodeChanges = changes.some((change: any) => 
-      change.type === 'add' || change.type === 'remove'
-    );
-    if (!hasImportedData.current && hasNodeChanges) {
-      setHasUnsavedChanges(true);
-      console.log("Node changes detected, triggering autosave");
-    }
-  }, [originalOnNodesChange]);
+  const onNodesChange = useCallback(
+    (changes: any) => {
+      originalOnNodesChange(changes);
+      // Track changes for autosave - detect add/remove operations
+      const hasNodeChanges = changes.some(
+        (change: any) => change.type === "add" || change.type === "remove",
+      );
+      if (!hasImportedData.current && hasNodeChanges) {
+        setHasUnsavedChanges(true);
+        console.log("Node changes detected, triggering autosave");
+      }
+    },
+    [originalOnNodesChange],
+  );
 
   // Enhanced change tracking for connections
-  const onEdgesChange = useCallback((changes: any) => {
-    originalOnEdgesChange(changes);
-    // Track connection changes for autosave
-    const hasEdgeChanges = changes.some((change: any) => 
-      change.type === 'add' || change.type === 'remove'
-    );
-    if (!hasImportedData.current && hasEdgeChanges) {
-      setHasUnsavedChanges(true);
-      console.log("Edge changes detected, triggering autosave");
-    }
-  }, [originalOnEdgesChange]);
+  const onEdgesChange = useCallback(
+    (changes: any) => {
+      originalOnEdgesChange(changes);
+      // Track connection changes for autosave
+      const hasEdgeChanges = changes.some(
+        (change: any) => change.type === "add" || change.type === "remove",
+      );
+      if (!hasImportedData.current && hasEdgeChanges) {
+        setHasUnsavedChanges(true);
+        console.log("Edge changes detected, triggering autosave");
+      }
+    },
+    [originalOnEdgesChange],
+  );
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [showPropertiesPanel, setShowPropertiesPanel] = useState(false);
   const [pipelineName, setPipelineName] = useState("New Pipeline");
@@ -122,7 +127,9 @@ export default function PipelineDesigner() {
   const [showExitDialog, setShowExitDialog] = useState(false);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(
+    null,
+  );
   const [conflictData, setConflictData] = useState<{
     exists: boolean;
     latestVersion: number;
@@ -132,21 +139,25 @@ export default function PipelineDesigner() {
 
   const [showComponentLibrary, setShowComponentLibrary] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(null);
-  const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(null);
+  const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(
+    null,
+  );
+  const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(
+    null,
+  );
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
     new Set(),
   );
-  
+
   // Console log states
   const [showConsole, setShowConsole] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [consoleTitle, setConsoleTitle] = useState("");
   const [consoleLoading, setConsoleLoading] = useState(false);
-  
+
   // Track if we've imported data to prevent auto-generation from overriding it
   const hasImportedData = useRef(false);
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -174,17 +185,17 @@ export default function PipelineDesigner() {
       name: pipelineName,
       description: pipelineDescription,
       region: pipelineRegion,
-      components: nodes.map(node => ({
+      components: nodes.map((node) => ({
         id: node.id,
         type: node.type,
         position: node.position,
-        data: node.data
+        data: node.data,
       })),
-      connections: edges.map(edge => ({
+      connections: edges.map((edge) => ({
         id: edge.id,
         source: edge.source,
-        target: edge.target
-      }))
+        target: edge.target,
+      })),
     });
 
     // Don't save if nothing has changed
@@ -194,49 +205,51 @@ export default function PipelineDesigner() {
 
     try {
       setIsAutoSaving(true);
-      
+
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
         provider: getCloudProvider(nodes),
         region: pipelineRegion,
-        components: nodes.map(node => ({
+        components: nodes.map((node) => ({
           id: node.id,
           type: node.type,
           position: node.position,
-          data: node.data
+          data: node.data,
         })),
-        connections: edges.map(edge => ({
+        connections: edges.map((edge) => ({
           id: edge.id,
           source: edge.source,
-          target: edge.target
-        }))
+          target: edge.target,
+        })),
       };
 
       let savedPipeline;
       if (currentPipelineId) {
         // Update existing pipeline
-        savedPipeline = await apiRequest(`/api/pipelines/${currentPipelineId}`, {
-          method: "PUT",
-          body: pipelineData,
-        });
+        savedPipeline = await apiRequest(
+          `/api/pipelines/${currentPipelineId}`,
+          {
+            method: "PUT",
+            body: JSON.stringify(pipelineData),
+          },
+        );
       } else {
         // Create new pipeline
         savedPipeline = await apiRequest("/api/pipelines", {
-          method: "POST", 
-          body: pipelineData,
+          method: "POST",
+          body: JSON.stringify(pipelineData),
         });
         setCurrentPipelineId(savedPipeline.id);
       }
 
       lastSaveData.current = currentData;
       setHasUnsavedChanges(false);
-      
+
       // Invalidate queries to update My Pipelines
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
-      
+
       console.log("Pipeline auto-saved successfully:", savedPipeline.name);
-      
     } catch (error) {
       console.error("Auto-save failed:", error);
       // Don't show error toast for auto-save failures to avoid annoying user
@@ -244,14 +257,14 @@ export default function PipelineDesigner() {
       setIsAutoSaving(false);
     }
   }, [
-    autoSaveEnabled, 
-    isAutoSaving, 
-    pipelineName, 
-    pipelineDescription, 
-    pipelineRegion, 
-    nodes, 
-    edges, 
-    currentPipelineId
+    autoSaveEnabled,
+    isAutoSaving,
+    pipelineName,
+    pipelineDescription,
+    pipelineRegion,
+    nodes,
+    edges,
+    currentPipelineId,
   ]);
 
   // Helper function to determine cloud provider from components
@@ -260,7 +273,7 @@ export default function PipelineDesigner() {
       if (node.type === "cloudComponent" && node.data?.componentType) {
         const type = node.data.componentType;
         if (type.startsWith("azure-")) return "azure";
-        if (type.startsWith("gcp-")) return "gcp"; 
+        if (type.startsWith("gcp-")) return "gcp";
         return "aws"; // Default for AWS components
       }
     }
@@ -269,7 +282,12 @@ export default function PipelineDesigner() {
 
   // Effect to trigger autosave when nodes or edges change
   useEffect(() => {
-    if (!autoSaveEnabled || isAutoSaving || hasImportedData.current || (!hasUnsavedChanges)) {
+    if (
+      !autoSaveEnabled ||
+      isAutoSaving ||
+      hasImportedData.current ||
+      !hasUnsavedChanges
+    ) {
       return;
     }
 
@@ -282,75 +300,84 @@ export default function PipelineDesigner() {
     autoSaveTimeout.current = setTimeout(async () => {
       try {
         setIsAutoSaving(true);
-        
+
         // Auto-generate pipeline name if still default and has components
         let currentName = pipelineName;
-        if (pipelineName === "New Pipeline" && nodes.length > 0 && !currentPipelineId) {
+        if (
+          pipelineName === "New Pipeline" &&
+          nodes.length > 0 &&
+          !currentPipelineId
+        ) {
           currentName = generatePipelineName();
           setPipelineName(currentName);
         }
-        
+
         const pipelineData = {
           name: currentName,
           description: pipelineDescription,
           provider: getCloudProvider(nodes),
           region: pipelineRegion,
-          components: nodes.map(node => ({
+          components: nodes.map((node) => ({
             id: node.id,
             type: node.type,
             position: node.position,
-            data: node.data
+            data: node.data,
           })),
-          connections: edges.map(edge => ({
+          connections: edges.map((edge) => ({
             id: edge.id,
             source: edge.source,
-            target: edge.target
-          }))
+            target: edge.target,
+          })),
         };
 
         let savedPipeline;
         if (currentPipelineId) {
           // Update existing pipeline
-          savedPipeline = await apiRequest(`/api/pipelines/${currentPipelineId}`, {
-            method: "PUT",
-            body: pipelineData,
-          });
+          savedPipeline = await apiRequest(
+            `/api/pipelines/${currentPipelineId}`,
+            {
+              method: "PUT",
+              body: JSON.stringify(pipelineData),
+            },
+          );
         } else {
           // Create new pipeline
           savedPipeline = await apiRequest("/api/pipelines", {
-            method: "POST", 
-            body: pipelineData,
+            method: "POST",
+            body: JSON.stringify(pipelineData),
           });
           setCurrentPipelineId(savedPipeline.id);
         }
 
         setHasUnsavedChanges(false);
-        
+
         // Generate Terraform configuration if components exist
         if (nodes.length > 0) {
           try {
             await apiRequest("/api/generate-terraform", {
               method: "POST",
-              body: {
+              body: JSON.stringify({
                 pipelineName: savedPipeline.name,
-                components: nodes.map(node => ({
+                components: nodes.map((node) => ({
                   id: node.id,
                   type: node.data?.componentType || node.type,
-                  data: node.data
+                  data: node.data,
                 })),
-                provider: getCloudProvider(nodes)
-              }
+                provider: getCloudProvider(nodes),
+              }),
             });
           } catch (terraformError) {
-            console.error("Failed to generate Terraform configuration:", terraformError);
+            console.error(
+              "Failed to generate Terraform configuration:",
+              terraformError,
+            );
           }
         }
-        
+
         // Invalidate queries to update My Pipelines
         queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
-        
+
         console.log("Pipeline auto-saved successfully:", savedPipeline.name);
-        
       } catch (error) {
         console.error("Auto-save failed:", error);
       } finally {
@@ -372,7 +399,7 @@ export default function PipelineDesigner() {
     pipelineRegion,
     nodes,
     edges,
-    currentPipelineId
+    currentPipelineId,
   ]);
 
   // Capture the canvas as an image
@@ -403,12 +430,10 @@ export default function PipelineDesigner() {
     }
   }, [reactFlowInstance]);
 
-
-
   // Check for imported pipeline data from sessionStorage (My Pipelines or Ask Jane)
   useEffect(() => {
     const importedData = sessionStorage.getItem("importedPipelineData");
-    const importedPipeline = sessionStorage.getItem('importedPipeline');
+    const importedPipeline = sessionStorage.getItem("importedPipeline");
 
     if ((importedData || importedPipeline) && !pipelineId) {
       // Only load if not editing an existing pipeline
@@ -419,15 +444,16 @@ export default function PipelineDesigner() {
         setPipelineName(pipelineData.name);
         setPipelineDescription(pipelineData.description || "");
         setPipelineRegion(pipelineData.region || "us-east-1");
-        
+
         // Mark that we've imported data
         hasImportedData.current = true;
-        
+
         // Show success message for Jane imports
         if (pipelineData.fromJane) {
           toast({
             title: "Pipeline Imported",
-            description: "Terraform configuration loaded from Jane's recommendation",
+            description:
+              "Terraform configuration loaded from Jane's recommendation",
           });
         }
 
@@ -518,7 +544,7 @@ export default function PipelineDesigner() {
       console.log("Line No 200:", pipeline.name);
       setPipelineDescription(pipeline.description || "");
       setPipelineRegion(pipeline.region);
-      
+
       // Set the current credential ID for existing pipelines
       if (pipeline.credentialId) {
         setCurrentCredentialId(pipeline.credentialId);
@@ -563,7 +589,11 @@ export default function PipelineDesigner() {
         }));
         setEdges(loadedEdges);
       }
-    } else if (!pipelineId && pipelineName === "New Pipeline" && !hasImportedData.current) {
+    } else if (
+      !pipelineId &&
+      pipelineName === "New Pipeline" &&
+      !hasImportedData.current
+    ) {
       // Auto-generate name for new pipelines (only if still using default name and haven't imported)
       setPipelineName(generatePipelineName());
     }
@@ -572,8 +602,8 @@ export default function PipelineDesigner() {
   const checkPipelineNameMutation = useMutation({
     mutationFn: async (name: string) => {
       const response = await apiRequest(
-        "GET",
         `/api/pipelines/check-name/${encodeURIComponent(name)}`,
+        { method: "GET" },
       );
       return response.json();
     },
@@ -585,14 +615,17 @@ export default function PipelineDesigner() {
         ? `/api/pipelines/${currentPipelineId}`
         : "/api/pipelines";
       const method = currentPipelineId ? "PUT" : "POST";
-      const response = await apiRequest(method, url, pipelineData);
+      const response = await apiRequest(url, {
+        method,
+        body: JSON.stringify(pipelineData),
+      });
       return response.json();
     },
     onSuccess: (data) => {
       if (!currentPipelineId && data.id) {
         setCurrentPipelineId(data.id);
       }
-      
+
       toast({
         title: "Pipeline saved",
         description: "Your pipeline has been saved successfully.",
@@ -617,7 +650,10 @@ export default function PipelineDesigner() {
         ? `/api/pipelines/${currentPipelineId}`
         : "/api/pipelines";
       const method = currentPipelineId ? "PUT" : "POST";
-      const response = await apiRequest(method, url, pipelineData);
+      const response = await apiRequest(url, {
+        method,
+        body: JSON.stringify(pipelineData),
+      });
       return response.json();
     },
     onSuccess: (data) => {
@@ -639,7 +675,10 @@ export default function PipelineDesigner() {
   const createVersionMutation = useMutation({
     mutationFn: async (pipelineData: any) => {
       if (!pipelineId) throw new Error("No pipeline ID available");
-      const response = await apiRequest("POST", `/api/pipelines/${pipelineId}/versions`, pipelineData);
+      const response = await apiRequest(
+        `/api/pipelines/${pipelineId}/versions`,
+        { method: "POST", body: JSON.stringify(pipelineData) },
+      );
       return response.json();
     },
     onSuccess: (data) => {
@@ -663,7 +702,11 @@ export default function PipelineDesigner() {
 
   // Auto-save function
   const triggerAutoSave = useCallback(async () => {
-    if (!autoSaveEnabled || hasImportedData.current || autoSaveMutation.isPending) {
+    if (
+      !autoSaveEnabled ||
+      hasImportedData.current ||
+      autoSaveMutation.isPending
+    ) {
       return;
     }
 
@@ -676,13 +719,25 @@ export default function PipelineDesigner() {
     autoSaveTimeout.current = setTimeout(async () => {
       try {
         const snapshot = await captureCanvasSnapshot();
-        
+
+        const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
         const pipelineData = {
           name: pipelineName,
-          description: pipelineDescription,
+          description: pipelineDescription || "",
+          version: 1,
+          projectId: selectedProjectId,
+          provider: "aws", // Default provider
           region: pipelineRegion,
           snapshot: snapshot,
           credentialId: currentCredentialId,
+          credentialName: "",
+          credentialUsername: "",
+          credentialPassword: "",
+          isTemplate: false,
+          status: "draft",
+          parentPipelineId: null,
+          isLatestVersion: true,
+          versionNotes: "",
           components: nodes.map((node) => ({
             id: node.id,
             type: node.data.type,
@@ -697,13 +752,23 @@ export default function PipelineDesigner() {
             type: edge.type || "default",
           })),
         };
-        
+
         autoSaveMutation.mutate(pipelineData);
       } catch (error) {
         console.error("Auto-save preparation failed:", error);
       }
     }, 2000);
-  }, [autoSaveEnabled, pipelineName, pipelineDescription, pipelineRegion, nodes, edges, captureCanvasSnapshot, autoSaveMutation, hasImportedData]);
+  }, [
+    autoSaveEnabled,
+    pipelineName,
+    pipelineDescription,
+    pipelineRegion,
+    nodes,
+    edges,
+    captureCanvasSnapshot,
+    autoSaveMutation,
+    hasImportedData,
+  ]);
 
   // Trigger auto-save when pipeline state changes
   useEffect(() => {
@@ -718,8 +783,6 @@ export default function PipelineDesigner() {
       triggerAutoSave();
     }
   }, [pipelineName, triggerAutoSave]);
-
-
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -906,15 +969,28 @@ export default function PipelineDesigner() {
       setShowVersionDialog(true);
       return;
     }
-    
+
     // If editing existing pipeline without changes, save directly
     if (pipelineId) {
       const snapshot = await captureCanvasSnapshot();
+      const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
       const pipelineData = {
         name: pipelineName,
-        description: pipelineDescription,
+        description: pipelineDescription || "",
+        version: 1,
+        projectId: selectedProjectId,
+        provider: "aws",
         region: pipelineRegion,
         snapshot: snapshot,
+        credentialId: currentCredentialId,
+        credentialName: "",
+        credentialUsername: "",
+        credentialPassword: "",
+        isTemplate: false,
+        status: "draft",
+        parentPipelineId: null,
+        isLatestVersion: true,
+        versionNotes: "",
         components: nodes.map((node) => ({
           id: node.id,
           type: node.data.type,
@@ -984,16 +1060,24 @@ export default function PipelineDesigner() {
     // Capture canvas snapshot
     const snapshot = await captureCanvasSnapshot();
 
+    const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
     const pipelineData = {
       name: pipelineName,
-      description: pipelineDescription,
-      region: pipelineRegion,
+      description: pipelineDescription || "",
       version: 1,
+      projectId: selectedProjectId,
+      provider: "aws",
+      region: pipelineRegion,
       snapshot: snapshot,
       credentialId: credential.id,
       credentialName: credential.name,
       credentialUsername: credential.username,
       credentialPassword: credential.password,
+      isTemplate: false,
+      status: "draft",
+      parentPipelineId: null,
+      isLatestVersion: true,
+      versionNotes: "",
       components: nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
@@ -1008,10 +1092,10 @@ export default function PipelineDesigner() {
         type: edge.type || "default",
       })),
     };
-    
+
     // Set the current credential ID for use in properties panel
     setCurrentCredentialId(credential.id);
-    
+
     savePipelineMutation.mutate(pipelineData);
   };
 
@@ -1052,16 +1136,31 @@ export default function PipelineDesigner() {
     setShowEditModal(true);
   };
 
-  const handleVersionSave = async (saveOption: 'existing' | 'new', versionNotes?: string) => {
+  const handleVersionSave = async (
+    saveOption: "existing" | "new",
+    versionNotes?: string,
+  ) => {
     if (!pipelineId) return;
 
     const snapshot = await captureCanvasSnapshot();
+    const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
     const pipelineData = {
       name: pipelineName,
-      description: pipelineDescription,
+      description: pipelineDescription || "",
+      version: 1,
+      projectId: selectedProjectId,
+      provider: "aws",
       region: pipelineRegion,
-      versionNotes: versionNotes || '',
       snapshot: snapshot,
+      credentialId: currentCredentialId,
+      credentialName: "",
+      credentialUsername: "",
+      credentialPassword: "",
+      isTemplate: false,
+      status: "draft",
+      parentPipelineId: null,
+      isLatestVersion: true,
+      versionNotes: versionNotes || "",
       components: nodes.map((node) => ({
         id: node.id,
         type: node.data.type,
@@ -1077,14 +1176,14 @@ export default function PipelineDesigner() {
       })),
     };
 
-    if (saveOption === 'new') {
+    if (saveOption === "new") {
       // Create new version
       createVersionMutation.mutate(pipelineData);
     } else {
       // Update existing version
       savePipelineMutation.mutate(pipelineData);
     }
-    
+
     setHasUnsavedChanges(false);
   };
 
@@ -1150,13 +1249,19 @@ export default function PipelineDesigner() {
     setConsoleLoading(true);
 
     try {
-      setConsoleLogs(prev => [...prev, "[INFO] Starting deployment process..."]);
-      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[INFO] Starting deployment process...",
+      ]);
+      setConsoleLogs((prev) => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
-      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "init"
+      const initResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "init",
+        }),
       });
 
       if (!initResponse.ok) {
@@ -1164,14 +1269,20 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+      setConsoleLogs((prev) => [...prev, "[INIT] " + initResult.output]);
 
-      setConsoleLogs(prev => [...prev, "[INFO] Running terraform apply -auto-approve..."]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[INFO] Running terraform apply -auto-approve...",
+      ]);
 
       // Execute terraform apply with auto-approve
-      const applyResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "apply -auto-approve"
+      const applyResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "apply -auto-approve",
+        }),
       });
 
       if (!applyResponse.ok) {
@@ -1179,20 +1290,31 @@ export default function PipelineDesigner() {
       }
 
       const applyResult = await applyResponse.json();
-      setConsoleLogs(prev => [...prev, "[APPLY] " + applyResult.output]);
-      setConsoleLogs(prev => [...prev, "[SUCCESS] Deployment completed successfully!"]);
+      setConsoleLogs((prev) => [...prev, "[APPLY] " + applyResult.output]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[SUCCESS] Deployment completed successfully!",
+      ]);
 
       toast({
         title: "Deployment Successful",
         description: "Infrastructure has been deployed successfully!",
       });
-
     } catch (error) {
       console.error("Deployment failed:", error);
-      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to deploy infrastructure")]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[ERROR] " +
+          (error instanceof Error
+            ? error.message
+            : "Failed to deploy infrastructure"),
+      ]);
       toast({
         title: "Deployment Failed",
-        description: error instanceof Error ? error.message : "Failed to deploy infrastructure",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to deploy infrastructure",
         variant: "destructive",
       });
     } finally {
@@ -1229,11 +1351,11 @@ export default function PipelineDesigner() {
     // Show confirmation dialog
     const confirmed = window.confirm(
       "⚠️ WARNING: This operation will DESTROY all resources created by this pipeline.\n\n" +
-      "This action cannot be undone and will permanently delete:\n" +
-      "• All cloud infrastructure resources\n" +
-      "• Associated data and configurations\n" +
-      "• Network components and security groups\n\n" +
-      "Are you sure you want to proceed with destruction?"
+        "This action cannot be undone and will permanently delete:\n" +
+        "• All cloud infrastructure resources\n" +
+        "• Associated data and configurations\n" +
+        "• Network components and security groups\n\n" +
+        "Are you sure you want to proceed with destruction?",
     );
 
     if (!confirmed) {
@@ -1247,13 +1369,19 @@ export default function PipelineDesigner() {
     setConsoleLoading(true);
 
     try {
-      setConsoleLogs(prev => [...prev, "[WARNING] Starting destruction process..."]);
-      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[WARNING] Starting destruction process...",
+      ]);
+      setConsoleLogs((prev) => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
-      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "init"
+      const initResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "init",
+        }),
       });
 
       if (!initResponse.ok) {
@@ -1261,14 +1389,20 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+      setConsoleLogs((prev) => [...prev, "[INIT] " + initResult.output]);
 
-      setConsoleLogs(prev => [...prev, "[WARNING] Running terraform destroy -auto-approve..."]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[WARNING] Running terraform destroy -auto-approve...",
+      ]);
 
       // Execute terraform destroy -auto-approve
-      const destroyResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "destroy -auto-approve"
+      const destroyResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "destroy -auto-approve",
+        }),
       });
 
       if (!destroyResponse.ok) {
@@ -1276,21 +1410,32 @@ export default function PipelineDesigner() {
       }
 
       const destroyResult = await destroyResponse.json();
-      setConsoleLogs(prev => [...prev, "[DESTROY] " + destroyResult.output]);
-      setConsoleLogs(prev => [...prev, "[SUCCESS] Destruction completed successfully!"]);
+      setConsoleLogs((prev) => [...prev, "[DESTROY] " + destroyResult.output]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[SUCCESS] Destruction completed successfully!",
+      ]);
 
       toast({
         title: "Destruction Complete",
         description: "Infrastructure destroyed successfully!",
         variant: "destructive",
       });
-
     } catch (error) {
       console.error("Destruction failed:", error);
-      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to destroy infrastructure")]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[ERROR] " +
+          (error instanceof Error
+            ? error.message
+            : "Failed to destroy infrastructure"),
+      ]);
       toast({
         title: "Destruction Failed",
-        description: error instanceof Error ? error.message : "Failed to destroy infrastructure",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to destroy infrastructure",
         variant: "destructive",
       });
     } finally {
@@ -1315,13 +1460,16 @@ export default function PipelineDesigner() {
     setConsoleLoading(true);
 
     try {
-      setConsoleLogs(prev => [...prev, "[INFO] Starting preview process..."]);
-      setConsoleLogs(prev => [...prev, "[INFO] Running terraform init..."]);
+      setConsoleLogs((prev) => [...prev, "[INFO] Starting preview process..."]);
+      setConsoleLogs((prev) => [...prev, "[INFO] Running terraform init..."]);
 
       // Execute terraform init
-      const initResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "init"
+      const initResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "init",
+        }),
       });
 
       if (!initResponse.ok) {
@@ -1329,14 +1477,17 @@ export default function PipelineDesigner() {
       }
 
       const initResult = await initResponse.json();
-      setConsoleLogs(prev => [...prev, "[INIT] " + initResult.output]);
+      setConsoleLogs((prev) => [...prev, "[INIT] " + initResult.output]);
 
-      setConsoleLogs(prev => [...prev, "[INFO] Running terraform plan..."]);
+      setConsoleLogs((prev) => [...prev, "[INFO] Running terraform plan..."]);
 
       // Execute terraform plan
-      const planResponse = await apiRequest("POST", "/api/terraform/execute", {
-        pipelineName: pipelineName,
-        command: "plan"
+      const planResponse = await apiRequest("/api/terraform/execute", {
+        method: "POST",
+        body: JSON.stringify({
+          pipelineName: pipelineName,
+          command: "plan",
+        }),
       });
 
       if (!planResponse.ok) {
@@ -1344,20 +1495,31 @@ export default function PipelineDesigner() {
       }
 
       const planResult = await planResponse.json();
-      setConsoleLogs(prev => [...prev, "[PLAN] " + planResult.output]);
-      setConsoleLogs(prev => [...prev, "[SUCCESS] Preview completed successfully!"]);
+      setConsoleLogs((prev) => [...prev, "[PLAN] " + planResult.output]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[SUCCESS] Preview completed successfully!",
+      ]);
 
       toast({
         title: "Preview Complete",
         description: "Infrastructure plan generated successfully!",
       });
-
     } catch (error) {
       console.error("Preview failed:", error);
-      setConsoleLogs(prev => [...prev, "[ERROR] " + (error instanceof Error ? error.message : "Failed to generate infrastructure plan")]);
+      setConsoleLogs((prev) => [
+        ...prev,
+        "[ERROR] " +
+          (error instanceof Error
+            ? error.message
+            : "Failed to generate infrastructure plan"),
+      ]);
       toast({
         title: "Preview Failed",
-        description: error instanceof Error ? error.message : "Failed to generate infrastructure plan",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to generate infrastructure plan",
         variant: "destructive",
       });
     } finally {
@@ -1439,12 +1601,15 @@ export default function PipelineDesigner() {
       setPipelineName(pipelineData.name || "Imported Pipeline");
       setPipelineDescription(pipelineData.description || "");
       setPipelineRegion(pipelineData.region || "us-east-1");
-      
+
       // Mark that we've imported data
       hasImportedData.current = true;
 
       // Load components to canvas
-      if (Array.isArray(pipelineData.components) && pipelineData.components.length > 0) {
+      if (
+        Array.isArray(pipelineData.components) &&
+        pipelineData.components.length > 0
+      ) {
         const loadedNodes = pipelineData.components.map((component: any) => ({
           id: component.id,
           type: "cloudComponent",
@@ -1460,7 +1625,10 @@ export default function PipelineDesigner() {
       }
 
       // Load connections
-      if (Array.isArray(pipelineData.connections) && pipelineData.connections.length > 0) {
+      if (
+        Array.isArray(pipelineData.connections) &&
+        pipelineData.connections.length > 0
+      ) {
         const loadedEdges = pipelineData.connections.map((connection: any) => ({
           id: connection.id,
           source: connection.source,
@@ -1486,7 +1654,8 @@ export default function PipelineDesigner() {
       console.error("Failed to import pipeline:", error);
       toast({
         title: "Import failed",
-        description: "Failed to load pipeline data. Please check the file format.",
+        description:
+          "Failed to load pipeline data. Please check the file format.",
         variant: "destructive",
       });
     }
@@ -1495,57 +1664,60 @@ export default function PipelineDesigner() {
   // Navigation guard for back button
   const handleBackNavigation = () => {
     if (hasUnsavedChanges && nodes.length > 0) {
-      setPendingNavigation('/');
+      setPendingNavigation("/");
       setShowExitDialog(true);
     } else {
-      setLocation('/');
+      setLocation("/");
     }
   };
 
   // Save pipeline when exiting
-  const handleExitSave = async (saveOption: 'existing' | 'new', versionNotes?: string) => {
+  const handleExitSave = async (
+    saveOption: "existing" | "new",
+    versionNotes?: string,
+  ) => {
     try {
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
         provider: getCloudProvider(nodes),
         region: pipelineRegion,
-        components: nodes.map(node => ({
+        components: nodes.map((node) => ({
           id: node.id,
           type: node.type,
           position: node.position,
-          data: node.data
+          data: node.data,
         })),
-        connections: edges.map(edge => ({
+        connections: edges.map((edge) => ({
           id: edge.id,
           source: edge.source,
-          target: edge.target
-        }))
+          target: edge.target,
+        })),
       };
 
-      if (saveOption === 'new' && currentPipelineId) {
+      if (saveOption === "new" && currentPipelineId) {
         // Create new version
         const newVersionData = {
           ...pipelineData,
-          versionNotes: versionNotes || ""
+          versionNotes: versionNotes || "",
         };
         await apiRequest(`/api/pipelines/${currentPipelineId}/versions`, {
           method: "POST",
-          body: newVersionData
+          body: JSON.stringify(newVersionData),
         });
         toast({
           title: "New Version Created",
-          description: "Pipeline saved as new version successfully."
+          description: "Pipeline saved as new version successfully.",
         });
       } else if (currentPipelineId) {
         // Update existing pipeline
         await apiRequest(`/api/pipelines/${currentPipelineId}`, {
           method: "PUT",
-          body: pipelineData
+          body: JSON.stringify(pipelineData),
         });
         toast({
           title: "Pipeline Updated",
-          description: "Pipeline saved successfully."
+          description: "Pipeline saved successfully.",
         });
       } else {
         // Create new pipeline
@@ -1554,17 +1726,17 @@ export default function PipelineDesigner() {
         }
         await apiRequest("/api/pipelines", {
           method: "POST",
-          body: pipelineData
+          body: JSON.stringify(pipelineData),
         });
         toast({
           title: "Pipeline Saved",
-          description: "New pipeline created successfully."
+          description: "New pipeline created successfully.",
         });
       }
 
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
-      
+
       // Navigate to pending location
       if (pendingNavigation) {
         setLocation(pendingNavigation);
@@ -1575,7 +1747,7 @@ export default function PipelineDesigner() {
       toast({
         title: "Save Failed",
         description: "Failed to save pipeline. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       });
       throw error;
     }
@@ -1599,9 +1771,12 @@ export default function PipelineDesigner() {
             <div className="flex items-center space-x-4">
               {/* Logo and Brand */}
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{
-                  background: 'rgb(138, 83, 214)'
-                }}>
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{
+                    background: "rgb(138, 83, 214)",
+                  }}
+                >
                   <Cloud className="text-white w-5 h-5" />
                 </div>
                 <div className="border-r border-gray-300 h-8"></div>
@@ -1619,7 +1794,9 @@ export default function PipelineDesigner() {
         </header>
 
         <div className="flex-1 flex overflow-hidden">
-          {showComponentLibrary && <ComponentLibrary nodes={nodes} onClearCanvas={handleClearCanvas} />}
+          {showComponentLibrary && (
+            <ComponentLibrary nodes={nodes} onClearCanvas={handleClearCanvas} />
+          )}
 
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
@@ -1691,10 +1868,14 @@ export default function PipelineDesigner() {
                       onClick={handlePreviewPipeline}
                       disabled={!pipelineName}
                       className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 disabled:opacity-50"
-                      style={!pipelineName ? {} : {
-                        borderColor: 'rgb(138, 83, 214)',
-                        color: 'rgb(138, 83, 214)'
-                      }}
+                      style={
+                        !pipelineName
+                          ? {}
+                          : {
+                              borderColor: "rgb(138, 83, 214)",
+                              color: "rgb(138, 83, 214)",
+                            }
+                      }
                     >
                       <Eye className="w-4 h-4 mr-1" />
                       Preview
@@ -1789,7 +1970,6 @@ export default function PipelineDesigner() {
                   >
                     <Plus className="w-4 h-4" />
                   </Button>
-
                 </div>
               </div>
             </div>
@@ -1852,8 +2032,6 @@ export default function PipelineDesigner() {
         initialName={pipelineName}
         initialDescription={pipelineDescription}
       />
-
-
 
       <VersionConflictModal
         isOpen={showVersionConflictModal}

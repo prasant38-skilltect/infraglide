@@ -4,9 +4,28 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
@@ -42,7 +61,7 @@ export default function LoginPage() {
       }
 
       const data = await response.json();
-      
+
       // Store authentication data
       localStorage.setItem("auth_token", data.token);
       localStorage.setItem("session_id", data.sessionId);
@@ -58,7 +77,10 @@ export default function LoginPage() {
     } catch (error) {
       toast({
         title: "Login failed",
-        description: error instanceof Error ? error.message : "An error occurred during login",
+        description:
+          error instanceof Error
+            ? error.message
+            : "An error occurred during login",
         variant: "destructive",
       });
     } finally {
@@ -76,7 +98,8 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl">Sign in to your account</CardTitle>
           <CardDescription>
-            Enter your credentials to access the infrastructure management platform
+            Enter your credentials to access the infrastructure management
+            platform
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,7 +180,10 @@ export default function LoginPage() {
             <div className="text-center mt-4">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link href="/signup" className="text-purple-600 hover:underline">
+                <Link
+                  href="/signup"
+                  className="text-purple-600 hover:underline"
+                >
                   Sign up
                 </Link>
               </p>
@@ -166,7 +192,8 @@ export default function LoginPage() {
 
           <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-md">
             <p className="text-sm text-blue-700 dark:text-blue-300">
-              <strong>Demo Account:</strong> Use email "admin@infraglide.com" and password "admin123" to test the application.
+              <strong>Demo Account:</strong> Use email "admin@infraglide.com"
+              and password "admin123" to test the application.
             </p>
           </div>
         </CardContent>

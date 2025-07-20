@@ -12,27 +12,29 @@ export async function apiRequest(
   options: RequestInit = {},
 ): Promise<Response> {
   const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   // Add authentication headers if available
   const token = localStorage.getItem("auth_token");
   const sessionId = localStorage.getItem("session_id");
-  
+
   if (token) {
     defaultHeaders.Authorization = `Bearer ${token}`;
   }
-  
+
   if (sessionId) {
-    defaultHeaders['X-Session-Id'] = sessionId;
+    defaultHeaders["X-Session-Id"] = sessionId;
   }
 
   const res = await fetch(url, {
-    ...options,
+    // ...options,
+    method: options.method || "GET",
     headers: {
       ...defaultHeaders,
       ...options.headers,
     },
+    body: options.body ? options.body : undefined,
     credentials: "include",
   });
 
@@ -51,13 +53,13 @@ export const getQueryFn: <T>(options: {
     // Add authentication headers if available
     const token = localStorage.getItem("auth_token");
     const sessionId = localStorage.getItem("session_id");
-    
+
     if (token) {
       defaultHeaders.Authorization = `Bearer ${token}`;
     }
-    
+
     if (sessionId) {
-      defaultHeaders['X-Session-Id'] = sessionId;
+      defaultHeaders["X-Session-Id"] = sessionId;
     }
 
     const res = await fetch(queryKey.join("/") as string, {

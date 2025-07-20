@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 
-
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -73,9 +72,11 @@ type SortDirection = "asc" | "desc";
 export default function MyPipelines() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Get selected project from localStorage
-  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
+  const selectedProjectId = parseInt(
+    localStorage.getItem("selectedProjectId") || "1",
+  );
   const [location, setLocation] = useLocation();
   const [sortField, setSortField] = useState<SortField>("createdAt");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
@@ -84,33 +85,56 @@ export default function MyPipelines() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [selectedProvider, setSelectedProvider] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  
+
   // Modal states
   const [showDeleteDialog, setShowDeleteDialog] = useState<number | null>(null);
-  const [showRenameDialog, setShowRenameDialog] = useState<Pipeline | null>(null);
+  const [showRenameDialog, setShowRenameDialog] = useState<Pipeline | null>(
+    null,
+  );
   const [newPipelineName, setNewPipelineName] = useState("");
   const [newPipelineDescription, setNewPipelineDescription] = useState("");
   const [diffDialogOpen, setDiffDialogOpen] = useState(false);
   const [diffPipelineName, setDiffPipelineName] = useState<string>("");
 
   // Fetch both owned and shared pipelines filtered by selected project
-  const { data: ownedPipelines = [], isLoading: isLoadingOwned } = useQuery<Pipeline[]>({
+  const { data: ownedPipelines = [], isLoading: isLoadingOwned } = useQuery<
+    Pipeline[]
+  >({
     queryKey: ["/api/pipelines", { projectId: selectedProjectId }],
-    queryFn: () => apiRequest(`/api/pipelines?projectId=${selectedProjectId}`),
+    queryFn: async () => {
+      const res = await apiRequest(
+        `/api/pipelines?projectId=${selectedProjectId}`,
+      );
+      return await res.json(); // ✅ Convert ReadableStream to JSON here
+    },
   });
 
-  const { data: sharedPipelines = [], isLoading: isLoadingShared } = useQuery<Pipeline[]>({
+  const { data: sharedPipelines = [], isLoading: isLoadingShared } = useQuery<
+    Pipeline[]
+  >({
     queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }],
-    queryFn: () => apiRequest(`/api/shared/pipelines?projectId=${selectedProjectId}`),
-    retry: 1,
-    retryOnMount: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryFn: async () => {
+      const res = await apiRequest(
+        `/api/shared/pipelines?projectId=${selectedProjectId}`,
+      );
+      return await res.json(); // ✅ Convert to usable JSON here
+    },
   });
 
+  console.log("Owned Pipelines:", ownedPipelines);
+  console.log("Shared Pipelines:", sharedPipelines);
   // Combine pipelines with ownership indicators
   const pipelines = useMemo(() => {
-    const owned = (ownedPipelines || []).map(p => ({ ...p, isOwned: true, isShared: false }));
-    const shared = (sharedPipelines || []).map(p => ({ ...p, isOwned: false, isShared: true }));
+    const owned = ownedPipelines.map((p) => ({
+      ...p,
+      isOwned: true,
+      isShared: false,
+    }));
+    const shared = sharedPipelines.map((p) => ({
+      ...p,
+      isOwned: false,
+      isShared: true,
+    }));
     return [...owned, ...shared];
   }, [ownedPipelines, sharedPipelines]);
 
@@ -119,7 +143,10 @@ export default function MyPipelines() {
   // Delete pipeline mutation
   const deletePipelineMutation = useMutation({
     mutationFn: async (pipelineId: number) => {
-      const response = await apiRequest("DELETE", `/api/pipelines/${pipelineId}`);
+      const response = await apiRequest(
+        "DELETE",
+        `/api/pipelines/${pipelineId}`,
+      );
       return response;
     },
     onSuccess: () => {
@@ -142,7 +169,15 @@ export default function MyPipelines() {
 
   // Rename pipeline mutation
   const renamePipelineMutation = useMutation({
-    mutationFn: async ({ pipelineId, name, description }: { pipelineId: number; name: string; description: string }) => {
+    mutationFn: async ({
+      pipelineId,
+      name,
+      description,
+    }: {
+      pipelineId: number;
+      name: string;
+      description: string;
+    }) => {
       const response = await apiRequest("PUT", `/api/pipelines/${pipelineId}`, {
         name,
         description,
@@ -168,8 +203,6 @@ export default function MyPipelines() {
       });
     },
   });
-
-
 
   const handleExport = (pipeline: Pipeline) => {
     const dataStr = JSON.stringify(pipeline, null, 2);
@@ -251,8 +284,6 @@ export default function MyPipelines() {
     };
     input.click();
   };
-
-
 
   const handleDelete = (pipelineId: number) => {
     setShowDeleteDialog(pipelineId);
@@ -480,11 +511,11 @@ export default function MyPipelines() {
   const getProviderBadgeStyle = (provider: string) => {
     switch (provider) {
       case "AWS":
-        return { backgroundColor: 'rgb(255, 153, 0)' };
+        return { backgroundColor: "rgb(255, 153, 0)" };
       case "Azure":
-        return { backgroundColor: 'rgb(0, 120, 215)' };
+        return { backgroundColor: "rgb(0, 120, 215)" };
       case "GCP":
-        return { backgroundColor: 'rgb(52, 168, 83)' };
+        return { backgroundColor: "rgb(52, 168, 83)" };
       default:
         return {};
     }
@@ -492,12 +523,12 @@ export default function MyPipelines() {
 
   if (isLoading) {
     return (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading pipelines...</p>
-          </div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading pipelines...</p>
         </div>
+      </div>
     );
   }
 
@@ -865,17 +896,21 @@ export default function MyPipelines() {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
+      <AlertDialog
+        open={showDeleteDialog !== null}
+        onOpenChange={() => setShowDeleteDialog(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Pipeline</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this pipeline? This action cannot be undone.
+              Are you sure you want to delete this pipeline? This action cannot
+              be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDeleteConfirm}
               className="bg-red-600 hover:bg-red-700"
               disabled={deletePipelineMutation.isPending}
@@ -887,7 +922,10 @@ export default function MyPipelines() {
       </AlertDialog>
 
       {/* Rename Pipeline Dialog */}
-      <Dialog open={showRenameDialog !== null} onOpenChange={() => setShowRenameDialog(null)}>
+      <Dialog
+        open={showRenameDialog !== null}
+        onOpenChange={() => setShowRenameDialog(null)}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Rename Pipeline</DialogTitle>
@@ -923,19 +961,23 @@ export default function MyPipelines() {
             </div>
           </div>
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => setShowRenameDialog(null)}
             >
               Cancel
             </Button>
-            <Button 
-              type="button" 
+            <Button
+              type="button"
               onClick={handleRenameConfirm}
-              disabled={!newPipelineName.trim() || renamePipelineMutation.isPending}
+              disabled={
+                !newPipelineName.trim() || renamePipelineMutation.isPending
+              }
             >
-              {renamePipelineMutation.isPending ? "Updating..." : "Update Pipeline"}
+              {renamePipelineMutation.isPending
+                ? "Updating..."
+                : "Update Pipeline"}
             </Button>
           </DialogFooter>
         </DialogContent>

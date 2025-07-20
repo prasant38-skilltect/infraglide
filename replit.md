@@ -125,6 +125,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 20, 2025 - Fixed Autosave Functionality with Project-Based Filtering
+- **Successfully Fixed Pipeline Designer Autosave with Complete Project Integration**
+  - Fixed critical autosave mutation error by adding all required pipeline fields (projectId, provider, version, etc.)
+  - Updated all pipelineData construction throughout Pipeline Designer to include complete schema fields
+  - Corrected field naming from `project_id` to `projectId` to match database schema requirements
+  - Enhanced autosave trigger to include all mandatory fields: name, description, version, projectId, provider, region, components, connections
+  - Fixed autoSaveMutation, savePipelineMutation, and createVersionMutation to work correctly with project-based filtering
+  - Removed duplicate ProjectSelector from Dashboard page to prevent setSelectedProjectId undefined errors
+  - Integrated SimpleProjectSelector in sidebar with localStorage persistence for consistent project filtering
+  - All pipeline operations now properly validate and save with complete project isolation
+  - Pipeline Designer now fully functional with project-based resource management and autosave capabilities
+
 ### January 20, 2025 - Complete RBAC System Implementation with Granular Resource Sharing
 - **Successfully Implemented Full Role-Based Access Control (RBAC) with Multi-Level Resource Sharing**
   - Added comprehensive database schema with `project_shares` and `resource_permissions` tables for granular access control
