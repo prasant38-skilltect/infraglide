@@ -102,12 +102,15 @@ export default function MyPipelines() {
   const { data: sharedPipelines = [], isLoading: isLoadingShared } = useQuery<Pipeline[]>({
     queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }],
     queryFn: () => apiRequest(`/api/shared/pipelines?projectId=${selectedProjectId}`),
+    retry: 1,
+    retryOnMount: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Combine pipelines with ownership indicators
   const pipelines = useMemo(() => {
-    const owned = ownedPipelines.map(p => ({ ...p, isOwned: true, isShared: false }));
-    const shared = sharedPipelines.map(p => ({ ...p, isOwned: false, isShared: true }));
+    const owned = (ownedPipelines || []).map(p => ({ ...p, isOwned: true, isShared: false }));
+    const shared = (sharedPipelines || []).map(p => ({ ...p, isOwned: false, isShared: true }));
     return [...owned, ...shared];
   }, [ownedPipelines, sharedPipelines]);
 
