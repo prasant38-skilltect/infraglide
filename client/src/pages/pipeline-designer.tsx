@@ -121,6 +121,7 @@ export default function PipelineDesigner() {
   const [currentPipelineId, setCurrentPipelineId] = useState<number | null>(null);
   const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
     new Set(),
@@ -135,6 +136,7 @@ export default function PipelineDesigner() {
   // Track if we've imported data to prevent auto-generation from overriding it
   const hasImportedData = useRef(false);
   const autoSaveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const lastSaveData = useRef<string>("");
 
   // Generate automatic pipeline name with current date and time
   const generatePipelineName = () => {
@@ -146,6 +148,192 @@ export default function PipelineDesigner() {
       .replace(/-/g, "");
     return `newPipeline_${dateTime}`;
   };
+
+  // Autosave function
+  const autoSavePipeline = useCallback(async () => {
+    if (!autoSaveEnabled || isAutoSaving || hasImportedData.current) {
+      return;
+    }
+
+    // Check if there are any changes to save
+    const currentData = JSON.stringify({
+      name: pipelineName,
+      description: pipelineDescription,
+      region: pipelineRegion,
+      components: nodes.map(node => ({
+        id: node.id,
+        type: node.type,
+        position: node.position,
+        data: node.data
+      })),
+      connections: edges.map(edge => ({
+        id: edge.id,
+        source: edge.source,
+        target: edge.target
+      }))
+    });
+
+    // Don't save if nothing has changed
+    if (currentData === lastSaveData.current) {
+      return;
+    }
+
+    try {
+      setIsAutoSaving(true);
+      
+      const pipelineData = {
+        name: pipelineName,
+        description: pipelineDescription,
+        provider: getCloudProvider(nodes),
+        region: pipelineRegion,
+        components: nodes.map(node => ({
+          id: node.id,
+          type: node.type,
+          position: node.position,
+          data: node.data
+        })),
+        connections: edges.map(edge => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target
+        }))
+      };
+
+      let savedPipeline;
+      if (currentPipelineId) {
+        // Update existing pipeline
+        savedPipeline = await apiRequest(`/api/pipelines/${currentPipelineId}`, {
+          method: "PUT",
+          body: pipelineData,
+        });
+      } else {
+        // Create new pipeline
+        savedPipeline = await apiRequest("/api/pipelines", {
+          method: "POST", 
+          body: pipelineData,
+        });
+        setCurrentPipelineId(savedPipeline.id);
+      }
+
+      lastSaveData.current = currentData;
+      setHasUnsavedChanges(false);
+      
+      // Invalidate queries to update My Pipelines
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      
+      console.log("Pipeline auto-saved successfully:", savedPipeline.name);
+      
+    } catch (error) {
+      console.error("Auto-save failed:", error);
+      // Don't show error toast for auto-save failures to avoid annoying user
+    } finally {
+      setIsAutoSaving(false);
+    }
+  }, [
+    autoSaveEnabled, 
+    isAutoSaving, 
+    pipelineName, 
+    pipelineDescription, 
+    pipelineRegion, 
+    nodes, 
+    edges, 
+    currentPipelineId
+  ]);
+
+  // Helper function to determine cloud provider from components
+  const getCloudProvider = (nodeList: Node[]) => {
+    for (const node of nodeList) {
+      if (node.type === "cloudComponent" && node.data?.componentType) {
+        const type = node.data.componentType;
+        if (type.startsWith("azure-")) return "azure";
+        if (type.startsWith("gcp-")) return "gcp"; 
+        return "aws"; // Default for AWS components
+      }
+    }
+    return "aws"; // Default provider
+  };
+
+  // Effect to trigger autosave when nodes or edges change
+  useEffect(() => {
+    if (!autoSaveEnabled || isAutoSaving || hasImportedData.current || (!hasUnsavedChanges)) {
+      return;
+    }
+
+    // Clear existing autosave timeout
+    if (autoSaveTimeout.current) {
+      clearTimeout(autoSaveTimeout.current);
+    }
+
+    // Set new autosave timeout (2 seconds after last change)
+    autoSaveTimeout.current = setTimeout(async () => {
+      try {
+        setIsAutoSaving(true);
+        
+        const pipelineData = {
+          name: pipelineName,
+          description: pipelineDescription,
+          provider: getCloudProvider(nodes),
+          region: pipelineRegion,
+          components: nodes.map(node => ({
+            id: node.id,
+            type: node.type,
+            position: node.position,
+            data: node.data
+          })),
+          connections: edges.map(edge => ({
+            id: edge.id,
+            source: edge.source,
+            target: edge.target
+          }))
+        };
+
+        let savedPipeline;
+        if (currentPipelineId) {
+          // Update existing pipeline
+          savedPipeline = await apiRequest(`/api/pipelines/${currentPipelineId}`, {
+            method: "PUT",
+            body: pipelineData,
+          });
+        } else {
+          // Create new pipeline
+          savedPipeline = await apiRequest("/api/pipelines", {
+            method: "POST", 
+            body: pipelineData,
+          });
+          setCurrentPipelineId(savedPipeline.id);
+        }
+
+        setHasUnsavedChanges(false);
+        
+        // Invalidate queries to update My Pipelines
+        queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+        
+        console.log("Pipeline auto-saved successfully:", savedPipeline.name);
+        
+      } catch (error) {
+        console.error("Auto-save failed:", error);
+        // Don't show error toast for auto-save failures to avoid annoying user
+      } finally {
+        setIsAutoSaving(false);
+      }
+    }, 2000);
+
+    return () => {
+      if (autoSaveTimeout.current) {
+        clearTimeout(autoSaveTimeout.current);
+      }
+    };
+  }, [
+    hasUnsavedChanges,
+    autoSaveEnabled,
+    isAutoSaving,
+    pipelineName,
+    pipelineDescription,
+    pipelineRegion,
+    nodes,
+    edges,
+    currentPipelineId
+  ]);
 
   // Capture the canvas as an image
   const captureCanvasSnapshot = useCallback(async (): Promise<
@@ -666,17 +854,6 @@ export default function PipelineDesigner() {
         handleDeleteEvent as EventListener,
       );
   }, [handleDeleteNode]);
-
-  const getCloudProvider = (nodes: Node[]) => {
-    if (!nodes || nodes.length === 0) return "Unknown";
-
-    const firstNode = nodes[0];
-    const componentType = firstNode.data.type;
-
-    if (componentType.startsWith("gcp-")) return "GCP";
-    if (componentType.startsWith("azure-")) return "Azure";
-    return "AWS";
-  };
 
   const handleSavePipeline = async () => {
     // If editing existing pipeline and there are changes, show version dialog
