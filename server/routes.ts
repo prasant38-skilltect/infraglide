@@ -341,7 +341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create directory with pipeline name
       try {
-        const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+        let str = process.cwd();
+        if (!str || typeof str !== 'string') {
+          throw new Error("line No: 506 Missing or invalid path for somePath");
+        }
+        const pipelineDir = path.join(str, "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
         await fs.mkdir(pipelineDir, { recursive: true });
         
         // Create pipeline metadata file
@@ -415,7 +419,11 @@ This directory was automatically created when the pipeline was saved in InfraGli
       
       // Update pipeline directory and files
       try {
-        const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+        let str = process.cwd();
+        if (!str || typeof str !== 'string') {
+          throw new Error("line No:424  Missing or invalid path for somePath");
+        }
+        const pipelineDir = path.join(str, "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
         await fs.mkdir(pipelineDir, { recursive: true });
         
         // Update pipeline metadata file
@@ -501,7 +509,11 @@ This directory was automatically created when the pipeline was saved in InfraGli
       // Clean up pipeline directory
       if (pipeline) {
         try {
-          const pipelineDir = path.join(process.cwd(), "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
+          let str = process.cwd();
+          if (!str || typeof str !== 'string') {
+            throw new Error("line No: 514 Missing or invalid path for somePath");
+          }
+          const pipelineDir = path.join(str, "pipelines", pipeline.name.replace(/[^a-zA-Z0-9-_]/g, "_"));
           await fs.rm(pipelineDir, { recursive: true, force: true });
           console.log(`Deleted directory for pipeline: ${pipeline.name}`);
         } catch (dirError) {
@@ -1103,8 +1115,8 @@ What specific cloud service would you like to configure?`
       const pipelineDir = path.join('pipelines', sanitizedName);
       
       // Use absolute path to our terraform wrapper
-      const terraformBinaryPath = '/home/runner/.local/bin/terraform';
-      
+      // const terraformBinaryPath = '/home/runner/.local/bin/terraform';
+      const terraformBinaryPath = '/usr/bin/terraform'; 
       try {
         // Execute terraform command in the pipeline directory using absolute path
         const output = execSync(`cd ${pipelineDir} && ${terraformBinaryPath} ${command}`, { 
@@ -2545,5 +2557,6 @@ function generateGCPResource(component: any, config: any, index: number) {
       return null;
   }
 }
+
 
 
