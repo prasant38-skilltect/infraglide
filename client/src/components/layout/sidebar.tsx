@@ -103,9 +103,8 @@ export default function Sidebar() {
             </Link>
           );
         })}
-      </nav>
 
-      {/* User Profile */}
+        {/* User Profile */}
       <div className="p-4 border-t border-purple-400/30">
         <div className="flex items-center space-x-3 mb-3">
           <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{
@@ -148,6 +147,7 @@ export default function Sidebar() {
           Sign Out
         </Button>
       </div>
+      </nav>
 
       {/* Ask Jane Dialog */}
       <Dialog open={showAskJane} onOpenChange={setShowAskJane}>

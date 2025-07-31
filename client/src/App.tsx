@@ -72,7 +72,7 @@ function ProtectedRouter() {
 
   // Show main app with sidebar for all other authenticated pages
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background" style={{height: "auto"}}>
       <Sidebar />
       <main className="flex-1 overflow-y-auto">
         <Switch>

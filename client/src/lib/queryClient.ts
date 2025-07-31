@@ -34,7 +34,7 @@ export async function apiRequest(
       ...defaultHeaders,
       ...options.headers,
     },
-    body: options.body ? JSON.stringify(options.body) : undefined,
+    body: options.body ? options.body : undefined,
     credentials: "include",
   });
 
