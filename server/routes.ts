@@ -919,27 +919,20 @@ This directory was automatically created when the pipeline was saved in InfraGli
 
   async function generatePerplexityResponse(message: string): Promise<{ response: string; terraformJson?: any; hasError?: boolean }> {
     console.log("generatePerplexityResponse called with message:", message);
+  
     try {
       if (!process.env.PERPLEXITY_API_KEY) {
         console.error("Perplexity API key not found in environment variables");
         throw new Error("Perplexity API key not configured");
       }
-      
-      console.log("Perplexity API key found, making API call...");
-
-      const systemPrompt = `You are Jane, an expert infrastructure assistant for InfraGlide. You help users with AWS, Azure, and GCP infrastructure questions. When appropriate, provide Terraform JSON configurations. Be concise, practical, and focus on infrastructure best practices. If the user asks for specific cloud resources, include a working Terraform configuration in your response.`;
-
+  
+      const systemPrompt = `You are Jane, an expert infrastructure assistant for InfraGlide...`;
+  
       const requestBody = {
         model: 'llama-3.1-sonar-small-128k-online',
         messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: message
-          }
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: message }
         ],
         max_tokens: 1000,
         temperature: 0.2,
@@ -949,9 +942,7 @@ This directory was automatically created when the pipeline was saved in InfraGli
         search_recency_filter: 'month',
         stream: false
       };
-
-      console.log("Making request to Perplexity API with body:", JSON.stringify(requestBody, null, 2));
-
+  
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -960,70 +951,71 @@ This directory was automatically created when the pipeline was saved in InfraGli
         },
         body: JSON.stringify(requestBody)
       });
-
-      console.log("Perplexity API response status:", response.status);
-
+  
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Perplexity API error details:", errorText);
         throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
       }
-
+  
       const data = await response.json();
-      console.log("Perplexity API response received:", JSON.stringify(data, null, 2));
-      const aiResponse = data.choices?.[0]?.message?.content || "I'm having trouble processing your request right now.";
-
-      // Try to extract Terraform configuration if the response seems to contain infrastructure code
-      let terraformJson = null;
-      if (message.toLowerCase().includes('terraform') || 
-          message.toLowerCase().includes('s3') || 
-          message.toLowerCase().includes('ec2') || 
-          message.toLowerCase().includes('azure') || 
-          message.toLowerCase().includes('gcp') ||
-          aiResponse.toLowerCase().includes('terraform')) {
+      const aiResponse = typeof data?.choices?.[0]?.message?.content === 'string'
+        ? data.choices[0].message.content
+        : "I'm having trouble processing your request right now.";
+  
+      // Special case: AI is prompting for clarification
+      if (aiResponse.toLowerCase().includes("would you like me to create") || aiResponse.toLowerCase().includes("would you like a terraform configuration")) {
+        return { response: aiResponse, terraformJson: null, hasError: false };
+      }
+  
+      // Try extracting JSON from response
+      let terraformJson: any = null;
+      const terraformBlock = extractTerraformJsonBlock(aiResponse);
+  
+      if (terraformBlock) {
+        try {
+          terraformJson = JSON.parse(terraformBlock);
+        } catch (err) {
+          console.warn("Failed to parse Terraform block from AI. Falling back to rule-based generation.");
+        }
+      }
+  
+      // Fallback generation only if no terraformJson
+      if (!terraformJson && (
+        message.toLowerCase().includes('terraform') ||
+        message.toLowerCase().includes('s3') ||
+        message.toLowerCase().includes('ec2') ||
+        message.toLowerCase().includes('azure') ||
+        message.toLowerCase().includes('gcp') ||
+        aiResponse.toLowerCase().includes('terraform')
+      )) {
         terraformJson = generateBasicTerraformFromMessage(message);
       }
-
+  
       return {
         response: aiResponse,
         terraformJson,
         hasError: false
       };
-
-    } catch (error) {
+  
+    } catch (error: any) {
       console.error("Perplexity API error:", error);
-      
-      // Check if it's an API key issue
-      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
-        // Fallback to basic Terraform generation if available
-        const terraformJson = generateBasicTerraformFromMessage(message);
-        if (terraformJson) {
-          return {
-            response: "I'm having trouble accessing Perplexity AI (API key issue), but I can provide this Terraform configuration for your request:",
-            terraformJson,
-            hasError: false
-          };
-        }
-        
-        return {
-          response: "I'm having trouble accessing Perplexity AI due to an API key issue. Please check your Perplexity API key and try again. For infrastructure questions, you can ask about specific AWS, Azure, or GCP services.",
-          hasError: true
-        };
-      }
-      
-      // General error fallback
+  
       const terraformJson = generateBasicTerraformFromMessage(message);
-      if (terraformJson) {
+  
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
         return {
-          response: "I'm having trouble connecting to Perplexity AI, but I can help you with this Terraform configuration:",
+          response: "I'm having trouble accessing Perplexity AI (API key issue), but I can provide this Terraform configuration for your request:",
           terraformJson,
-          hasError: false
+          hasError: !terraformJson
         };
       }
-      
+  
       return {
-        response: "I'm experiencing technical difficulties with Perplexity AI. Please try asking your infrastructure question again in a moment.",
-        hasError: true
+        response: terraformJson
+          ? "I'm having trouble connecting to Perplexity AI, but I can help you with this Terraform configuration:"
+          : "I'm experiencing technical difficulties with Perplexity AI. Please try asking your infrastructure question again in a moment.",
+        terraformJson,
+        hasError: !terraformJson
       };
     }
   }
@@ -1174,6 +1166,11 @@ This directory was automatically created when the pipeline was saved in InfraGli
     }
 
     return null;
+  }
+
+  function extractTerraformJsonBlock(text: string): string | null {
+    const codeBlockMatch = text.match(/```(?:json|terraform)?([\s\S]*?)```/i);
+    return codeBlockMatch ? codeBlockMatch[1].trim() : null;
   }
 
   // Terraform execution test route
