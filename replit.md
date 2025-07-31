@@ -125,6 +125,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### January 31, 2025 - Successfully Integrated Perplexity AI with Ask Jane Virtual Assistant
+- **Completed Perplexity AI Integration to Replace Hardcoded Responses**
+  - Successfully replaced all hardcoded responses in Ask Jane virtual assistant with intelligent Perplexity AI calls
+  - Implemented comprehensive Perplexity API integration using llama-3.1-sonar-small-128k-online model
+  - Added proper error handling for API key issues with informative fallback messages
+  - Fixed JSON parsing errors in frontend by properly serializing request bodies in apiRequest function
+  - Enhanced system prompts to position Jane as expert infrastructure assistant for InfraGlide
+  - Added fallback Terraform generation for AWS, Azure, and GCP when API key issues occur
+  - Implemented proper response parsing and error handling throughout the chat interface
+  - System now provides real-time AI responses when API key is valid, with graceful degradation to Terraform generation
+  - Added detailed logging for debugging API calls and response handling
+  - Ask Jane chat now uses authentic Perplexity AI for intelligent infrastructure guidance and best practices
+
 ### January 20, 2025 - Fixed Autosave Functionality with Project-Based Filtering
 - **Successfully Fixed Pipeline Designer Autosave with Complete Project Integration**
   - Fixed critical autosave mutation error by adding all required pipeline fields (projectId, provider, version, etc.)

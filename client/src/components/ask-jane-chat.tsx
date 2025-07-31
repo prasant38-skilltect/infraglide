@@ -47,19 +47,20 @@ export default function AskJaneChat() {
 
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
-      return apiRequest("/api/ask-jane", {
+      const response = await apiRequest("/api/ask-jane", {
         method: "POST",
         body: { message },
       });
+      return response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: (data: any) => {
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.response,
+        content: data.response,
         timestamp: new Date(),
-        terraformJson: response.terraformJson,
-        hasError: response.hasError
+        terraformJson: data.terraformJson,
+        hasError: data.hasError
       };
       setMessages(prev => [...prev, assistantMessage]);
     },
@@ -156,7 +157,7 @@ export default function AskJaneChat() {
   };
 
   const convertTerraformToPipelineComponents = (terraformJson: any): any[] => {
-    const components = [];
+    const components: any[] = [];
     let index = 0;
 
     if (!terraformJson?.resource) return components;
