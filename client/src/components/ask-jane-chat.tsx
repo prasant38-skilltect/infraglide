@@ -275,7 +275,7 @@ export default function AskJaneChat() {
                           message.role === 'user'
                             ? 'bg-blue-600 text-white'
                             : message.hasError
-                            ? 'bg-red-50 border border-red-200'
+                            ? 'bg-red-50 border border-red-200 text-red-800'
                             : 'bg-gray-100'
                         }`}
                       >

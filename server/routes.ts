@@ -929,7 +929,7 @@ This directory was automatically created when the pipeline was saved in InfraGli
       const systemPrompt = `You are Jane, an expert infrastructure assistant for InfraGlide...`;
   
       const requestBody = {
-        model: 'llama-3.1-sonar-small-128k-online',
+        model: 'sonar',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: message }
