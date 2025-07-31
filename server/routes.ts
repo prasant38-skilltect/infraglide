@@ -895,56 +895,189 @@ This directory was automatically created when the pipeline was saved in InfraGli
         return res.status(400).json({ error: "Message is required" });
       }
 
-      // Built-in AI responses for infrastructure questions
-      const response = await generateJaneResponse(message.toLowerCase());
+      // Use Perplexity AI for intelligent infrastructure guidance
+      const response = await generatePerplexityResponse(message);
       
       res.json(response);
     } catch (error) {
       console.error("Failed to process Jane request:", error);
-      res.status(500).json({ error: "Failed to process request" });
+      res.status(500).json({ error: "Failed to process request with Perplexity AI" });
     }
   });
 
-  async function generateJaneResponse(message: string): Promise<{ response: string; terraformJson?: any; hasError?: boolean }> {
-    // AWS Services
-    if (message.includes('aws s3') || message.includes('s3 bucket')) {
-      return {
-        response: "Here's a Terraform configuration for an AWS S3 bucket with versioning and encryption:",
-        terraformJson: {
-          terraform: {
-            required_providers: {
-              aws: {
-                source: "hashicorp/aws",
-                version: "~> 5.0"
-              }
-            }
+  async function generatePerplexityResponse(message: string): Promise<{ response: string; terraformJson?: any; hasError?: boolean }> {
+    console.log("generatePerplexityResponse called with message:", message);
+    try {
+      if (!process.env.PERPLEXITY_API_KEY) {
+        console.error("Perplexity API key not found in environment variables");
+        throw new Error("Perplexity API key not configured");
+      }
+      
+      console.log("Perplexity API key found, making API call...");
+
+      const systemPrompt = `You are Jane, an expert infrastructure assistant for InfraGlide. You help users with AWS, Azure, and GCP infrastructure questions. When appropriate, provide Terraform JSON configurations. Be concise, practical, and focus on infrastructure best practices. If the user asks for specific cloud resources, include a working Terraform configuration in your response.`;
+
+      const requestBody = {
+        model: 'llama-3.1-sonar-small-128k-online',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
           },
-          provider: {
+          {
+            role: 'user',
+            content: message
+          }
+        ],
+        max_tokens: 1000,
+        temperature: 0.2,
+        top_p: 0.9,
+        return_images: false,
+        return_related_questions: false,
+        search_recency_filter: 'month',
+        stream: false
+      };
+
+      console.log("Making request to Perplexity API with body:", JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.PERPLEXITY_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      console.log("Perplexity API response status:", response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Perplexity API error details:", errorText);
+        throw new Error(`Perplexity API error: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log("Perplexity API response received:", JSON.stringify(data, null, 2));
+      const aiResponse = data.choices?.[0]?.message?.content || "I'm having trouble processing your request right now.";
+
+      // Try to extract Terraform configuration if the response seems to contain infrastructure code
+      let terraformJson = null;
+      if (message.toLowerCase().includes('terraform') || 
+          message.toLowerCase().includes('s3') || 
+          message.toLowerCase().includes('ec2') || 
+          message.toLowerCase().includes('azure') || 
+          message.toLowerCase().includes('gcp') ||
+          aiResponse.toLowerCase().includes('terraform')) {
+        terraformJson = generateBasicTerraformFromMessage(message);
+      }
+
+      return {
+        response: aiResponse,
+        terraformJson,
+        hasError: false
+      };
+
+    } catch (error) {
+      console.error("Perplexity API error:", error);
+      
+      // Check if it's an API key issue
+      if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+        // Fallback to basic Terraform generation if available
+        const terraformJson = generateBasicTerraformFromMessage(message);
+        if (terraformJson) {
+          return {
+            response: "I'm having trouble accessing Perplexity AI (API key issue), but I can provide this Terraform configuration for your request:",
+            terraformJson,
+            hasError: false
+          };
+        }
+        
+        return {
+          response: "I'm having trouble accessing Perplexity AI due to an API key issue. Please check your Perplexity API key and try again. For infrastructure questions, you can ask about specific AWS, Azure, or GCP services.",
+          hasError: true
+        };
+      }
+      
+      // General error fallback
+      const terraformJson = generateBasicTerraformFromMessage(message);
+      if (terraformJson) {
+        return {
+          response: "I'm having trouble connecting to Perplexity AI, but I can help you with this Terraform configuration:",
+          terraformJson,
+          hasError: false
+        };
+      }
+      
+      return {
+        response: "I'm experiencing technical difficulties with Perplexity AI. Please try asking your infrastructure question again in a moment.",
+        hasError: true
+      };
+    }
+  }
+
+  function generateBasicTerraformFromMessage(message: string): any {
+    const lowerMessage = message.toLowerCase();
+    
+    // AWS S3 Bucket
+    if (lowerMessage.includes('s3') || lowerMessage.includes('bucket')) {
+      return {
+        terraform: {
+          required_providers: {
             aws: {
-              region: "us-east-1"
+              source: "hashicorp/aws",
+              version: "~> 5.0"
+            }
+          }
+        },
+        provider: {
+          aws: {
+            region: "us-east-1"
+          }
+        },
+        resource: {
+          aws_s3_bucket: {
+            example_bucket: {
+              bucket: "infraglide-bucket-${random_id.bucket_suffix.hex}",
+              tags: {
+                Name: "InfraGlide S3 Bucket",
+                Environment: "Production"
+              }
             }
           },
-          resource: {
-            aws_s3_bucket: {
-              example_bucket: {
-                bucket: "my-infrastructure-bucket-${random_id.bucket_suffix.hex}",
-                tags: {
-                  Name: "InfraGlide Bucket",
-                  Environment: "Production"
-                }
-              }
-            },
-            aws_s3_bucket_versioning: {
-              example_bucket_versioning: {
-                bucket: "${aws_s3_bucket.example_bucket.id}",
-                versioning_configuration: {
-                  status: "Enabled"
-                }
-              }
-            },
-            random_id: {
-              bucket_suffix: {
-                byte_length: 4
+          random_id: {
+            bucket_suffix: {
+              byte_length: 4
+            }
+          }
+        }
+      };
+    }
+
+    // AWS EC2 Instance
+    if (lowerMessage.includes('ec2') || lowerMessage.includes('instance')) {
+      return {
+        terraform: {
+          required_providers: {
+            aws: {
+              source: "hashicorp/aws",
+              version: "~> 5.0"
+            }
+          }
+        },
+        provider: {
+          aws: {
+            region: "us-east-1"
+          }
+        },
+        resource: {
+          aws_instance: {
+            example_instance: {
+              ami: "ami-0c02fb55956c7d316",
+              instance_type: "t3.micro",
+              tags: {
+                Name: "InfraGlide EC2 Instance",
+                Environment: "Production"
               }
             }
           }
@@ -952,90 +1085,37 @@ This directory was automatically created when the pipeline was saved in InfraGli
       };
     }
 
-    // Google Cloud Services
-    if (message.includes('google compute') || message.includes('gcp compute') || message.includes('compute engine')) {
+    // Azure Virtual Machine
+    if (lowerMessage.includes('azure') && (lowerMessage.includes('vm') || lowerMessage.includes('virtual machine'))) {
       return {
-        response: "Here's a Terraform configuration for a Google Compute Engine instance:",
-        terraformJson: {
-          terraform: {
-            required_providers: {
-              google: {
-                source: "hashicorp/google",
-                version: "~> 4.0"
-              }
-            }
-          },
-          provider: {
-            google: {
-              project: "my-project-id",
-              region: "us-central1",
-              zone: "us-central1-a"
-            }
-          },
-          resource: {
-            google_compute_instance: {
-              vm_instance: {
-                name: "web-server",
-                machine_type: "e2-micro",
-                zone: "us-central1-a",
-                boot_disk: {
-                  initialize_params: {
-                    image: "debian-cloud/debian-11"
-                  }
-                },
-                network_interface: {
-                  network: "default",
-                  access_config: {}
-                },
-                tags: ["web-server", "http-server"]
-              }
-            }
-          }
-        }
-      };
-    }
-
-    // Azure Services
-    if (message.includes('azure sql') || message.includes('sql database')) {
-      return {
-        response: "Here's a Terraform configuration for Azure SQL Database:",
-        terraformJson: {
-          terraform: {
-            required_providers: {
-              azurerm: {
-                source: "hashicorp/azurerm",
-                version: "~> 3.0"
-              }
-            }
-          },
-          provider: {
+        terraform: {
+          required_providers: {
             azurerm: {
-              features: {}
+              source: "hashicorp/azurerm",
+              version: "~> 3.0"
+            }
+          }
+        },
+        provider: {
+          azurerm: {
+            features: {}
+          }
+        },
+        resource: {
+          azurerm_resource_group: {
+            example: {
+              name: "infraglide-rg",
+              location: "East US"
             }
           },
-          resource: {
-            azurerm_resource_group: {
-              main: {
-                name: "rg-database",
-                location: "East US"
-              }
-            },
-            azurerm_mssql_server: {
-              main: {
-                name: "sql-server-${random_id.server_suffix.hex}",
-                resource_group_name: "${azurerm_resource_group.main.name}",
-                location: "${azurerm_resource_group.main.location}",
-                version: "12.0",
-                administrator_login: "sqladmin",
-                administrator_login_password: "ComplexPassword123!"
-              }
-            },
-            azurerm_mssql_database: {
-              main: {
-                name: "production-db",
-                server_id: "${azurerm_mssql_server.main.id}",
-                collation: "SQL_Latin1_General_CP1_CI_AS",
-                sku_name: "Basic"
+          azurerm_virtual_machine: {
+            example: {
+              name: "infraglide-vm",
+              location: "${azurerm_resource_group.example.location}",
+              resource_group_name: "${azurerm_resource_group.example.name}",
+              vm_size: "Standard_B1s",
+              tags: {
+                Environment: "Production"
               }
             }
           }
@@ -1043,51 +1123,45 @@ This directory was automatically created when the pipeline was saved in InfraGli
       };
     }
 
-    // General infrastructure advice
-    if (message.includes('best practices') || message.includes('architecture')) {
+    // GCP Compute Engine
+    if (lowerMessage.includes('gcp') || lowerMessage.includes('google cloud')) {
       return {
-        response: `Here are some cloud architecture best practices:
-
-**Security:**
-• Use IAM roles and policies for least privilege access
-• Enable encryption at rest and in transit
-• Implement network security groups and firewalls
-
-**Scalability:**
-• Design for horizontal scaling with load balancers
-• Use auto-scaling groups for dynamic capacity
-• Consider microservices architecture
-
-**Reliability:**
-• Multi-AZ/region deployments for high availability
-• Implement health checks and monitoring
-• Use managed services when possible
-
-Would you like me to create a specific Terraform configuration for any of these patterns?`
+        terraform: {
+          required_providers: {
+            google: {
+              source: "hashicorp/google",
+              version: "~> 4.0"
+            }
+          }
+        },
+        provider: {
+          google: {
+            project: "your-project-id",
+            region: "us-central1"
+          }
+        },
+        resource: {
+          google_compute_instance: {
+            example: {
+              name: "infraglide-instance",
+              machine_type: "e2-micro",
+              zone: "us-central1-a",
+              boot_disk: {
+                initialize_params: {
+                  image: "debian-cloud/debian-11"
+                }
+              },
+              network_interface: {
+                network: "default"
+              },
+              tags: ["infraglide", "production"]
+            }
+          }
+        }
       };
     }
 
-    // Default response for unrecognized queries
-    return {
-      response: `I can help you with Terraform configurations for cloud services! Try asking about:
-
-**AWS Services:**
-• "Create an AWS S3 bucket"
-• "Show me AWS EC2 instance configuration"
-
-**Google Cloud:**
-• "Google Compute Engine instance"
-• "GCP Cloud Storage bucket"
-
-**Azure:**
-• "Azure Virtual Machine"
-• "Azure SQL Database"
-
-**General Help:**
-• "Best practices for cloud architecture"
-
-What specific cloud service would you like to configure?`
-    };
+    return null;
   }
 
   // Terraform execution test route
