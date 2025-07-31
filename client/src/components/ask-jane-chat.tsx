@@ -54,14 +54,16 @@ export default function AskJaneChat() {
       return response.json();
     },
     onSuccess: (data: any) => {
+      console.log('Ask Jane API response:', data);
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.response,
+        content: data.response || 'No response received',
         timestamp: new Date(),
         terraformJson: data.terraformJson,
-        hasError: data.hasError
+        hasError: data.hasError || false
       };
+      console.log('Adding assistant message:', assistantMessage);
       setMessages(prev => [...prev, assistantMessage]);
     },
     onError: () => {
