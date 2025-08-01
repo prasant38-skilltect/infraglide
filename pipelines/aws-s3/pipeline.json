@@ -4,7 +4,7 @@
   "description": "",
   "provider": "aws",
   "region": "us-east-1",
-  "updatedAt": "2025-08-01T15:41:33.056Z",
+  "updatedAt": "2025-08-01T15:56:13.033Z",
   "components": [
     {
       "id": "azure-vm-1754062858571",
@@ -14,6 +14,33 @@
       "position": {
         "x": 105.9140625,
         "y": 91.29999542236328
+      }
+    },
+    {
+      "id": "s3-1754063620515",
+      "name": "S3-diqyc0",
+      "type": "s3",
+      "config": {
+        "awsRegion": "us-east-2",
+        "bucketName": "test"
+      },
+      "position": {
+        "x": 8.6953125,
+        "y": 194.49999237060547
+      }
+    },
+    {
+      "id": "s3-1754063738413",
+      "name": "S3-g9d3ue",
+      "type": "s3",
+      "config": {
+        "awsRegion": "us-west-1",
+        "bucketName": "111",
+        "versioning": "enabled"
+      },
+      "position": {
+        "x": -67.19529724121094,
+        "y": 45.959373474121094
       }
     }
   ],

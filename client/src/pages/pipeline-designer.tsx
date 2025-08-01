@@ -708,7 +708,8 @@ export default function PipelineDesigner() {
     if (
       !autoSaveEnabled ||
       hasImportedData.current ||
-      autoSaveMutation.isPending
+      autoSaveMutation.isPending ||
+      showExitDialog
     ) {
       return;
     }
@@ -771,6 +772,7 @@ export default function PipelineDesigner() {
     captureCanvasSnapshot,
     autoSaveMutation,
     hasImportedData,
+    showExitDialog,
   ]);
 
   // Trigger auto-save when pipeline state changes
@@ -1667,6 +1669,11 @@ export default function PipelineDesigner() {
   // Navigation guard for back button
   const handleBackNavigation = () => {
     if (hasUnsavedChanges && nodes.length > 0) {
+      // Clear any pending auto-save timeout when showing exit dialog
+      if (autoSaveTimeout.current) {
+        clearTimeout(autoSaveTimeout.current);
+        autoSaveTimeout.current = null;
+      }
       setPendingNavigation("/");
       setShowExitDialog(true);
     } else {
