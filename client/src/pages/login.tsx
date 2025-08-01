@@ -52,7 +52,7 @@ export default function LoginPage() {
     try {
       const response = await apiRequest("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify(values),
+        body: values,
       });
 
       if (!response.ok) {

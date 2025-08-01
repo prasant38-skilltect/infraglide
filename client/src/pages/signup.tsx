@@ -39,7 +39,7 @@ export default function SignupPage() {
     try {
       const response = await apiRequest("/api/auth/signup", {
         method: "POST",
-        body: JSON.stringify(values),
+        body: values,
       });
 
       if (!response.ok) {
@@ -81,7 +81,7 @@ export default function SignupPage() {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${localStorage.getItem("auth_token")}`
         },
-        body: JSON.stringify(projectData),
+        body: projectData,
       });
 
       if (!response.ok) {
