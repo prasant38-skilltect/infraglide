@@ -124,3 +124,8 @@
 .react-flow__controls button:hover {
   background: hsl(60, 4.8%, 95.9%);
 }
+
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: #2c2c2c #9f9f9f;
+}

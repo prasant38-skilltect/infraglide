@@ -38,8 +38,46 @@ export async function apiRequest(
     credentials: "include",
   });
 
-  await throwIfResNotOk(res);
   return res;
+}
+
+export async function getCredential(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const defaultHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+
+  // Add authentication headers if available
+  const token = localStorage.getItem("auth_token");
+  const sessionId = localStorage.getItem("session_id");
+
+  if (token) {
+    defaultHeaders.Authorization = `Bearer ${token}`;
+  }
+
+  if (sessionId) {
+    defaultHeaders["X-Session-Id"] = sessionId;
+  }
+
+  const res = await fetch(url, {
+    // ...options,
+    method: options.method || "GET",
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+    body: options.body ? options.body : undefined,
+    credentials: "include",
+  });
+  console.log("res...", res)
+  await throwIfResNotOk(res);
+
+  const data = await res.json(); // or res.text(), depending on your API
+
+  console.log("Response data:", data);
+  return data;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";

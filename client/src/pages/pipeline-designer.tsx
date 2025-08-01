@@ -1801,9 +1801,9 @@ export default function PipelineDesigner() {
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col">
             {/* Canvas Toolbar */}
-            <div className="bg-gray-100 border-b border-gray-200 p-4">
+            <div className="bg-gray-100 border-b border-gray-200 p-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1839,7 +1839,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowImportModal(true)}
-                      className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200"
+                      className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 gap-0"
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Import
@@ -1848,7 +1848,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={handleExportPipeline}
-                      className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 transition-all duration-200"
+                      className="border-green-300 text-green-700 hover:bg-green-50 hover:border-green-400 transition-all duration-200 gap-0"
                     >
                       <Download className="w-4 h-4 mr-1" />
                       Export
@@ -1857,7 +1857,7 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={validateAllComponents}
-                      className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 transition-all duration-200"
+                      className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:border-orange-400 transition-all duration-200 gap-0"
                     >
                       <CheckCircle className="w-4 h-4 mr-1" />
                       Validate
@@ -1867,7 +1867,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handlePreviewPipeline}
                       disabled={!pipelineName}
-                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 disabled:opacity-50"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 disabled:opacity-50 gap-0"
                       style={
                         !pipelineName
                           ? {}
@@ -1885,7 +1885,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handleDeployPipeline}
                       disabled={!pipelineName}
-                      className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-all duration-200 disabled:opacity-50 shadow-sm hover:shadow-md"
+                      className="border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400 transition-all duration-200 disabled:opacity-50 shadow-sm hover:shadow-md gap-0"
                     >
                       <Rocket className="w-4 h-4 mr-1" />
                       Deploy
@@ -1895,7 +1895,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={handleDestroyPipeline}
                       disabled={!pipelineName}
-                      className="bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700 transition-all duration-200 shadow-sm hover:shadow-md"
+                      className="bg-red-600 hover:bg-red-700 border-red-600 hover:border-red-700 transition-all duration-200 shadow-sm hover:shadow-md gap-0"
                     >
                       <Zap className="w-4 h-4 mr-1" />
                       Destroy
@@ -1905,7 +1905,7 @@ export default function PipelineDesigner() {
                       size="sm"
                       onClick={() => setShowShareModal(true)}
                       disabled={!currentPipelineId}
-                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200"
+                      className="border-purple-300 text-purple-700 hover:bg-purple-50 hover:border-purple-400 transition-all duration-200 gap-0"
                     >
                       <Share2 className="w-4 h-4 mr-1" />
                       Share
@@ -1914,17 +1914,18 @@ export default function PipelineDesigner() {
                       variant="outline"
                       size="sm"
                       onClick={() => setShowPublishModal(true)}
-                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200"
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-400 transition-all duration-200 gap-0"
                     >
                       <Upload className="w-4 h-4 mr-1" />
                       Publish
                     </Button>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1">
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="gap-0 px-2"
                     onClick={() => reactFlowInstance?.zoomOut()}
                   >
                     <ZoomOut className="w-4 h-4" />
@@ -1935,6 +1936,7 @@ export default function PipelineDesigner() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="gap-0 px-2"
                     onClick={() => reactFlowInstance?.zoomIn()}
                   >
                     <ZoomIn className="w-4 h-4" />
@@ -1942,6 +1944,7 @@ export default function PipelineDesigner() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="gap-0 px-2"
                     onClick={() => reactFlowInstance?.fitView()}
                   >
                     <Maximize className="w-4 h-4" />
@@ -1950,6 +1953,7 @@ export default function PipelineDesigner() {
                     <Button
                       variant="destructive"
                       size="sm"
+                      className="gap-0 px-2"
                       onClick={() => handleDeleteNode(selectedNode.id)}
                     >
                       <Trash2 className="w-4 h-4 mr-1" />
@@ -1959,6 +1963,7 @@ export default function PipelineDesigner() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    className="gap-0"
                     onClick={() =>
                       setShowComponentLibrary(!showComponentLibrary)
                     }
@@ -1975,7 +1980,7 @@ export default function PipelineDesigner() {
             </div>
 
             {/* React Flow Canvas */}
-            <div className="flex-1 bg-gray-50">
+            <div className="flex-1 bg-gray-50" style={{minHeight: "78vh"}}>
               <ReactFlow
                 nodes={nodes}
                 edges={edges}

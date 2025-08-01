@@ -23,7 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 import { Plus, Edit, Trash2, Key, Cloud, Database, Eye, EyeOff, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
+import { queryClient, apiRequest, getCredential } from "@/lib/queryClient";
 import type { Credential } from "@shared/schema";
 
 export default function Credentials() {
@@ -48,7 +48,7 @@ export default function Credentials() {
 
   const { data: credentials = [], isLoading } = useQuery<Credential[]>({
     queryKey: ["/api/credentials", { projectId: selectedProjectId }],
-    queryFn: () => apiRequest(`/api/credentials?projectId=${selectedProjectId}`),
+    queryFn: () => getCredential(`/api/credentials?projectId=${selectedProjectId}`),
   });
 
   const createCredentialMutation = useMutation({
@@ -200,6 +200,7 @@ export default function Credentials() {
   };
 
   // Pagination logic
+  console.log("credentials....", credentials);
   const totalItems = credentials.length;
   const totalPages = Math.ceil(totalItems / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;

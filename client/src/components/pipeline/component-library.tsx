@@ -388,11 +388,12 @@ export default function ComponentLibrary({ nodes = [], onClearCanvas }: Componen
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-2 overflow-y-auto">
           <Tabs
             value={selectedTab}
             onValueChange={handleTabChange}
             className="w-full"
+            style={{width: "90%"}}
           >
             <TabsList className="grid w-full grid-cols-3 mx-4 mt-4">
               <TabsTrigger value="aws">AWS</TabsTrigger>

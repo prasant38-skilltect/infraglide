@@ -172,7 +172,7 @@ export default function Dashboard() {
   };
 
   return (
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-y-auto" style={{maxHeight: "100vh"}}>
         <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
