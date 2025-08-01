@@ -1,0 +1,21 @@
+{
+  "id": 16,
+  "name": "aws-s3",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "updatedAt": "2025-08-01T15:41:33.056Z",
+  "components": [
+    {
+      "id": "azure-vm-1754062858571",
+      "name": "AZURE-VM-i6co5e",
+      "type": "azure-vm",
+      "config": {},
+      "position": {
+        "x": 105.9140625,
+        "y": 91.29999542236328
+      }
+    }
+  ],
+  "connections": []
+}

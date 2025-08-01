@@ -545,6 +545,9 @@ export default function PipelineDesigner() {
       setPipelineDescription(pipeline.description || "");
       setPipelineRegion(pipeline.region);
 
+      // Set the current pipeline ID so auto-save updates instead of creating new
+      setCurrentPipelineId(pipeline.id);
+
       // Set the current credential ID for existing pipelines
       if (pipeline.credentialId) {
         setCurrentCredentialId(pipeline.credentialId);
