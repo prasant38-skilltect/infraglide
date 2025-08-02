@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
   Select,
   SelectContent,
@@ -8,12 +8,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Folder, Users } from "lucide-react";
+import { Folder, Users, Plus } from "lucide-react";
 import type { Project } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
+import CreateProjectModal from "@/components/modals/create-project-modal";
 
 export default function SimpleProjectSelector() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -48,7 +51,48 @@ export default function SimpleProjectSelector() {
 
   const selectedProject = allProjects.find(p => p.id === selectedProjectId);
 
+  // Create project mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (data: { name: string; description: string }) => {
+      const response = await apiRequest("/api/projects", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      return response.json();
+    },
+    onSuccess: (newProject: Project) => {
+      // Invalidate projects query to refetch
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      
+      // Select the new project
+      setSelectedProjectId(newProject.id);
+      localStorage.setItem('selectedProjectId', newProject.id.toString());
+      
+      // Close modal and show success message
+      setShowCreateModal(false);
+      toast({
+        title: "Project Created",
+        description: `${newProject.name} has been created successfully.`,
+      });
+      
+      // Refresh to update all components with new project
+      window.location.reload();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create project. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleProjectChange = (projectId: string) => {
+    if (projectId === "__create_new__") {
+      setShowCreateModal(true);
+      return;
+    }
+    
     const id = parseInt(projectId);
     setSelectedProjectId(id);
     localStorage.setItem('selectedProjectId', id.toString());
@@ -61,6 +105,10 @@ export default function SimpleProjectSelector() {
     
     // Trigger a page refresh to update all components
     window.location.reload();
+  };
+
+  const handleCreateProject = async (data: { name: string; description: string }) => {
+    await createProjectMutation.mutateAsync(data);
   };
 
   if (isLoading) {
@@ -128,8 +176,25 @@ export default function SimpleProjectSelector() {
               ))}
             </>
           )}
+          
+          {/* Create New Project Option */}
+          <div className="border-t my-1" />
+          <SelectItem value="__create_new__" className="text-purple-600">
+            <div className="flex items-center space-x-2">
+              <Plus className="w-4 h-4" />
+              <span className="font-medium">Create New Project</span>
+            </div>
+          </SelectItem>
         </SelectContent>
       </Select>
+
+      {/* Create Project Modal */}
+      <CreateProjectModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateProject}
+        isSubmitting={createProjectMutation.isPending}
+      />
     </div>
   );
 }

@@ -1,0 +1,47 @@
+{
+  "id": 18,
+  "name": "Infraglid_pipeline_1",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "createdAt": "2025-08-02T08:28:49.545Z",
+  "components": [
+    {
+      "id": "ec2-1754123297452",
+      "data": {
+        "name": "EC2-zlb76g",
+        "type": "ec2",
+        "config": {},
+        "componentType": "ec2",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 74,
+        "y": 37.33332824707031
+      }
+    },
+    {
+      "id": "s3-1754123299738",
+      "data": {
+        "name": "S3-dbresy",
+        "type": "s3",
+        "config": {},
+        "componentType": "s3",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 197.75,
+        "y": 157.24999237060547
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "reactflow__edge-ec2-1754123297452-s3-1754123299738",
+      "source": "ec2-1754123297452",
+      "target": "s3-1754123299738"
+    }
+  ]
+}
