@@ -55,17 +55,49 @@ export default function DeployedResources() {
   const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
 
   // Fetch available credentials for account selection - filtered by selected project
-  const { data: credentials } = useQuery<Credential[]>({
+  const { data: credentials = [] } = useQuery<Credential[]>({
     queryKey: ["/api/credentials", { projectId: selectedProjectId }],
-    queryFn: () => fetch(`/api/credentials?projectId=${selectedProjectId}`).then(res => res.json()),
+    queryFn: () => {
+      const token = localStorage.getItem('auth_token');
+      const sessionId = localStorage.getItem('session_id');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      if (sessionId) {
+        headers['X-Session-Id'] = sessionId;
+      }
+      
+      return fetch(`/api/credentials?projectId=${selectedProjectId}`, {
+        headers,
+      }).then(async (response) => {
+        if (!response.ok) {
+          console.error("Failed to fetch credentials:", response.status, response.statusText);
+          return []; // Return empty array instead of throwing error
+        }
+        
+        const data = await response.json();
+        return Array.isArray(data) ? data : []; // Ensure we always return an array
+      });
+    },
+    retry: false,
+    refetchOnWindowFocus: false,
   });
 
   // Filter credentials based on selected provider
   const getCredentialsByProvider = () => {
-    if (!credentials) return [];
+    if (!credentials || !Array.isArray(credentials)) return [];
     if (selectedProvider === "all") return credentials;
     return credentials.filter(cred => cred.provider === selectedProvider);
   };
+
+  // Ensure we have safe credentials array
+  const safeCredentials = Array.isArray(credentials) ? credentials : [];
 
   // Fetch deployed resources
   const { data: deployedResources, isLoading, refetch } = useQuery<CloudResource[]>({
@@ -218,7 +250,7 @@ export default function DeployedResources() {
   const gcpResources = filteredResources(getResourcesByProvider("GCP"));
   const allResources = filteredResources(deployedResources || []);
 
-  if (!credentials || credentials.length === 0) {
+  if (!safeCredentials || safeCredentials.length === 0) {
     return (
         <div className="flex-1 p-8">
           <div className="max-w-4xl mx-auto">
@@ -299,7 +331,7 @@ export default function DeployedResources() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Accounts</SelectItem>
-                    {getCredentialsByProvider().map((credential) => (
+                    {Array.isArray(getCredentialsByProvider()) && getCredentialsByProvider().map((credential) => (
                       <SelectItem key={credential.id} value={credential.id.toString()}>
                         {credential.name}
                       </SelectItem>
