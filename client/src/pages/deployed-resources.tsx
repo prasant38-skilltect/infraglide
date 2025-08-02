@@ -51,9 +51,13 @@ export default function DeployedResources() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
 
-  // Fetch available credentials for account selection
+  // Get selected project from localStorage
+  const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
+
+  // Fetch available credentials for account selection - filtered by selected project
   const { data: credentials } = useQuery<Credential[]>({
-    queryKey: ["/api/credentials"],
+    queryKey: ["/api/credentials", { projectId: selectedProjectId }],
+    queryFn: () => fetch(`/api/credentials?projectId=${selectedProjectId}`).then(res => res.json()),
   });
 
   // Filter credentials based on selected provider
