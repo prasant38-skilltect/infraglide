@@ -17,16 +17,9 @@ import CreateProjectModal from "@/components/modals/create-project-modal";
 export default function SimpleProjectSelector() {
   const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-
-  // Load selected project from localStorage on mount
-  useEffect(() => {
-    const savedProjectId = localStorage.getItem('selectedProjectId');
-    if (savedProjectId) {
-      setSelectedProjectId(parseInt(savedProjectId));
-    }
-  }, []);
 
   // Fetch user's projects and shared projects
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
@@ -40,14 +33,34 @@ export default function SimpleProjectSelector() {
   const isLoading = projectsLoading || sharedLoading;
   const allProjects = [...projects, ...sharedProjects];
 
-  // Set default project if none selected
+  // Initialize project selection once projects are loaded
   useEffect(() => {
-    if (!selectedProjectId && allProjects.length > 0) {
-      const firstProjectId = allProjects[0].id;
-      setSelectedProjectId(firstProjectId);
-      localStorage.setItem('selectedProjectId', firstProjectId.toString());
+    if (!hasInitialized && allProjects.length > 0) {
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      
+      if (savedProjectId) {
+        const savedId = parseInt(savedProjectId);
+        // Verify the saved project still exists
+        const projectExists = allProjects.some(p => p.id === savedId);
+        
+        if (projectExists) {
+          setSelectedProjectId(savedId);
+        } else {
+          // Saved project no longer exists, select first available
+          const firstProjectId = allProjects[0].id;
+          setSelectedProjectId(firstProjectId);
+          localStorage.setItem('selectedProjectId', firstProjectId.toString());
+        }
+      } else {
+        // No saved project, select first available
+        const firstProjectId = allProjects[0].id;
+        setSelectedProjectId(firstProjectId);
+        localStorage.setItem('selectedProjectId', firstProjectId.toString());
+      }
+      
+      setHasInitialized(true);
     }
-  }, [selectedProjectId, allProjects]);
+  }, [allProjects, hasInitialized]);
 
   const selectedProject = allProjects.find(p => p.id === selectedProjectId);
 

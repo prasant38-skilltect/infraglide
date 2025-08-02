@@ -110,7 +110,9 @@ export default function AskJane() {
     alert(`Adding user message to state`);
     setMessages((prev) => {
       const newMessages = [...prev, userMessage];
-      alert(`User messages: Before: ${prev.length}, After: ${newMessages.length}`);
+      alert(
+        `User messages: Before: ${prev.length}, After: ${newMessages.length}`,
+      );
       return newMessages;
     });
 
@@ -268,7 +270,6 @@ export default function AskJane() {
               {/* Messages */}
               <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
                 <div className="space-y-4 pb-4">
-
                   {messages.map((message) => (
                     <div
                       key={message.id}

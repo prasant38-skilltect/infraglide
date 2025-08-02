@@ -1656,16 +1656,19 @@ export default function PipelineDesigner() {
 
   // Navigation guard for back button
   const handleBackNavigation = () => {
+    // Default to my-pipelines, but could be enhanced to remember previous location
+    const returnTo = "/my-pipelines";
+    
     if (hasUnsavedChanges && nodes.length > 0) {
       // Clear any pending auto-save timeout when showing exit dialog
       if (autoSaveTimeout.current) {
         clearTimeout(autoSaveTimeout.current);
         autoSaveTimeout.current = null;
       }
-      setPendingNavigation("/");
+      setPendingNavigation(returnTo);
       setShowExitDialog(true);
     } else {
-      setLocation("/");
+      setLocation(returnTo);
     }
   };
 
