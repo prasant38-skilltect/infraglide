@@ -45,8 +45,7 @@ export default function AskJane() {
 
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
-      console.log("Sending message to Ask Jane:", message);
-      const response = await apiRequest("/api/ask-jane", {
+      return apiRequest("/api/ask-jane", {
         method: "POST",
         body: { message }, // Let apiRequest handle the JSON.stringify
       });

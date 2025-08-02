@@ -34,12 +34,17 @@ export default function AskJaneContent() {
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
       console.log("Sending message to Ask Jane 2:", message);
-      return apiRequest("/api/ask-jane", {
+      const res = await apiRequest("/api/ask-jane", {
         method: "POST",
         body: { message },
       });
+    
+      // ✅ Parse the JSON body
+      const data = await res.json();
+      return data;
     },
     onSuccess: (response) => {
+	    console.log("response...", response)
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
@@ -201,9 +206,9 @@ export default function AskJaneContent() {
 
     return mapping[terraformType] || "aws-ec2";
   };
-
+  console.log("messages.... ", messages);
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full" style={{ overflow: 'auto' }}>
       {/* Messages */}
       <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
         <div className="space-y-4">
