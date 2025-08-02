@@ -260,6 +260,7 @@ export default function DeployedResources() {
           <Card>
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Search Box - First */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -270,7 +271,7 @@ export default function DeployedResources() {
                   />
                 </div>
                 
-                {/* Provider Dropdown - First */}
+                {/* Provider Dropdown - Second Position */}
                 <Select value={selectedProvider} onValueChange={handleProviderChange}>
                   <SelectTrigger>
                     <SelectValue placeholder="All Providers" />
@@ -283,7 +284,7 @@ export default function DeployedResources() {
                   </SelectContent>
                 </Select>
                 
-                {/* Account Dropdown - Second, enabled after provider selection */}
+                {/* Account Dropdown - Third Position, enabled after provider selection */}
                 <Select 
                   value={selectedAccount} 
                   onValueChange={setSelectedAccount}
@@ -302,6 +303,7 @@ export default function DeployedResources() {
                   </SelectContent>
                 </Select>
                 
+                {/* Status Dropdown - Fourth Position */}
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger>
                     <SelectValue placeholder="All Status" />
@@ -315,6 +317,7 @@ export default function DeployedResources() {
                   </SelectContent>
                 </Select>
                 
+                {/* Resource Count - Fifth Position */}
                 <div className="text-sm text-gray-500 flex items-center">
                   <Filter className="w-4 h-4 mr-1" />
                   {allResources.length} resources
