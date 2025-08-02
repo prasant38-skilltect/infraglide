@@ -34,7 +34,12 @@ export async function apiRequest(
       ...defaultHeaders,
       ...options.headers,
     },
-    body: options.body ? options.body : undefined,
+    body:
+      typeof options.body === "string"
+        ? options.body
+        : options.body
+          ? JSON.stringify(options.body)
+          : undefined,
     credentials: "include",
   });
 
@@ -71,7 +76,7 @@ export async function getCredential(
     body: options.body ? options.body : undefined,
     credentials: "include",
   });
-  console.log("res...", res)
+  console.log("res...", res);
   await throwIfResNotOk(res);
 
   const data = await res.json(); // or res.text(), depending on your API
