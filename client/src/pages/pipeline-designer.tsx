@@ -145,7 +145,7 @@ export default function PipelineDesigner() {
   const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(
     null,
   );
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
@@ -775,19 +775,7 @@ export default function PipelineDesigner() {
     showExitDialog,
   ]);
 
-  // Trigger auto-save when pipeline state changes
-  useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      triggerAutoSave();
-    }
-  }, [nodes, edges, triggerAutoSave]);
-
-  // Trigger auto-save when pipeline name changes (and rename directory)
-  useEffect(() => {
-    if (pipelineName !== "New Pipeline" && !hasImportedData.current) {
-      triggerAutoSave();
-    }
-  }, [pipelineName, triggerAutoSave]);
+  // Auto-save disabled - removed auto-save triggers
 
   const onConnect = useCallback(
     (params: Connection) => {

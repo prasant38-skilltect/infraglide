@@ -1,0 +1,36 @@
+{
+  "id": 5,
+  "name": "newPipeline_20250722144803",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "updatedAt": "2025-08-02T08:05:48.467Z",
+  "components": [
+    {
+      "id": "ec2-1754121917185",
+      "type": "cloudComponent",
+      "config": {},
+      "position": {
+        "x": 68.8125,
+        "y": -100.66667175292969
+      }
+    },
+    {
+      "id": "s3-1754121920388",
+      "type": "cloudComponent",
+      "config": {},
+      "position": {
+        "x": 232.46875,
+        "y": 38.74999237060547
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "reactflow__edge-ec2-1754121917185-s3-1754121920388",
+      "type": "smoothstep",
+      "source": "ec2-1754121917185",
+      "target": "s3-1754121920388"
+    }
+  ]
+}
