@@ -56,6 +56,13 @@ export default function DeployedResources() {
     queryKey: ["/api/credentials"],
   });
 
+  // Filter credentials based on selected provider
+  const getCredentialsByProvider = () => {
+    if (!credentials) return [];
+    if (selectedProvider === "all") return credentials;
+    return credentials.filter(cred => cred.provider === selectedProvider);
+  };
+
   // Fetch deployed resources
   const { data: deployedResources, isLoading, refetch } = useQuery<CloudResource[]>({
     queryKey: ["/api/deployed-resources", selectedAccount],
@@ -91,6 +98,12 @@ export default function DeployedResources() {
     return deployedResources.filter(resource => 
       provider === "all" || resource.provider === provider
     );
+  };
+
+  // Reset account selection when provider changes
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider);
+    setSelectedAccount("all"); // Reset account when provider changes
   };
 
   const filteredResources = (resources: CloudResource[]) => {
@@ -247,6 +260,7 @@ export default function DeployedResources() {
           <Card>
             <CardContent className="p-4">
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                {/* Search Box - First */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
@@ -257,23 +271,10 @@ export default function DeployedResources() {
                   />
                 </div>
                 
-                <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                {/* Provider Dropdown - Second Position */}
+                <Select value={selectedProvider} onValueChange={handleProviderChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select Account" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Accounts</SelectItem>
-                    {credentials.map((credential) => (
-                      <SelectItem key={credential.id} value={credential.id.toString()}>
-                        {credential.name} ({credential.provider})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                
-                <Select value={selectedProvider} onValueChange={setSelectedProvider}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Provider" />
+                    <SelectValue placeholder="All Providers" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Providers</SelectItem>
@@ -283,9 +284,29 @@ export default function DeployedResources() {
                   </SelectContent>
                 </Select>
                 
+                {/* Account Dropdown - Third Position, enabled after provider selection */}
+                <Select 
+                  value={selectedAccount} 
+                  onValueChange={setSelectedAccount}
+                  disabled={selectedProvider === "all"}
+                >
+                  <SelectTrigger className={selectedProvider === "all" ? "opacity-50" : ""}>
+                    <SelectValue placeholder="All Accounts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Accounts</SelectItem>
+                    {getCredentialsByProvider().map((credential) => (
+                      <SelectItem key={credential.id} value={credential.id.toString()}>
+                        {credential.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                {/* Status Dropdown - Fourth Position */}
                 <Select value={selectedStatus} onValueChange={setSelectedStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="All Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
@@ -296,6 +317,7 @@ export default function DeployedResources() {
                   </SelectContent>
                 </Select>
                 
+                {/* Resource Count - Fifth Position */}
                 <div className="text-sm text-gray-500 flex items-center">
                   <Filter className="w-4 h-4 mr-1" />
                   {allResources.length} resources

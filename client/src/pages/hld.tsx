@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,52 @@ import type { Pipeline } from "@shared/schema";
 
 export default function HLD() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+
+  // Load selected project from localStorage and listen for changes
+  useEffect(() => {
+    const updateProject = () => {
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      if (savedProjectId) {
+        const newProjectId = parseInt(savedProjectId);
+        setSelectedProjectId(newProjectId);
+        // Reset pipeline selection when project changes
+        setSelectedPipelineId("");
+      }
+    };
+
+    // Initial load
+    updateProject();
+
+    // Listen for storage changes (when project selector changes in other components)
+    window.addEventListener('storage', updateProject);
+    
+    // Also listen for custom event when project changes in the same tab
+    window.addEventListener('projectChanged', updateProject);
+
+    return () => {
+      window.removeEventListener('storage', updateProject);
+      window.removeEventListener('projectChanged', updateProject);
+    };
+  }, []);
 
   const { data: pipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
 
-  const selectedPipeline = pipelines?.find(p => p.id.toString() === selectedPipelineId);
+  // Filter pipelines by selected project
+  const projectPipelines = pipelines?.filter(pipeline => 
+    selectedProjectId ? pipeline.projectId === selectedProjectId : false
+  ) || [];
+
+  // Reset pipeline selection when project pipelines change
+  useEffect(() => {
+    if (selectedPipelineId && !projectPipelines.find(p => p.id.toString() === selectedPipelineId)) {
+      setSelectedPipelineId("");
+    }
+  }, [projectPipelines, selectedPipelineId]);
+
+  const selectedPipeline = projectPipelines?.find(p => p.id.toString() === selectedPipelineId);
 
   const getCloudProvider = (components: any[]) => {
     if (!components || components.length === 0) return "Not specified";
@@ -110,11 +150,15 @@ export default function HLD() {
                   <SelectValue placeholder="Choose a pipeline to generate HLD" />
                 </SelectTrigger>
                 <SelectContent>
-                  {pipelines?.map((pipeline) => (
-                    <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
-                      {pipeline.name} - {pipeline.provider}
-                    </SelectItem>
-                  ))}
+                  {projectPipelines.length === 0 ? (
+                    <SelectItem value="no-pipelines" disabled>No pipelines available for selected project</SelectItem>
+                  ) : (
+                    projectPipelines.map((pipeline) => (
+                      <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
+                        {pipeline.name} - {pipeline.provider}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </CardContent>

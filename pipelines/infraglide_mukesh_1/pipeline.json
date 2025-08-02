@@ -1,0 +1,67 @@
+{
+  "id": 20,
+  "name": "infraglide_mukesh_1",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "createdAt": "2025-08-02T08:43:59.010Z",
+  "components": [
+    {
+      "id": "ec2-1754124179553",
+      "data": {
+        "name": "EC2-58gl9q",
+        "type": "ec2",
+        "config": {},
+        "componentType": "ec2",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 123.3125,
+        "y": 21.833328247070312
+      }
+    },
+    {
+      "id": "s3-1754124181097",
+      "data": {
+        "name": "S3-3k6l5a",
+        "type": "s3",
+        "config": {},
+        "componentType": "s3",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 125.46875,
+        "y": 165.74999237060547
+      }
+    },
+    {
+      "id": "lambda-1754124224075",
+      "data": {
+        "name": "LAMBDA-zipwow",
+        "type": "lambda",
+        "config": {},
+        "componentType": "lambda",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 371.3125,
+        "y": 188.24999237060547
+      }
+    }
+  ],
+  "connections": [
+    {
+      "id": "reactflow__edge-ec2-1754124179553-s3-1754124181097",
+      "source": "ec2-1754124179553",
+      "target": "s3-1754124181097"
+    },
+    {
+      "id": "reactflow__edge-ec2-1754124179553-lambda-1754124224075",
+      "source": "ec2-1754124179553",
+      "target": "lambda-1754124224075"
+    }
+  ]
+}

@@ -64,6 +64,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Pipeline } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+
+// Add the throwIfResNotOk function
+async function throwIfResNotOk(res: Response) {
+  if (!res.ok) {
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
+  }
+}
 import PipelineDiffDialog from "@/components/pipeline-diff-dialog";
 
 type SortField = "name" | "provider" | "description" | "createdAt";
@@ -143,25 +151,60 @@ export default function MyPipelines() {
   // Delete pipeline mutation
   const deletePipelineMutation = useMutation({
     mutationFn: async (pipelineId: number) => {
-      const response = await apiRequest(
-        "DELETE",
-        `/api/pipelines/${pipelineId}`,
-      );
+      const response = await apiRequest(`/api/pipelines/${pipelineId}`, {
+        method: "DELETE",
+      });
+      await throwIfResNotOk(response);
       return response;
     },
     onSuccess: () => {
+      // Invalidate all query variations and force fresh data fetch
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
+      
+      // Also invalidate project-specific queries
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
+      
+      // Force immediate refetch by removing from cache
+      queryClient.removeQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.removeQueries({ queryKey: ["/api/shared/pipelines"] });
+      
       toast({
         title: "Pipeline deleted",
         description: "Pipeline has been successfully deleted.",
       });
       setShowDeleteDialog(null);
     },
+    onError: (error) => {
+      console.error("Delete pipeline error:", error);
+      toast({
+        title: "Error",
+        description: `Failed to delete pipeline: ${error instanceof Error ? error.message : "Please try again."}`,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create pipeline mutation
+  const createPipelineMutation = useMutation({
+    mutationFn: async (pipelineData: any) => {
+      const response = await apiRequest("POST", "/api/pipelines", {
+        ...pipelineData,
+        projectId: selectedProjectId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
+    },
     onError: () => {
       toast({
         title: "Error",
-        description: "Failed to delete pipeline. Please try again.",
+        description: "Failed to create pipeline. Please try again.",
         variant: "destructive",
       });
     },
@@ -185,6 +228,8 @@ export default function MyPipelines() {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
       toast({

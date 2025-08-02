@@ -1,0 +1,29 @@
+{
+  "id": 23,
+  "name": "newPipeline_20250802092644",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "createdAt": "2025-08-02T09:27:28.044Z",
+  "components": [
+    {
+      "id": "s3-1754126818133",
+      "data": {
+        "name": "S3-yrm8t3",
+        "type": "s3",
+        "config": {
+          "awsRegion": "us-east-1",
+          "bucketName": "TestS3"
+        },
+        "componentType": "s3",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 165.25,
+        "y": 268.25
+      }
+    }
+  ],
+  "connections": []
+}
