@@ -38,13 +38,6 @@ export default function Architecture() {
     return () => window.removeEventListener('projectChanged', handleProjectChange);
   }, []);
 
-  // Clear pipeline selection when pipelines change (due to project change)
-  useEffect(() => {
-    if (selectedPipelineId && pipelines && !pipelines.find(p => p.id.toString() === selectedPipelineId)) {
-      setSelectedPipelineId("");
-    }
-  }, [pipelines, selectedPipelineId]);
-
   // Fetch pipelines filtered by selected project
   const { data: allPipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -58,6 +51,13 @@ export default function Architecture() {
   const pipelines = [...(allPipelines || []), ...(sharedPipelines || [])].filter(
     pipeline => pipeline.projectId === selectedProjectId
   );
+
+  // Clear pipeline selection when pipelines change (due to project change)
+  useEffect(() => {
+    if (selectedPipelineId && pipelines && !pipelines.find(p => p.id.toString() === selectedPipelineId)) {
+      setSelectedPipelineId("");
+    }
+  }, [pipelines, selectedPipelineId]);
 
   const selectedPipeline = pipelines?.find(p => p.id.toString() === selectedPipelineId);
 
