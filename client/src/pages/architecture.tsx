@@ -225,7 +225,7 @@ export default function Architecture() {
                       {pipelines && pipelines.length > 0 ? (
                         pipelines.map((pipeline) => (
                           <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
-                            {pipeline.name} - {pipeline.provider}
+                            {pipeline.name} - v{pipeline.version}
                           </SelectItem>
                         ))
                       ) : (
