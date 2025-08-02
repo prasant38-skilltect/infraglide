@@ -97,6 +97,9 @@ export default function SimpleProjectSelector() {
     setSelectedProjectId(id);
     localStorage.setItem('selectedProjectId', id.toString());
     
+    // Emit custom event for same-tab components to listen
+    window.dispatchEvent(new CustomEvent('projectChanged'));
+    
     // Invalidate all project-specific queries to refetch data
     queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
     queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });

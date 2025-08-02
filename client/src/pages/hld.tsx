@@ -12,13 +12,39 @@ export default function HLD() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
 
-  // Load selected project from localStorage
+  // Load selected project from localStorage and listen for changes
   useEffect(() => {
-    const savedProjectId = localStorage.getItem('selectedProjectId');
-    if (savedProjectId) {
-      setSelectedProjectId(parseInt(savedProjectId));
-    }
+    const updateProject = () => {
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      if (savedProjectId) {
+        const newProjectId = parseInt(savedProjectId);
+        setSelectedProjectId(newProjectId);
+        // Reset pipeline selection when project changes
+        setSelectedPipelineId("");
+      }
+    };
+
+    // Initial load
+    updateProject();
+
+    // Listen for storage changes (when project selector changes in other components)
+    window.addEventListener('storage', updateProject);
+    
+    // Also listen for custom event when project changes in the same tab
+    window.addEventListener('projectChanged', updateProject);
+
+    return () => {
+      window.removeEventListener('storage', updateProject);
+      window.removeEventListener('projectChanged', updateProject);
+    };
   }, []);
+
+  // Reset pipeline selection when project pipelines change
+  useEffect(() => {
+    if (selectedPipelineId && !projectPipelines.find(p => p.id.toString() === selectedPipelineId)) {
+      setSelectedPipelineId("");
+    }
+  }, [projectPipelines, selectedPipelineId]);
 
   const { data: pipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
@@ -125,7 +151,7 @@ export default function HLD() {
                 </SelectTrigger>
                 <SelectContent>
                   {projectPipelines.length === 0 ? (
-                    <SelectItem value="" disabled>No pipelines available for selected project</SelectItem>
+                    <SelectItem value="no-pipelines" disabled>No pipelines available for selected project</SelectItem>
                   ) : (
                     projectPipelines.map((pipeline) => (
                       <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
