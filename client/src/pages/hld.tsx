@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,26 @@ import type { Pipeline } from "@shared/schema";
 
 export default function HLD() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
+
+  // Load selected project from localStorage
+  useEffect(() => {
+    const savedProjectId = localStorage.getItem('selectedProjectId');
+    if (savedProjectId) {
+      setSelectedProjectId(parseInt(savedProjectId));
+    }
+  }, []);
 
   const { data: pipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
 
-  const selectedPipeline = pipelines?.find(p => p.id.toString() === selectedPipelineId);
+  // Filter pipelines by selected project
+  const projectPipelines = pipelines?.filter(pipeline => 
+    selectedProjectId ? pipeline.projectId === selectedProjectId : false
+  ) || [];
+
+  const selectedPipeline = projectPipelines?.find(p => p.id.toString() === selectedPipelineId);
 
   const getCloudProvider = (components: any[]) => {
     if (!components || components.length === 0) return "Not specified";
@@ -110,11 +124,15 @@ export default function HLD() {
                   <SelectValue placeholder="Choose a pipeline to generate HLD" />
                 </SelectTrigger>
                 <SelectContent>
-                  {pipelines?.map((pipeline) => (
-                    <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
-                      {pipeline.name} - {pipeline.provider}
-                    </SelectItem>
-                  ))}
+                  {projectPipelines.length === 0 ? (
+                    <SelectItem value="" disabled>No pipelines available for selected project</SelectItem>
+                  ) : (
+                    projectPipelines.map((pipeline) => (
+                      <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
+                        {pipeline.name} - {pipeline.provider}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </CardContent>
