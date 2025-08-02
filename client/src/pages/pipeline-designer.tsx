@@ -1740,7 +1740,7 @@ export default function PipelineDesigner() {
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
 
-      // Navigate to pending location
+      // Navigate to pending location only if there was a navigation request
       if (pendingNavigation) {
         setLocation(pendingNavigation);
         setPendingNavigation(null);
@@ -1838,6 +1838,19 @@ export default function PipelineDesigner() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setPendingNavigation(null); // Clear navigation to prevent redirect after save
+                        setShowExitDialog(true);
+                      }}
+                      disabled={!hasUnsavedChanges}
+                      className="border-blue-300 text-blue-700 hover:bg-blue-50 hover:border-blue-400 transition-all duration-200 gap-0 disabled:opacity-50"
+                    >
+                      <Save className="w-4 h-4 mr-1" />
+                      Save
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
