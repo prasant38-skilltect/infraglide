@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
+import Sidebar from "@/components/layout/sidebar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,11 +13,51 @@ import type { Pipeline } from "@shared/schema";
 export default function Architecture() {
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
   const [isCapturingScreenshot, setIsCapturingScreenshot] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number | undefined>();
   const { toast } = useToast();
 
-  const { data: pipelines, isLoading } = useQuery<Pipeline[]>({
+  // Load selected project from localStorage
+  useEffect(() => {
+    const savedProjectId = localStorage.getItem('selectedProjectId');
+    if (savedProjectId) {
+      setSelectedProjectId(parseInt(savedProjectId));
+    }
+  }, []);
+
+  // Listen for project changes and clear pipeline selection
+  useEffect(() => {
+    const handleProjectChange = () => {
+      const savedProjectId = localStorage.getItem('selectedProjectId');
+      if (savedProjectId) {
+        setSelectedProjectId(parseInt(savedProjectId));
+        setSelectedPipelineId(""); // Clear pipeline selection when project changes
+      }
+    };
+
+    window.addEventListener('projectChanged', handleProjectChange);
+    return () => window.removeEventListener('projectChanged', handleProjectChange);
+  }, []);
+
+  // Clear pipeline selection when pipelines change (due to project change)
+  useEffect(() => {
+    if (selectedPipelineId && pipelines && !pipelines.find(p => p.id.toString() === selectedPipelineId)) {
+      setSelectedPipelineId("");
+    }
+  }, [pipelines, selectedPipelineId]);
+
+  // Fetch pipelines filtered by selected project
+  const { data: allPipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
+
+  const { data: sharedPipelines } = useQuery<Pipeline[]>({
+    queryKey: ["/api/shared/pipelines"],
+  });
+
+  // Filter pipelines by selected project
+  const pipelines = [...(allPipelines || []), ...(sharedPipelines || [])].filter(
+    pipeline => pipeline.projectId === selectedProjectId
+  );
 
   const selectedPipeline = pipelines?.find(p => p.id.toString() === selectedPipelineId);
 
@@ -181,11 +222,17 @@ export default function Architecture() {
                       <SelectValue placeholder="Choose a pipeline to view architecture" />
                     </SelectTrigger>
                     <SelectContent>
-                      {pipelines?.map((pipeline) => (
-                        <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
-                          {pipeline.name} - {pipeline.provider}
+                      {pipelines && pipelines.length > 0 ? (
+                        pipelines.map((pipeline) => (
+                          <SelectItem key={pipeline.id} value={pipeline.id.toString()}>
+                            {pipeline.name} - {pipeline.provider}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-pipelines" disabled>
+                          No pipelines available for this project
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
