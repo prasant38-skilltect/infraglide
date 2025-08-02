@@ -150,10 +150,18 @@ export default function MyPipelines() {
       return response;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
-      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
+      // Invalidate all query variations and force fresh data fetch
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
+      
+      // Also invalidate project-specific queries
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
+      
+      // Force immediate refetch by removing from cache
+      queryClient.removeQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.removeQueries({ queryKey: ["/api/shared/pipelines"] });
+      
       toast({
         title: "Pipeline deleted",
         description: "Pipeline has been successfully deleted.",
