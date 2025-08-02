@@ -480,14 +480,21 @@ This directory was automatically created when the pipeline was saved in InfraGli
       }
       
       const validatedData = insertPipelineSchema.parse(req.body);
-      const newVersion = await storage.createPipelineVersion(validatedData, parentId);
+      const newVersion = await storage.createPipelineVersion({
+        ...validatedData,
+        userId: req.user!.id
+      }, parentId);
       
       res.status(201).json(newVersion);
     } catch (error) {
+      console.error("Pipeline version creation error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid pipeline data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create pipeline version" });
+      res.status(500).json({ 
+        error: "Failed to create pipeline version",
+        details: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
 
