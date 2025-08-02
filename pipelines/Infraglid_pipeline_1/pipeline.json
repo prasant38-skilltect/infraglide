@@ -4,15 +4,14 @@
   "description": "",
   "provider": "aws",
   "region": "us-east-1",
-  "createdAt": "2025-08-02T08:28:49.545Z",
+  "updatedAt": "2025-08-02T08:37:50.122Z",
   "components": [
     {
       "id": "ec2-1754123297452",
       "data": {
         "name": "EC2-zlb76g",
-        "type": "ec2",
+        "type": "cloudComponent",
         "config": {},
-        "componentType": "ec2",
         "validationError": false
       },
       "type": "cloudComponent",
@@ -25,15 +24,29 @@
       "id": "s3-1754123299738",
       "data": {
         "name": "S3-dbresy",
-        "type": "s3",
+        "type": "cloudComponent",
         "config": {},
-        "componentType": "s3",
         "validationError": false
       },
       "type": "cloudComponent",
       "position": {
         "x": 197.75,
         "y": 157.24999237060547
+      }
+    },
+    {
+      "id": "lambda-1754123867196",
+      "data": {
+        "name": "LAMBDA-uekppi",
+        "type": "lambda",
+        "config": {},
+        "componentType": "lambda",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": -50.875,
+        "y": 165.70832443237305
       }
     }
   ],
@@ -42,6 +55,11 @@
       "id": "reactflow__edge-ec2-1754123297452-s3-1754123299738",
       "source": "ec2-1754123297452",
       "target": "s3-1754123299738"
+    },
+    {
+      "id": "reactflow__edge-ec2-1754123297452-lambda-1754123867196",
+      "source": "ec2-1754123297452",
+      "target": "lambda-1754123867196"
     }
   ]
 }
