@@ -60,7 +60,7 @@ export default function Hub() {
   const selectedProjectId = parseInt(localStorage.getItem('selectedProjectId') || '1');
 
   // Fetch user's pipelines for publishing from selected project
-  const { data: userPipelines } = useQuery<Pipeline[]>({
+  const { data: userPipelines, isLoading: isPipelinesLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines", { projectId: selectedProjectId }],
     queryFn: () => apiRequest(`/api/pipelines?projectId=${selectedProjectId}`),
   });
@@ -179,12 +179,17 @@ export default function Hub() {
                       value={selectedPipelineId}
                       onChange={(e) => setSelectedPipelineId(e.target.value)}
                     >
-                      <option value="">Choose a pipeline...</option>
-                      {userPipelines?.map((pipeline) => (
+                      <option value="">
+                        {isPipelinesLoading ? "Loading pipelines..." : "Choose a pipeline..."}
+                      </option>
+                      {userPipelines && Array.isArray(userPipelines) ? userPipelines.map((pipeline) => (
                         <option key={pipeline.id} value={pipeline.id}>
-                          {pipeline.name} - {pipeline.provider}
+                          {pipeline.name || `Pipeline ${pipeline.id}`} - {pipeline.provider || 'Unknown'}
                         </option>
-                      ))}
+                      )) : null}
+                      {userPipelines && Array.isArray(userPipelines) && userPipelines.length === 0 && !isPipelinesLoading && (
+                        <option value="" disabled>No pipelines available</option>
+                      )}
                     </select>
                   </div>
                   
