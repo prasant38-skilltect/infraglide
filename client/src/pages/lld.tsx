@@ -40,13 +40,6 @@ export default function LLD() {
     };
   }, []);
 
-  // Reset pipeline selection when project pipelines change
-  useEffect(() => {
-    if (selectedPipelineId && !projectPipelines.find(p => p.id.toString() === selectedPipelineId)) {
-      setSelectedPipelineId("");
-    }
-  }, [projectPipelines, selectedPipelineId]);
-
   const { data: pipelines, isLoading } = useQuery<Pipeline[]>({
     queryKey: ["/api/pipelines"],
   });
@@ -55,6 +48,13 @@ export default function LLD() {
   const projectPipelines = pipelines?.filter(pipeline => 
     selectedProjectId ? pipeline.projectId === selectedProjectId : false
   ) || [];
+
+  // Reset pipeline selection when project pipelines change
+  useEffect(() => {
+    if (selectedPipelineId && !projectPipelines.find(p => p.id.toString() === selectedPipelineId)) {
+      setSelectedPipelineId("");
+    }
+  }, [projectPipelines, selectedPipelineId]);
 
   const selectedPipeline = projectPipelines?.find(p => p.id.toString() === selectedPipelineId);
 
