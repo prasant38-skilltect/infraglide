@@ -949,16 +949,28 @@ export default function PropertiesPanel({
   );
 
   const renderConfigForm = () => {
+    console.log("renderConfigForm called with node.data.type:", node.data.type);
+    console.log("Full node.data:", node.data);
+    
     switch (node.data.type) {
       case "ec2":
+        console.log("Rendering EC2 config form");
         return renderEC2Config();
       case "s3":
+        console.log("Rendering S3 config form");
         return renderS3Config();
       case "rds":
+        console.log("Rendering RDS config form");
         return renderRDSConfig();
       case "vpc":
+        console.log("Rendering VPC config form");
         return renderVPCConfig();
+      case "lambda":
+      case "alb":
+        console.log("Rendering default config for unsupported component:", node.data.type);
+        return renderDefaultConfig();
       default:
+        console.log("Rendering default config form for type:", node.data.type);
         return renderDefaultConfig();
     }
   };
