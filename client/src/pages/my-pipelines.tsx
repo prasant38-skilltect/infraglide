@@ -64,6 +64,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import type { Pipeline } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
+
+// Add the throwIfResNotOk function
+async function throwIfResNotOk(res: Response) {
+  if (!res.ok) {
+    const text = (await res.text()) || res.statusText;
+    throw new Error(`${res.status}: ${text}`);
+  }
+}
 import PipelineDiffDialog from "@/components/pipeline-diff-dialog";
 
 type SortField = "name" | "provider" | "description" | "createdAt";
@@ -143,10 +151,10 @@ export default function MyPipelines() {
   // Delete pipeline mutation
   const deletePipelineMutation = useMutation({
     mutationFn: async (pipelineId: number) => {
-      const response = await apiRequest(
-        "DELETE",
-        `/api/pipelines/${pipelineId}`,
-      );
+      const response = await apiRequest(`/api/pipelines/${pipelineId}`, {
+        method: "DELETE",
+      });
+      await throwIfResNotOk(response);
       return response;
     },
     onSuccess: () => {
@@ -168,10 +176,11 @@ export default function MyPipelines() {
       });
       setShowDeleteDialog(null);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Delete pipeline error:", error);
       toast({
         title: "Error",
-        description: "Failed to delete pipeline. Please try again.",
+        description: `Failed to delete pipeline: ${error instanceof Error ? error.message : "Please try again."}`,
         variant: "destructive",
       });
     },
