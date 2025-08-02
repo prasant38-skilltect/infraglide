@@ -44,6 +44,7 @@ export default function AskJane() {
 
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
+	    alert("1")
       return apiRequest("/api/ask-jane", {
         method: "POST",
         body: { message },
