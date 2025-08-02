@@ -57,12 +57,39 @@ export default function DeployedResources() {
   // Fetch available credentials for account selection - filtered by selected project
   const { data: credentials } = useQuery<Credential[]>({
     queryKey: ["/api/credentials", { projectId: selectedProjectId }],
-    queryFn: () => fetch(`/api/credentials?projectId=${selectedProjectId}`).then(res => res.json()),
+    queryFn: () => {
+      const token = localStorage.getItem('auth_token');
+      const sessionId = localStorage.getItem('session_id');
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      if (sessionId) {
+        headers['X-Session-Id'] = sessionId;
+      }
+      
+      return fetch(`/api/credentials?projectId=${selectedProjectId}`, {
+        headers,
+      }).then(async (response) => {
+        if (!response.ok) {
+          console.error("Failed to fetch credentials:", response.status, response.statusText);
+          return []; // Return empty array instead of throwing error
+        }
+        
+        const data = await response.json();
+        return Array.isArray(data) ? data : []; // Ensure we always return an array
+      });
+    },
   });
 
   // Filter credentials based on selected provider
   const getCredentialsByProvider = () => {
-    if (!credentials) return [];
+    if (!credentials || !Array.isArray(credentials)) return [];
     if (selectedProvider === "all") return credentials;
     return credentials.filter(cred => cred.provider === selectedProvider);
   };

@@ -452,12 +452,19 @@ export class MemStorage implements IStorage {
 
 
   // Credentials  
-  async getCredentials(userId?: number): Promise<Credential[]> {
+  async getCredentials(userId?: number, projectId?: number): Promise<Credential[]> {
     const allCredentials = Array.from(this.credentials.values());
+    let filteredCredentials = allCredentials;
+    
     if (userId) {
-      return allCredentials.filter(credential => credential.userId === userId);
+      filteredCredentials = filteredCredentials.filter(credential => credential.userId === userId);
     }
-    return allCredentials;
+    
+    if (projectId) {
+      filteredCredentials = filteredCredentials.filter(credential => credential.projectId === projectId);
+    }
+    
+    return filteredCredentials;
   }
 
   async getCredential(id: number): Promise<Credential | undefined> {
