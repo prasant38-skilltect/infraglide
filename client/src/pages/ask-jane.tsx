@@ -44,11 +44,15 @@ export default function AskJane() {
 
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
+      console.log("Sending message to Ask Jane:", message);
       const response = await apiRequest("/api/ask-jane", {
         method: "POST",
-        body: { message },
+        body: JSON.stringify({ message }),
       });
-      return await response.json();
+      console.log("Ask Jane response status:", response.status);
+      const data = await response.json();
+      console.log("Ask Jane response data:", data);
+      return data;
     },
     onSuccess: (data) => {
       const assistantMessage: Message = {
