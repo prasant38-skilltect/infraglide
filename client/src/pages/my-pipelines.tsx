@@ -133,12 +133,12 @@ export default function MyPipelines() {
   console.log("Shared Pipelines:", sharedPipelines);
   // Combine pipelines with ownership indicators
   const pipelines = useMemo(() => {
-    const owned = ownedPipelines.map((p) => ({
+    const owned = (ownedPipelines || []).map((p) => ({
       ...p,
       isOwned: true,
       isShared: false,
     }));
-    const shared = sharedPipelines.map((p) => ({
+    const shared = (sharedPipelines || []).map((p) => ({
       ...p,
       isOwned: false,
       isShared: true,
