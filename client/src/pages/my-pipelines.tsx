@@ -150,6 +150,8 @@ export default function MyPipelines() {
       return response;
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
       toast({
@@ -162,6 +164,30 @@ export default function MyPipelines() {
       toast({
         title: "Error",
         description: "Failed to delete pipeline. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Create pipeline mutation
+  const createPipelineMutation = useMutation({
+    mutationFn: async (pipelineData: any) => {
+      const response = await apiRequest("POST", "/api/pipelines", {
+        ...pipelineData,
+        projectId: selectedProjectId,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create pipeline. Please try again.",
         variant: "destructive",
       });
     },
@@ -185,6 +211,8 @@ export default function MyPipelines() {
       return response.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/pipelines", { projectId: selectedProjectId }] });
+      queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines", { projectId: selectedProjectId }] });
       queryClient.invalidateQueries({ queryKey: ["/api/pipelines"] });
       queryClient.invalidateQueries({ queryKey: ["/api/shared/pipelines"] });
       toast({
