@@ -44,23 +44,25 @@ export default function AskJane() {
 
   const askJaneMutation = useMutation({
     mutationFn: async (message: string) => {
-      return apiRequest("/api/ask-jane", {
+      const response = await apiRequest("/api/ask-jane", {
         method: "POST",
         body: { message },
       });
+      return await response.json();
     },
-    onSuccess: (response) => {
+    onSuccess: (data) => {
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: response.response,
+        content: data.response,
         timestamp: new Date(),
-        terraformJson: response.terraformJson,
-        hasError: response.hasError
+        terraformJson: data.terraformJson,
+        hasError: data.hasError
       };
       setMessages(prev => [...prev, assistantMessage]);
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Ask Jane error:", error);
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
