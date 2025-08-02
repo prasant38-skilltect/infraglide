@@ -432,6 +432,17 @@ export default function PipelineDesigner() {
 
   // Check for imported pipeline data from sessionStorage (My Pipelines or Ask Jane)
   useEffect(() => {
+    // Check if this is a fresh page load for a new pipeline (no ID in URL)
+    const urlParams = new URLSearchParams(window.location.search);
+    const isNewPipeline = !pipelineId && !urlParams.has('import');
+    
+    // If this is a new pipeline creation, clear any import data first
+    if (isNewPipeline && (pipelineName === "New Pipeline" || !pipelineName)) {
+      sessionStorage.removeItem("importedPipelineData");
+      sessionStorage.removeItem("importedPipeline");
+      return; // Exit early for new pipelines
+    }
+    
     const importedData = sessionStorage.getItem("importedPipelineData");
     const importedPipeline = sessionStorage.getItem("importedPipeline");
 
@@ -509,6 +520,7 @@ export default function PipelineDesigner() {
 
         // Clear sessionStorage to prevent reloading on refresh
         sessionStorage.removeItem("importedPipelineData");
+        sessionStorage.removeItem("importedPipeline");
 
         toast({
           title: "Pipeline imported successfully",
@@ -599,6 +611,10 @@ export default function PipelineDesigner() {
     ) {
       // Auto-generate name for new pipelines (only if still using default name and haven't imported)
       setPipelineName(generatePipelineName());
+      
+      // Clear any leftover import data to ensure clean state for new pipelines
+      sessionStorage.removeItem("importedPipeline");
+      sessionStorage.removeItem("importedPipelineData");
     }
   }, [pipeline, setNodes, setEdges]);
 

@@ -131,7 +131,14 @@ export default function AskJaneContent() {
       fromJane: true,
     };
 
+    // Clear any existing imported pipeline data to prevent interference
+    sessionStorage.removeItem("importedPipeline");
+    sessionStorage.removeItem("importedPipelineData");
+    
+    // Set the new pipeline data with a unique key for this import
     sessionStorage.setItem("importedPipeline", JSON.stringify(pipelineData));
+    
+    // Open in new tab
     window.open("/pipeline", "_blank");
 
     toast({
@@ -273,11 +280,13 @@ export default function AskJaneContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() =>
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             copyToClipboard(
                               JSON.stringify(message.terraformJson, null, 2),
-                            )
-                          }
+                            );
+                          }}
                         >
                           <Copy className="w-3 h-3 mr-1" />
                           Copy JSON
