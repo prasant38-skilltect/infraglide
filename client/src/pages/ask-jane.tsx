@@ -47,23 +47,33 @@ export default function AskJane() {
       console.log("Sending message to Ask Jane:", message);
       const response = await apiRequest("/api/ask-jane", {
         method: "POST",
-        body: JSON.stringify({ message }),
+        body: { message }, // Let apiRequest handle the JSON.stringify
       });
       console.log("Ask Jane response status:", response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       const data = await response.json();
       console.log("Ask Jane response data:", data);
       return data;
     },
     onSuccess: (data) => {
+      console.log("Processing successful response:", data);
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: 'assistant',
-        content: data.response,
+        content: data.response || "No response content",
         timestamp: new Date(),
         terraformJson: data.terraformJson,
         hasError: data.hasError
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      console.log("Created assistant message:", assistantMessage);
+      setMessages(prev => {
+        console.log("Previous messages:", prev);
+        const newMessages = [...prev, assistantMessage];
+        console.log("New messages array:", newMessages);
+        return newMessages;
+      });
     },
     onError: (error) => {
       console.error("Ask Jane error:", error);
