@@ -96,6 +96,8 @@ export default function AskJane() {
 
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
+    
+    console.log("handleSendMessage called with:", inputMessage);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -104,7 +106,15 @@ export default function AskJane() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    console.log("Adding user message:", userMessage);
+    setMessages(prev => {
+      console.log("Current messages before adding user:", prev);
+      const newMessages = [...prev, userMessage];
+      console.log("Messages after adding user:", newMessages);
+      return newMessages;
+    });
+    
+    console.log("Calling askJaneMutation.mutate");
     askJaneMutation.mutate(inputMessage);
     setInputMessage("");
   };
@@ -243,6 +253,7 @@ export default function AskJane() {
               {/* Messages */}
               <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
                 <div className="space-y-4 pb-4">
+                  {console.log("Rendering messages:", messages)}
                   {messages.map((message) => (
                     <div
                       key={message.id}
