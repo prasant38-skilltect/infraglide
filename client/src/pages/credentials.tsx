@@ -17,6 +17,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -30,6 +40,7 @@ export default function Credentials() {
   const { toast } = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState<number | null>(null);
   const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showEditPassword, setShowEditPassword] = useState(false);
@@ -168,8 +179,13 @@ export default function Credentials() {
   };
 
   const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this credential?")) {
-      deleteCredentialMutation.mutate(id);
+    setShowDeleteDialog(id);
+  };
+
+  const confirmDelete = () => {
+    if (showDeleteDialog) {
+      deleteCredentialMutation.mutate(showDeleteDialog);
+      setShowDeleteDialog(null);
     }
   };
 
@@ -553,6 +569,27 @@ export default function Credentials() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog !== null} onOpenChange={() => setShowDeleteDialog(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Credential</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this credential? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
