@@ -561,8 +561,8 @@ export default function PipelineDesigner() {
             position: component.position,
             data: {
               type: component.type,
-              name: component.name,
-              config: component.config,
+              name: component.name || component.data?.name || `${component.type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
+              config: component.config || component.data?.config || {},
               validationError: false, // Don't show validation errors until validate is clicked
             },
           }),
@@ -1609,8 +1609,8 @@ export default function PipelineDesigner() {
           position: component.position,
           data: {
             type: component.type,
-            name: component.name,
-            config: component.config,
+            name: component.name || component.data?.name || `${component.type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
+            config: component.config || component.data?.config || {},
             validationError: false,
           },
         }));
