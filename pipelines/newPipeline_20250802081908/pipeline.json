@@ -1,0 +1,26 @@
+{
+  "id": 17,
+  "name": "newPipeline_20250802081908",
+  "description": "",
+  "provider": "aws",
+  "region": "us-east-1",
+  "createdAt": "2025-08-02T08:19:18.047Z",
+  "components": [
+    {
+      "id": "ec2-1754122751549",
+      "data": {
+        "name": "EC2-nbfdxt",
+        "type": "ec2",
+        "config": {},
+        "componentType": "ec2",
+        "validationError": false
+      },
+      "type": "cloudComponent",
+      "position": {
+        "x": 240,
+        "y": 206
+      }
+    }
+  ],
+  "connections": []
+}

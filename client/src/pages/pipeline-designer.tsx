@@ -145,7 +145,7 @@ export default function PipelineDesigner() {
   const [currentCredentialId, setCurrentCredentialId] = useState<number | null>(
     null,
   );
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
   const [isAutoSaving, setIsAutoSaving] = useState(false);
 
   const [validationErrors, setValidationErrors] = useState<Set<string>>(
@@ -561,8 +561,8 @@ export default function PipelineDesigner() {
             position: component.position,
             data: {
               type: component.type,
-              name: component.name,
-              config: component.config,
+              name: component.name || component.data?.name || `${component.type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
+              config: component.config || component.data?.config || {},
               validationError: false, // Don't show validation errors until validate is clicked
             },
           }),
@@ -775,19 +775,7 @@ export default function PipelineDesigner() {
     showExitDialog,
   ]);
 
-  // Trigger auto-save when pipeline state changes
-  useEffect(() => {
-    if (nodes.length > 0 || edges.length > 0) {
-      triggerAutoSave();
-    }
-  }, [nodes, edges, triggerAutoSave]);
-
-  // Trigger auto-save when pipeline name changes (and rename directory)
-  useEffect(() => {
-    if (pipelineName !== "New Pipeline" && !hasImportedData.current) {
-      triggerAutoSave();
-    }
-  }, [pipelineName, triggerAutoSave]);
+  // Auto-save disabled - removed auto-save triggers
 
   const onConnect = useCallback(
     (params: Connection) => {
@@ -1621,8 +1609,8 @@ export default function PipelineDesigner() {
           position: component.position,
           data: {
             type: component.type,
-            name: component.name,
-            config: component.config,
+            name: component.name || component.data?.name || `${component.type.toUpperCase()}-${Math.random().toString(36).substr(2, 6)}`,
+            config: component.config || component.data?.config || {},
             validationError: false,
           },
         }));
@@ -1687,11 +1675,16 @@ export default function PipelineDesigner() {
     versionNotes?: string,
   ) => {
     try {
+      const selectedProjectId = parseInt(
+        localStorage.getItem("selectedProjectId") || "1",
+      );
+      
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
         provider: getCloudProvider(nodes),
         region: pipelineRegion,
+        projectId: selectedProjectId,
         components: nodes.map((node) => ({
           id: node.id,
           type: node.type,
