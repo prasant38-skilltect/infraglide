@@ -1675,11 +1675,16 @@ export default function PipelineDesigner() {
     versionNotes?: string,
   ) => {
     try {
+      const selectedProjectId = parseInt(
+        localStorage.getItem("selectedProjectId") || "1",
+      );
+      
       const pipelineData = {
         name: pipelineName,
         description: pipelineDescription,
         provider: getCloudProvider(nodes),
         region: pipelineRegion,
+        projectId: selectedProjectId,
         components: nodes.map((node) => ({
           id: node.id,
           type: node.type,
