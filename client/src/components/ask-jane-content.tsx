@@ -44,7 +44,7 @@ export default function AskJaneContent() {
       return data;
     },
     onSuccess: (response) => {
-	    console.log("response...", response)
+            console.log("response...", response)
       const assistantMessage: Message = {
         id: Date.now().toString(),
         role: "assistant",
@@ -96,12 +96,27 @@ export default function AskJaneContent() {
     }
   };
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Copied",
-      description: "Content copied to clipboard",
-    });
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied",
+        description: "Content copied to clipboard",
+      });
+    } catch (error) {
+      console.error("Failed to copy text:", error);
+      // Fallback for browsers that don't support clipboard API
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      toast({
+        title: "Copied",
+        description: "Content copied to clipboard",
+      });
+    }
   };
 
   const openInPipelineDesigner = (terraformJson: any) => {
@@ -171,7 +186,8 @@ export default function AskJaneContent() {
               },
               data: {
                 type: mapTerraformTypeToComponent(resourceType),
-                label: resourceName,
+                name: resourceName,
+                componentType: mapTerraformTypeToComponent(resourceType),
                 config: config,
                 provider: detectProvider(terraformJson),
               },
@@ -187,11 +203,12 @@ export default function AskJaneContent() {
 
   const mapTerraformTypeToComponent = (terraformType: string): string => {
     const mapping: Record<string, string> = {
-      aws_s3_bucket: "aws-s3",
-      aws_instance: "aws-ec2",
-      aws_db_instance: "aws-rds",
-      aws_vpc: "aws-vpc",
-      aws_lb: "aws-alb",
+      aws_s3_bucket: "s3",
+      aws_instance: "ec2", 
+      aws_db_instance: "rds",
+      aws_vpc: "vpc",
+      aws_lb: "alb",
+      aws_lambda_function: "lambda",
       azurerm_storage_account: "azure-storage",
       azurerm_virtual_machine: "azure-vm",
       azurerm_sql_database: "azure-sql",
@@ -204,7 +221,7 @@ export default function AskJaneContent() {
       google_compute_url_map: "gcp-load-balancer",
     };
 
-    return mapping[terraformType] || "aws-ec2";
+    return mapping[terraformType] || "ec2";
   };
   console.log("messages.... ", messages);
   return (
